@@ -1,0 +1,2 @@
+[alias]
+chef = "run --release --bin chef -- "
