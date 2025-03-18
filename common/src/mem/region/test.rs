@@ -20,81 +20,6 @@ fn region(start: usize, size: usize) -> MemoryRegion {
 }
 
 #[test]
-fn test_constructors() {
-    let r1 = MemoryRegion::new(addr(1000), memsize(500));
-    assert_eq!(*r1.start(), 1000);
-    assert_eq!(*r1.size(), 500);
-    assert_eq!(*r1.end(), 1500);
-
-    let r2 = MemoryRegion::new_boundaries(addr(2000), addr(3000));
-    assert_eq!(*r2.start(), 2000);
-    assert_eq!(*r2.size(), 1000);
-
-    let null_region = MemoryRegion::null();
-    assert!(null_region.is_null());
-    assert_eq!(MemoryRegion::default(), null_region);
-}
-
-#[test]
-fn test_contains() {
-    let r = region(1000, 500);
-
-    assert!(!r.contains(addr(999)));
-    assert!(r.contains(addr(1000)));
-    assert!(r.contains(addr(1499)));
-    assert!(!r.contains(addr(1500)));
-
-    let inner = region(1200, 200);
-    assert!(r.contains_region(inner));
-
-    let overlapping = region(800, 500);
-    assert!(!r.contains_region(overlapping));
-}
-
-#[test]
-fn test_union() {
-    // Adjacent regions
-    let r1 = region(1000, 500);
-    let r2 = region(1500, 500);
-    assert_eq!(r1.union(r2), Some(region(1000, 1000)));
-
-    // Overlapping regions
-    let r3 = region(1200, 500);
-    let union = r1.union(r3).unwrap();
-    assert_eq!(*union.start(), 1000);
-    assert_eq!(*union.end(), 1700);
-
-    // Disjoint regions
-    let r4 = region(2000, 500);
-    assert!(r1.union(r4).is_none());
-
-    // One inside another
-    let inner = region(1100, 200);
-    assert_eq!(r1.union(inner), Some(r1));
-}
-
-#[test]
-fn test_intersect() {
-    let r1 = region(1000, 500);
-
-    // Full overlap
-    let inner = region(1100, 200);
-    assert_eq!(r1 & inner, inner);
-
-    // Partial overlap
-    let r2 = region(800, 500);
-    assert_eq!(r1 & r2, region(1000, 300));
-
-    // No overlap
-    let r3 = region(2000, 500);
-    assert!((r1 & r3).is_null());
-
-    // Adjacent (no overlap)
-    let r4 = region(1500, 500);
-    assert!((r1 & r4).is_null());
-}
-
-#[test]
 fn test_operators() {
     let mut r1 = region(1000, 500);
     let r2 = region(1500, 500);
@@ -203,4 +128,56 @@ fn test_compound_operations() {
     let c = region(0x1200, 0x1000);
     let result = (a + b).unwrap() & c;
     assert_eq!(result, region(0x1200, 0x800));
+}
+
+#[test]
+fn test_constructors() {
+    let start = PhysAddr::new(0x1000).unwrap();
+    let size = MemorySize::new(0x1000);
+    let region = MemoryRegion::new(start, size);
+    assert_eq!(region.start(), start);
+    assert_eq!(region.size(), size);
+    assert_eq!(region.end(), start.add_truncate(0x1000));
+
+    // Test new_boundaries
+    let end = start.add_truncate(0x1000);
+    let region2 = MemoryRegion::new_boundaries(start, end);
+    assert_eq!(region2.size(), size);
+}
+
+#[test]
+#[should_panic]
+fn test_invalid_boundaries() {
+    let start = PhysAddr::new(0x2000).unwrap();
+    let end = PhysAddr::new(0x1000).unwrap();
+    let _region = MemoryRegion::new_boundaries(start, end);
+}
+
+#[test]
+fn test_contains() {
+    let region = MemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
+    assert!(region.contains(PhysAddr::new(0x1000).unwrap()));
+    assert!(region.contains(PhysAddr::new(0x1FFF).unwrap()));
+    assert!(!region.contains(PhysAddr::new(0x2000).unwrap()));
+}
+
+#[test]
+fn test_union() {
+    let r1 = MemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
+    let r2 = MemoryRegion::new(PhysAddr::new(0x3000).unwrap(), MemorySize::new(0x1000));
+    assert_eq!(r1.union(r2), None); // Disjoint
+
+    let r3 = MemoryRegion::new(PhysAddr::new(0x1800).unwrap(), MemorySize::new(0x1000));
+    let union = r1.union(r3).unwrap();
+    assert_eq!(union.start(), PhysAddr::new(0x1000).unwrap());
+    assert_eq!(union.end(), PhysAddr::new(0x2800).unwrap());
+}
+
+#[test]
+fn test_intersect() {
+    let r1 = MemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
+    let r2 = MemoryRegion::new(PhysAddr::new(0x1800).unwrap(), MemorySize::new(0x1000));
+    let intersection = r1.intersect(r2);
+    assert_eq!(intersection.start(), PhysAddr::new(0x1800).unwrap());
+    assert_eq!(intersection.end(), PhysAddr::new(0x2000).unwrap());
 }

@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod test;
+
 use crate::mem::MemorySize;
 use crate::mem::frame::Frame;
 use crate::mem::frame::size::FrameSize;
