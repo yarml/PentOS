@@ -18,6 +18,7 @@ use snail::qemu::Qemu;
 use std::fs;
 use std::io::Read;
 use std::process;
+use std::process::Command;
 use tar::Archive;
 use utils::get_path;
 use xz::read::XzDecoder;
@@ -136,6 +137,16 @@ fn run(root: &Metadata) {
     qemu.command().status().unwrap();
 }
 
+fn install(config: &ChefConfig) {
+    let bootloader_location = &config.install_bootloader;
+    Command::new("sudo")
+        .arg("cp")
+        .arg("target/x86_64-unknown-uefi/debug/bootloader.efi")
+        .arg(bootloader_location)
+        .status()
+        .unwrap();
+}
+
 fn main() {
     let args = ChefArgs::parse();
     let root = MetadataCommand::new()
@@ -154,6 +165,9 @@ fn main() {
         }
         ChefCommand::Run => {
             run(&root);
+        }
+        ChefCommand::Install => {
+            install(&config);
         }
         ChefCommand::Ovmf => {
             ovmf(&config);

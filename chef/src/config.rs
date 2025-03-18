@@ -5,6 +5,8 @@ use serde_json::Value;
 pub struct ChefConfig {
     #[serde(rename = "ovmf-source")]
     pub ovmf_source: String,
+    #[serde(rename = "install-bootloader")]
+    pub install_bootloader: String,
 }
 
 impl ChefConfig {

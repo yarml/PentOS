@@ -13,5 +13,6 @@ pub enum ChefCommand {
     Build { package: String },
     Image,
     Run,
+    Install,
     Ovmf,
 }
