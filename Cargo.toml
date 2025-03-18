@@ -1,5 +1,5 @@
 [workspace]
-members = ["chef", "boot-protocol", "bootloader", "snail"]
+members = ["chef", "boot-protocol", "bootloader", "snail", "common"]
 resolver = "3"
 
 package.edition = "2024"
