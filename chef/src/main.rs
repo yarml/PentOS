@@ -1,21 +1,20 @@
 mod args;
-mod cargo;
 mod config;
 mod progress;
-mod qemu;
 mod utils;
 
 use args::ChefArgs;
 use args::ChefCommand;
-use cargo::Cargo;
-use cargo::Packages;
 use cargo_metadata::Metadata;
 use cargo_metadata::MetadataCommand;
 use clap::Parser;
 use config::ChefConfig;
-use qemu::Drive;
-use qemu::DriveInterface;
-use qemu::Qemu;
+use snail::cargo::Cargo;
+use snail::cargo::Packages;
+use snail::qemu::Drive;
+use snail::qemu::DriveInterface;
+use snail::qemu::Memory;
+use snail::qemu::Qemu;
 use std::fs;
 use std::io::Read;
 use std::process;
@@ -30,7 +29,7 @@ fn check(root: &Metadata) {
             .keep_going()
             .quiet()
             .message_format("json")
-            .packages(Packages::packages(&[&package.id.repr]));
+            .packages(Packages::package_list(&[&package.id.repr]));
         let path = get_path(package);
         check_cmd
             .command()
@@ -59,7 +58,7 @@ fn build(root: &Metadata, target_package_name: &str) {
 
     let target_package = target_package.unwrap();
 
-    let build_cmd = Cargo::build().packages(Packages::packages(&[&target_package.id.repr]));
+    let build_cmd = Cargo::build().packages(Packages::package_list(&[&target_package.id.repr]));
     let path = get_path(target_package);
     build_cmd
         .command()
@@ -119,7 +118,7 @@ fn run(root: &Metadata) {
     image(root);
     let qemu = Qemu::new()
         .numcores(4)
-        .memory(qemu::Memory::Giga(4))
+        .memory(Memory::Giga(8))
         .debugcon("stdio")
         .drive(
             Drive::new("run/ovmf/code.fd")

@@ -80,7 +80,7 @@ impl Packages {
     pub fn workspace_except(exclude: Vec<String>) -> Packages {
         Packages::Workspace { exclude }
     }
-    pub fn packages(items: &[&str]) -> Packages {
+    pub fn package_list(items: &[&str]) -> Packages {
         Packages::PackageList(items.iter().map(|item| item.to_string()).collect())
     }
 }
