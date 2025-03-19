@@ -8,6 +8,8 @@ package.authors = ["Youssef Harmal"]
 
 [workspace.dependencies]
 snail = { path = "snail" }
+common = { path = "common" }
+boot-protocol = { path = "boot-protocol" }
 
 [workspace.metadata.chef]
 ovmf-source = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/edk2-stable202408.01-r1/edk2-stable202408.01-r1-bin.tar.xz"

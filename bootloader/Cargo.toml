@@ -7,4 +7,10 @@ authors.workspace = true
 
 [dependencies]
 log = "0.4.26"
-uefi = { version = "0.34.1", features = ["logger"] }
+uefi = { version = "0.34.1" }
+boot-protocol.workspace = true
+common.workspace = true
+
+[features]
+default = ["log-debugcon"]
+log-debugcon = []
