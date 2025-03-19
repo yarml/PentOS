@@ -181,3 +181,42 @@ fn test_intersect() {
     assert_eq!(intersection.start(), PhysAddr::new(0x1800).unwrap());
     assert_eq!(intersection.end(), PhysAddr::new(0x2000).unwrap());
 }
+
+#[test]
+fn take_start_partial() {
+    let mut region = MemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
+    let taken = region.take_start(0x500);
+    assert_eq!(taken, PhysAddr::new(0x1000).unwrap());
+    assert_eq!(region.start(), PhysAddr::new(0x1500).unwrap());
+    assert_eq!(*region.size(), 0xB00);
+}
+
+#[test]
+fn take_start_full() {
+    let mut region = MemoryRegion::new(PhysAddr::new(0x2000).unwrap(), MemorySize::new(0x1000));
+    let taken = region.take_start(0x1000);
+    assert_eq!(taken, PhysAddr::new(0x2000).unwrap());
+    assert!(region.is_null());
+}
+
+#[test]
+#[should_panic] // In debug mode only
+fn take_start_over_size() {
+    let mut region = MemoryRegion::new(PhysAddr::new(0x3000).unwrap(), MemorySize::new(0x500));
+    region.take_start(0x1000); // Panics in debug due to underflow
+}
+
+#[test]
+fn take_start_zero() {
+    let mut region = MemoryRegion::new(PhysAddr::new(0x4000).unwrap(), MemorySize::new(0x1000));
+    let taken = region.take_start(0);
+    assert_eq!(taken, PhysAddr::new(0x4000).unwrap());
+    assert_eq!(*region.size(), 0x1000);
+}
+
+#[test]
+#[should_panic]
+fn take_start_from_null() {
+    let mut region = MemoryRegion::null();
+    region.take_start(0x1000); // Will panic due to underflow
+}

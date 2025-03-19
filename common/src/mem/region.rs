@@ -103,6 +103,18 @@ impl MemoryRegion {
     }
 }
 
+impl MemoryRegion {
+    pub fn take_start(&mut self, amount: usize) -> PhysAddr {
+        let start = self.start();
+        self.start += amount;
+        self.size -= amount;
+        if *self.size() == 0 {
+            *self = MemoryRegion::null();
+        }
+        start
+    }
+}
+
 impl Default for MemoryRegion {
     fn default() -> Self {
         Self::null()
