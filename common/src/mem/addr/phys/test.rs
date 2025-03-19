@@ -26,6 +26,12 @@ fn test_conversions() {
 
     let u64_val: u64 = addr.into();
     assert_eq!(u64_val, 0x1234);
+
+    let ptr: *const u8 = addr.as_ptr();
+    assert_eq!(ptr as usize, 0x1234);
+
+    let mut_ptr: *mut u8 = addr.as_mut_ptr();
+    assert_eq!(mut_ptr as usize, 0x1234);
 }
 
 #[test]

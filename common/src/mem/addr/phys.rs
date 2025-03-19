@@ -83,6 +83,14 @@ impl PhysAddr {
     pub const fn as_u64(&self) -> u64 {
         self.inner as u64
     }
+    #[inline]
+    pub const fn as_ptr<T>(&self) -> *const T {
+        self.inner as *const T
+    }
+    #[inline]
+    pub const fn as_mut_ptr<T>(&self) -> *mut T {
+        self.inner as *mut T
+    }
 }
 
 impl Deref for PhysAddr {
