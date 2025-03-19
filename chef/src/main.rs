@@ -1,3 +1,5 @@
+#![feature(exit_status_error)]
+
 mod args;
 mod config;
 mod progress;
@@ -19,11 +21,12 @@ use std::fs;
 use std::io::Read;
 use std::process;
 use std::process::Command;
+use std::process::ExitStatusError;
 use tar::Archive;
 use utils::get_path;
 use xz::read::XzDecoder;
 
-fn check(root: &Metadata) {
+fn check(root: &Metadata) -> Result<(), ExitStatusError> {
     for package in &root.workspace_members {
         let package = &root[package];
         let check_cmd = Cargo::check()
@@ -37,11 +40,13 @@ fn check(root: &Metadata) {
             // Change PWD to use package's .cargo/config.toml
             .current_dir(path)
             .status()
-            .unwrap();
+            .unwrap()
+            .exit_ok()?;
     }
+    Ok(())
 }
 
-fn build(root: &Metadata, target_package_name: &str) {
+fn build(root: &Metadata, target_package_name: &str) -> Result<(), ExitStatusError> {
     let mut target_package = None;
 
     for package in &root.workspace_members {
@@ -66,7 +71,8 @@ fn build(root: &Metadata, target_package_name: &str) {
         // Change PWD to use package's .cargo/config.toml
         .current_dir(path)
         .status()
-        .unwrap();
+        .unwrap()
+        .exit_ok()
 }
 
 fn ovmf(config: &ChefConfig) {
@@ -105,18 +111,19 @@ fn ovmf(config: &ChefConfig) {
     }
 }
 
-fn image(root: &Metadata) {
-    build(root, "bootloader");
-    fs::create_dir_all("run/esp/efi/boot").unwrap();
+fn image(root: &Metadata) -> Result<(), ExitStatusError> {
+    build(root, "bootloader")?;
+    fs::create_dir_all("run/esp/efi/boot").expect("Couldn't create run/esp/efi/boot");
     fs::copy(
         "target/x86_64-unknown-uefi/debug/bootloader.efi",
         "run/esp/efi/boot/bootx64.efi",
     )
-    .unwrap();
+    .expect("Couldn't copy bootloader.efi");
+    Ok(())
 }
 
-fn run(root: &Metadata) {
-    image(root);
+fn run(root: &Metadata) -> Result<(), ExitStatusError> {
+    image(root)?;
     let qemu = Qemu::new()
         .numcores(4)
         .memory(Memory::Giga(8))
@@ -134,17 +141,19 @@ fn run(root: &Metadata) {
                 .readonly(),
         )
         .drive(Drive::new("fat:rw:run/esp").raw());
-    qemu.command().status().unwrap();
+    qemu.command().status().unwrap().exit_ok()
 }
 
-fn install(config: &ChefConfig) {
+fn install(root: &Metadata, config: &ChefConfig) -> Result<(), ExitStatusError> {
+    build(root, "bootloader")?;
     let bootloader_location = &config.install_bootloader;
     Command::new("sudo")
         .arg("cp")
         .arg("target/x86_64-unknown-uefi/debug/bootloader.efi")
         .arg(bootloader_location)
         .status()
-        .unwrap();
+        .unwrap()
+        .exit_ok()
 }
 
 fn main() {
@@ -155,19 +164,19 @@ fn main() {
     let config = ChefConfig::from(&root.workspace_metadata["chef"]);
     match args.command {
         ChefCommand::Check => {
-            check(&root);
+            check(&root).expect("Couldn't check");
         }
         ChefCommand::Build { package } => {
-            build(&root, &package);
+            build(&root, &package).expect("Couldn't build");
         }
         ChefCommand::Image => {
-            image(&root);
+            image(&root).expect("Couldn't make image");
         }
         ChefCommand::Run => {
-            run(&root);
+            run(&root).expect("Couldn't run");
         }
         ChefCommand::Install => {
-            install(&config);
+            install(&root, &config).expect("Couldn't install");
         }
         ChefCommand::Ovmf => {
             ovmf(&config);
