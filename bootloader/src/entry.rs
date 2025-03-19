@@ -1,3 +1,4 @@
+use crate::allocator::Allocator;
 use crate::logger;
 use crate::mmap::MemoryMap;
 use common::mem::MemoryRegion;
@@ -23,9 +24,43 @@ fn main() -> Status {
         // SAFETY: We call logger::diable() before exiting UEFI boot services.
         logger::init();
     }
+    info!("Booting PentOS...");
+
+    // TODO: Load kernel image
 
     logger::disable();
+    let real_mmap = unsafe {
+        // SAFETY: Only thing we used was the UEFI console logger, it is now disabled
+        boot::exit_boot_services(MemoryType::LOADER_DATA)
+    };
+    let mut mmap = MemoryMap::<256>::new();
+    let mut loader_mmap = MemoryMap::<64>::new();
+    for entry in real_mmap.entries() {
+        let region = MemoryRegion::new(
+            PhysAddr::new_truncate(entry.phys_start as usize),
+            MemorySize::new(entry.page_count as usize * 4096),
+        );
+        if entry.phys_start >= 1024 * 1024
+            && (entry.ty == MemoryType::CONVENTIONAL
+                || entry.ty == MemoryType::BOOT_SERVICES_CODE
+                || entry.ty == MemoryType::BOOT_SERVICES_DATA)
+        {
+            mmap.add(region);
+        }
+        if entry.phys_start >= 1024 * 1024
+            && (entry.ty == MemoryType::LOADER_CODE || entry.ty == MemoryType::LOADER_DATA)
+        {
+            loader_mmap.add(region);
+        }
+    }
 
+    let allocator = Allocator::init(mmap);
+
+    // TODO: Setup virtual memory for kernel
+
+    let mmap = allocator.disable(loader_mmap);
+
+    // TODO: Jump to kernel
     loop {
         unsafe {
             asm!("hlt");

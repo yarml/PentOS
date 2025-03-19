@@ -1,6 +1,7 @@
 use common::mem::MemoryRegion;
 use core::cmp::Ordering;
 use core::ops::Deref;
+use core::ops::DerefMut;
 
 pub struct MemoryMap<const MAX: usize> {
     pub regions: [MemoryRegion; MAX],
@@ -49,7 +50,7 @@ impl<const MAX: usize> MemoryMap<MAX> {
         }
     }
     pub fn minimize(&mut self) {
-        self.sort();
+        self.sort_start_addr();
         for i in 0..self.len {
             if i > 0 && (self.regions[i - 1] + self.regions[i]).is_some() {
                 self.regions[i - 1] += self.regions[i];
@@ -71,8 +72,11 @@ impl<const MAX: usize> MemoryMap<MAX> {
         });
         self.len = self.regions.iter().position(|r| r.is_null()).unwrap_or(MAX);
     }
-    pub fn sort(&mut self) {
+    pub fn sort_start_addr(&mut self) {
         self.regions[..self.len].sort_unstable_by_key(|r| r.start());
+    }
+    pub fn sort_size(&mut self) {
+        self.regions[..self.len].sort_unstable_by_key(|r| r.size());
     }
 }
 
@@ -93,5 +97,11 @@ impl<const MAX: usize> Deref for MemoryMap<MAX> {
 
     fn deref(&self) -> &Self::Target {
         &self.regions[..self.len]
+    }
+}
+
+impl<const MAX: usize> DerefMut for MemoryMap<MAX> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.regions[..self.len]
     }
 }
