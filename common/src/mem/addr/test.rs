@@ -1,17 +1,19 @@
-use crate::mem::addr::PhysAddr;
+use crate::define_addr;
+
+define_addr!(Addr, 0x00FF_FFFF_FFFF_FFFF);
 
 #[test]
 fn test_addr_creation() {
-    let valid_addr = PhysAddr::new(0x00FF_FFFF_FFFF_FFFF);
+    let valid_addr = Addr::new(0x00FF_FFFF_FFFF_FFFF);
     assert!(valid_addr.is_some());
 
-    let truncated = PhysAddr::new_truncate(0xFFFF_FFFF_FFFF_FFFF);
+    let truncated = Addr::new_truncate(0xFFFF_FFFF_FFFF_FFFF);
     assert_eq!(truncated.as_usize(), 0x00FF_FFFF_FFFF_FFFF);
 }
 
 #[test]
 fn test_arithmetic() {
-    let mut addr = PhysAddr::new(0x1000).unwrap();
+    let mut addr = Addr::new(0x1000).unwrap();
     addr += 0x500;
     assert_eq!(addr.as_usize(), 0x1500);
 
@@ -21,7 +23,7 @@ fn test_arithmetic() {
 
 #[test]
 fn test_conversions() {
-    let addr: PhysAddr = (0x1234 as usize).into();
+    let addr: Addr = (0x1234 as usize).into();
     assert_eq!(addr.as_usize(), 0x1234);
 
     let u64_val: u64 = addr.into();
@@ -36,8 +38,8 @@ fn test_conversions() {
 
 #[test]
 fn test_subtraction() {
-    let a = PhysAddr::new(0x2000).unwrap();
-    let b = PhysAddr::new(0x1000).unwrap();
+    let a = Addr::new(0x2000).unwrap();
+    let b = Addr::new(0x1000).unwrap();
     let diff = a - b;
     assert_eq!(*diff, 0x1000);
 }
