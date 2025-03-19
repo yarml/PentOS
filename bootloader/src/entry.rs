@@ -54,11 +54,16 @@ fn main() -> Status {
         }
     }
 
-    let allocator = Allocator::init(mmap);
+    let allocator = unsafe {
+        // SAFETY: We didn't include any memory under 1M, and LOADER memory from in mmap
+        Allocator::init(mmap)
+    };
+
+    allocator.print();
 
     // TODO: Setup virtual memory for kernel
 
-    let mmap = allocator.disable(loader_mmap);
+    let mmap = allocator.fini(loader_mmap);
 
     // TODO: Jump to kernel
     loop {
