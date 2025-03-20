@@ -113,12 +113,18 @@ fn ovmf(config: &ChefConfig) {
 
 fn image(root: &Metadata) -> Result<(), ExitStatusError> {
     build(root, "bootloader")?;
+    build(root, "kernel")?;
     fs::create_dir_all("run/esp/efi/boot").expect("Couldn't create run/esp/efi/boot");
     fs::copy(
         "target/x86_64-unknown-uefi/debug/bootloader.efi",
         "run/esp/efi/boot/bootx64.efi",
     )
     .expect("Couldn't copy bootloader.efi");
+    fs::copy(
+        "target/kernel/debug/kernel",
+        "run/esp/pentos.kernel",
+    )
+    .expect("Couldn't copy pentos.kernel");
     Ok(())
 }
 
