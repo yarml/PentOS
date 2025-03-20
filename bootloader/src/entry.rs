@@ -1,6 +1,7 @@
 use crate::allocator::PostBootAllocator;
 use crate::allocator::PreBootAllocator;
 use crate::bootstage;
+use crate::kernel;
 use crate::logger;
 use crate::mmap::MemoryMap;
 use common::mem::MemoryRegion;
@@ -28,6 +29,8 @@ fn main() -> Status {
     }
     info!("Booting PentOS...");
     let allocator = PreBootAllocator;
+
+    let kernel = kernel::load_kernel(&allocator);
 
     bootstage::set_postboot();
     logger::disable();
