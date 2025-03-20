@@ -30,7 +30,7 @@ fn main() -> Status {
     info!("Booting PentOS...");
     let allocator = PreBootAllocator;
 
-    let kernel = kernel::load_kernel(&allocator);
+    let _kernel = kernel::load_kernel(&allocator);
 
     bootstage::set_postboot();
     logger::disable();

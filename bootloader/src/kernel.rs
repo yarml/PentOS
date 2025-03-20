@@ -25,7 +25,7 @@ pub fn load_kernel(allocator: &PreBootAllocator) -> &'static [u8] {
     let filename_wide =
         CStr16::from_str_with_buf(filename, &mut file_buf).expect("Filename too long");
     let kernel_file = volume
-        .open(&filename_wide, FileMode::Read, FileAttribute::empty())
+        .open(filename_wide, FileMode::Read, FileAttribute::empty())
         .expect("Failed to open kernel file");
     let mut kernel_file = kernel_file
         .into_regular_file()
@@ -44,5 +44,5 @@ pub fn load_kernel(allocator: &PreBootAllocator) -> &'static [u8] {
 
 /// Farewell, until another boot time...
 pub fn cede_control() -> ! {
-    loop {}
+    todo!()
 }

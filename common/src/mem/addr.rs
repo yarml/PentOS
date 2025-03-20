@@ -11,7 +11,7 @@ pub use phys::PhysAddr;
 #[macro_export]
 macro_rules! define_addr {
     ($name:ident, $mask:expr) => {
-        use crate::mem::MemorySize;
+        use $crate::mem::MemorySize;
         use core::fmt::Debug;
         use core::fmt::Display;
         use core::ops::Add;
