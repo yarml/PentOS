@@ -1,5 +1,5 @@
 [workspace]
-members = ["chef", "boot-protocol", "bootloader", "snail", "common"]
+members = ["chef", "boot-protocol", "bootloader", "snail", "common", "builder"]
 resolver = "3"
 
 package.edition = "2024"
@@ -10,6 +10,7 @@ package.authors = ["Youssef Harmal"]
 snail = { path = "snail" }
 common = { path = "common" }
 boot-protocol = { path = "boot-protocol" }
+builder = { path = "builder" }
 
 [workspace.metadata.chef]
 ovmf-source = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/edk2-stable202408.01-r1/edk2-stable202408.01-r1-bin.tar.xz"
