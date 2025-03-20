@@ -1,12 +1,11 @@
+use crate::bootstage;
 use common::mem::addr::PhysAddr;
 use core::mem;
 use core::mem::MaybeUninit;
 use core::slice;
+use uefi::boot;
 use uefi::boot::AllocateType;
 use uefi::boot::MemoryType;
-use uefi::boot::{self};
-
-use crate::bootstage;
 
 pub struct PreBootAllocator;
 

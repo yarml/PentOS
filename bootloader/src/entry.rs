@@ -66,7 +66,7 @@ fn main() -> Status {
 
     // TODO: Setup virtual memory for kernel
 
-    let mmap = allocator.fini(loader_mmap);
+    let _mmap = allocator.fini(loader_mmap);
 
     // TODO: Jump to kernel
     loop {

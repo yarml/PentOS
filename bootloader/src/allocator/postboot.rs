@@ -1,7 +1,6 @@
 use crate::mmap::MemoryMap;
 use common::mem::addr::PhysAddr;
 use core::mem;
-use log::debug;
 
 /// Post boot services allocator
 pub struct PostBootAllocator<const MAX: usize> {
