@@ -2,6 +2,7 @@
 #![no_main]
 
 mod allocator;
+mod bootstage;
 mod entry;
 mod logger;
 mod mmap;

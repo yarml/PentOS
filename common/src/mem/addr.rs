@@ -120,6 +120,20 @@ macro_rules! define_addr {
             }
         }
 
+        impl<T> From<*const T> for $name {
+            #[inline]
+            fn from(value: *const T) -> Self {
+                Self::new_truncate(value as usize)
+            }
+        }
+
+        impl<T> From<*mut T> for $name {
+            #[inline]
+            fn from(value: *mut T) -> Self {
+                Self::new_truncate(value as usize)
+            }
+        }
+
         impl From<$name> for usize {
             #[inline]
             fn from(value: $name) -> Self {

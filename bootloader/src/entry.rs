@@ -1,4 +1,6 @@
-use crate::allocator::Allocator;
+use crate::allocator::PostBootAllocator;
+use crate::allocator::PreBootAllocator;
+use crate::bootstage;
 use crate::logger;
 use crate::mmap::MemoryMap;
 use common::mem::MemoryRegion;
@@ -25,12 +27,12 @@ fn main() -> Status {
         logger::init();
     }
     info!("Booting PentOS...");
+    let allocator = PreBootAllocator;
 
-    // TODO: Load kernel image
-
+    bootstage::set_postboot();
     logger::disable();
     let real_mmap = unsafe {
-        // SAFETY: Only thing we used was the UEFI console logger, it is now disabled
+        // SAFETY: Only thing we used was the UEFI console logger, and allocator, they are now disabled
         boot::exit_boot_services(MemoryType::LOADER_DATA)
     };
     let mut mmap = MemoryMap::<256>::new();
@@ -55,11 +57,9 @@ fn main() -> Status {
     }
 
     let allocator = unsafe {
-        // SAFETY: We didn't include any memory under 1M, and LOADER memory from in mmap
-        Allocator::init(mmap)
+        // SAFETY: We didn't include any memory under 1M, and LOADER_* memory in mmap
+        PostBootAllocator::init(mmap)
     };
-
-    allocator.print();
 
     // TODO: Setup virtual memory for kernel
 
