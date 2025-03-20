@@ -5,13 +5,13 @@ mod phys;
 mod virt;
 
 pub use phys::PhysAddr;
+pub use virt::VirtAddr;
 
 /// Implementation detail
 #[doc(hidden)]
 #[macro_export]
 macro_rules! define_addr {
     ($name:ident, $mask:expr) => {
-        use $crate::mem::MemorySize;
         use core::fmt::Debug;
         use core::fmt::Display;
         use core::ops::Add;
@@ -20,6 +20,7 @@ macro_rules! define_addr {
         use core::ops::DerefMut;
         use core::ops::Sub;
         use core::ops::SubAssign;
+        use $crate::mem::MemorySize;
 
         #[repr(transparent)]
         #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
