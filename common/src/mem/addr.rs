@@ -11,7 +11,7 @@ pub use virt::VirtAddr;
 #[doc(hidden)]
 #[macro_export]
 macro_rules! define_addr {
-    ($name:ident, $mask:expr) => {
+    ($name:ident, $make_canonical:expr) => {
         use core::fmt::Debug;
         use core::fmt::Display;
         use core::ops::Add;
@@ -34,7 +34,7 @@ macro_rules! define_addr {
 
             #[inline]
             pub const fn new(addr: usize) -> Option<Self> {
-                if addr == addr & $mask {
+                if addr == $make_canonical(addr) {
                     Some(Self { inner: addr })
                 } else {
                     None
@@ -43,7 +43,7 @@ macro_rules! define_addr {
             #[inline]
             pub const fn new_truncate(addr: usize) -> Self {
                 Self {
-                    inner: addr & $mask,
+                    inner: $make_canonical(addr),
                 }
             }
             #[inline]

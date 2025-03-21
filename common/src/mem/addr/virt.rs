@@ -1,5 +1,12 @@
 use crate::define_addr;
 
-const VIRT_MASK: usize = 0x0000_FFFF_FFFF_FFFF;
+define_addr!(VirtAddr, make_canonical);
 
-define_addr!(VirtAddr, VIRT_MASK);
+#[inline]
+const fn make_canonical(addr: usize) -> usize {
+    if addr & 0x0000800000000000 == 0 {
+        addr & 0x0000FFFFFFFFFFFF
+    } else {
+        addr | 0xFFFF000000000000
+    }
+}
