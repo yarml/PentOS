@@ -7,4 +7,4 @@ authors.workspace = true
 
 [dependencies]
 log.workspace = true
-common.workspace = true
+x64.workspace = true

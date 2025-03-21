@@ -116,7 +116,7 @@ checksum = "5c8214115b7bf84099f1309324e63141d4c5d7cc26862f97a0a857dbefe165bd"
 name = "boot-protocol"
 version = "0.1.0"
 dependencies = [
- "common",
+ "x64",
 ]
 
 [[package]]
@@ -124,9 +124,10 @@ name = "bootloader"
 version = "0.1.0"
 dependencies = [
  "boot-protocol",
- "common",
+ "elf",
  "log",
  "uefi",
+ "x64",
 ]
 
 [[package]]
@@ -266,10 +267,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "common"
-version = "0.1.0"
-
-[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -300,8 +297,8 @@ dependencies = [
 name = "elf"
 version = "0.1.0"
 dependencies = [
- "common",
  "log",
+ "x64",
 ]
 
 [[package]]
@@ -1892,6 +1889,10 @@ name = "writeable"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e9df38ee2d2c3c5948ea468a8406ff0db0b29ae1ffde1bcf20ef305bcc95c51"
+
+[[package]]
+name = "x64"
+version = "0.1.0"
 
 [[package]]
 name = "xattr"

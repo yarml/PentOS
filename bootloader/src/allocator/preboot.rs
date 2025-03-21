@@ -1,5 +1,5 @@
 use crate::bootstage;
-use common::mem::addr::PhysAddr;
+use x64::mem::addr::PhysAddr;
 use core::mem;
 use core::mem::MaybeUninit;
 use core::slice;

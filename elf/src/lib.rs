@@ -4,8 +4,8 @@
 pub mod headers;
 pub mod types;
 
-use common::mem::MemorySize;
-use common::mem::addr::VirtAddr;
+use x64::mem::MemorySize;
+use x64::mem::addr::VirtAddr;
 use core::ops::Index;
 use headers::FileHeader;
 use headers::RawSegment;

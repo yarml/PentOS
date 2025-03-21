@@ -1,6 +1,6 @@
 #![no_std]
 
-use common::mem::MemoryRegion;
+use x64::mem::MemoryRegion;
 
 const MMAP_PG_COUNT: usize = 1;
 pub const MAX_MMAP_SIZE: usize = MMAP_PG_COUNT * (4096 / core::mem::size_of::<MemoryRegion>());

@@ -6,7 +6,7 @@ members = [
     "boot-protocol",
     "snail",
     "builder",
-    "common",
+    "x64",
     "elf",
 ]
 resolver = "3"
@@ -18,7 +18,7 @@ package.authors = ["Youssef Harmal"]
 [workspace.dependencies]
 log = "0.4.26"
 boot-protocol = { path = "boot-protocol" }
-common = { path = "common" }
+x64 = { path = "x64" }
 elf = { path = "elf" }
 snail = { path = "snail" }
 builder = { path = "builder" }

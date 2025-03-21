@@ -1,5 +1,8 @@
 use crate::allocator::PreBootAllocator;
 use crate::misc;
+use elf::Elf;
+use elf::ElfClass;
+use elf::ElfType;
 use uefi::CStr16;
 use uefi::Identify;
 use uefi::boot;
@@ -10,7 +13,7 @@ use uefi::proto::media::file::FileMode;
 use uefi::proto::media::fs::SimpleFileSystem;
 
 // TODO: Load kernel from PentFS partition
-pub fn load_kernel(allocator: &PreBootAllocator) -> &'static [u8] {
+pub fn load_kernel(allocator: &PreBootAllocator) -> Elf<'static> {
     let simple_fs_handle =
         *boot::locate_handle_buffer(SearchType::ByProtocol(&SimpleFileSystem::GUID))
             .expect("Failed to locate SimpleFileSystem protocol")
@@ -39,7 +42,18 @@ pub fn load_kernel(allocator: &PreBootAllocator) -> &'static [u8] {
     kernel_file
         .read(buffer)
         .expect("Failed to read kernel file");
-    buffer
+    let elf = Elf::parse(buffer).expect("Failed to parse kernel");
+    if elf.ty != ElfType::Executable {
+        panic!("Kernel is not an executable");
+    }
+    if elf.ident.encoding != elf::DataEncoding::LittleEndian {
+        panic!("Kernel is not little endian");
+    }
+    if elf.ident.class != ElfClass::Elf64 {
+        panic!("Kernel is not 64-bit");
+    }
+
+    elf
 }
 
 /// Farewell, until another boot time...

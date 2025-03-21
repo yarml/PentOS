@@ -4,10 +4,11 @@ use crate::bootstage;
 use crate::kernel;
 use crate::logger;
 use crate::mmap::MemoryMap;
-use common::mem::MemoryRegion;
-use common::mem::MemorySize;
-use common::mem::addr::PhysAddr;
+use x64::mem::MemoryRegion;
+use x64::mem::MemorySize;
+use x64::mem::addr::PhysAddr;
 use core::arch::asm;
+use log::debug;
 use log::info;
 use uefi::Status;
 use uefi::boot;
@@ -30,7 +31,11 @@ fn main() -> Status {
     info!("Booting PentOS...");
     let allocator = PreBootAllocator;
 
-    let _kernel = kernel::load_kernel(&allocator);
+    let kernel = kernel::load_kernel(&allocator);
+    debug!("Kernel entry point: {:#x}", kernel.entry.as_u64());
+    for segment in &kernel.program_header {
+        debug!("Segment {:x?}:", segment);
+    }
 
     bootstage::set_postboot();
     logger::disable();

@@ -1,5 +1,5 @@
 use crate::mmap::MemoryMap;
-use common::mem::addr::PhysAddr;
+use x64::mem::addr::PhysAddr;
 use core::mem;
 
 /// Post boot services allocator

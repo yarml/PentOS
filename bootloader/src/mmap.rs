@@ -1,4 +1,4 @@
-use common::mem::MemoryRegion;
+use x64::mem::MemoryRegion;
 use core::cmp::Ordering;
 use core::ops::Deref;
 use core::ops::DerefMut;
