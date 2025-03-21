@@ -175,13 +175,7 @@ impl Mul<usize> for MemorySize {
 
 impl Debug for MemorySize {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        for unit in (0..MemoryUnit::MEMORY_ORDERS)
-            .rev()
-            .filter_map(MemoryUnit::from_order)
-        {
-            write!(f, "{:04}{}", unit.component(self.inner), unit.suffix())?
-        }
-        Ok(())
+        Display::fmt(&self, f)
     }
 }
 
