@@ -8,6 +8,9 @@ use core::marker::PhantomData;
 use core::ops::Add;
 use size::FrameSize;
 
+use super::page::Page;
+use super::page::size::PageSize;
+
 #[repr(transparent)]
 #[derive(Clone, Copy)]
 pub struct Frame<S: FrameSize> {
@@ -41,6 +44,14 @@ impl<S: FrameSize> Frame<S> {
     #[inline]
     pub const fn number(&self) -> usize {
         self.boundary.as_usize() >> S::SHIFT
+    }
+}
+
+impl<S: FrameSize> Frame<S> {
+    #[inline]
+    pub fn to_virt<VS: PageSize>(&self) -> Page<VS> {
+        assert!(VS::SIZE == S::SIZE);
+        Page::containing(self.boundary.to_virt())
     }
 }
 
