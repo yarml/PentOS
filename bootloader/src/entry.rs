@@ -3,10 +3,7 @@ use crate::allocator::PreBootAllocator;
 use crate::bootstage;
 use crate::kernel;
 use crate::logger;
-use crate::mmap::MemoryMap;
-use x64::mem::MemoryRegion;
-use x64::mem::MemorySize;
-use x64::mem::addr::PhysAddr;
+use crate::phys_mmap::PhysMemMap;
 use core::arch::asm;
 use log::debug;
 use log::info;
@@ -16,6 +13,9 @@ use uefi::boot::MemoryType;
 use uefi::entry;
 use uefi::mem::memory_map::MemoryMap as UefiMemoryMap;
 use uefi::system;
+use x64::mem::MemoryRegion;
+use x64::mem::MemorySize;
+use x64::mem::addr::PhysAddr;
 
 #[entry]
 fn main() -> Status {
@@ -37,14 +37,14 @@ fn main() -> Status {
         debug!("Segment {:x?}:", segment);
     }
 
-    bootstage::set_postboot();
     logger::disable();
+    bootstage::set_postboot();
     let real_mmap = unsafe {
         // SAFETY: Only thing we used was the UEFI console logger, and allocator, they are now disabled
         boot::exit_boot_services(MemoryType::LOADER_DATA)
     };
-    let mut mmap = MemoryMap::<256>::new();
-    let mut loader_mmap = MemoryMap::<64>::new();
+    let mut mmap = PhysMemMap::<256>::new();
+    let mut loader_mmap = PhysMemMap::<64>::new();
     for entry in real_mmap.entries() {
         let region = MemoryRegion::new(
             PhysAddr::new_truncate(entry.phys_start as usize),
@@ -65,7 +65,7 @@ fn main() -> Status {
     }
 
     let allocator = unsafe {
-        // SAFETY: We didn't include any memory under 1M, and LOADER_* memory in mmap
+        // SAFETY: We didn't include any memory under 1M, nor LOADER_* memory in mmap
         PostBootAllocator::init(mmap)
     };
 

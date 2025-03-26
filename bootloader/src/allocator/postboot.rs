@@ -1,17 +1,17 @@
-use crate::mmap::MemoryMap;
+use crate::phys_mmap::PhysMemMap;
 use x64::mem::addr::PhysAddr;
 use core::mem;
 
 /// Post boot services allocator
 pub struct PostBootAllocator<const MAX: usize> {
-    mmap: MemoryMap<MAX>,
+    mmap: PhysMemMap<MAX>,
 }
 
 impl<const MAX: usize> PostBootAllocator<MAX> {
     /// # Safety
     /// Caller must make sure all memory under 1M is not included in the memory map
     /// as well as LOADER_CODE and LOADER_DATA regions.
-    pub unsafe fn init(mut mmap: MemoryMap<MAX>) -> Self {
+    pub unsafe fn init(mut mmap: PhysMemMap<MAX>) -> Self {
         mmap.minimize();
         mmap.sort_size();
         Self { mmap }
@@ -19,8 +19,8 @@ impl<const MAX: usize> PostBootAllocator<MAX> {
 
     pub fn fini<const LOADER_MAX: usize>(
         self,
-        loader_mmap: MemoryMap<LOADER_MAX>,
-    ) -> MemoryMap<MAX> {
+        loader_mmap: PhysMemMap<LOADER_MAX>,
+    ) -> PhysMemMap<MAX> {
         let Self { mut mmap } = self;
         for region in loader_mmap.iter() {
             mmap.add(*region);

@@ -1,14 +1,14 @@
-use x64::mem::MemoryRegion;
 use core::cmp::Ordering;
 use core::ops::Deref;
 use core::ops::DerefMut;
+use x64::mem::MemoryRegion;
 
-pub struct MemoryMap<const MAX: usize> {
+pub struct PhysMemMap<const MAX: usize> {
     pub regions: [MemoryRegion; MAX],
     pub len: usize,
 }
 
-impl<const MAX: usize> MemoryMap<MAX> {
+impl<const MAX: usize> PhysMemMap<MAX> {
     #[inline]
     pub const fn new() -> Self {
         Self {
@@ -18,7 +18,7 @@ impl<const MAX: usize> MemoryMap<MAX> {
     }
 }
 
-impl<const MAX: usize> MemoryMap<MAX> {
+impl<const MAX: usize> PhysMemMap<MAX> {
     #[inline]
     pub fn len(&self) -> usize {
         self.len
@@ -33,7 +33,7 @@ impl<const MAX: usize> MemoryMap<MAX> {
     }
 }
 
-impl<const MAX: usize> MemoryMap<MAX> {
+impl<const MAX: usize> PhysMemMap<MAX> {
     pub fn add(&mut self, region: MemoryRegion) {
         // Merge with entry if overlapping or if tail of one is head of other
         for entry in &mut self.regions[..self.len] {
@@ -80,19 +80,19 @@ impl<const MAX: usize> MemoryMap<MAX> {
     }
 }
 
-impl<const MAX: usize> MemoryMap<MAX> {
+impl<const MAX: usize> PhysMemMap<MAX> {
     pub fn iter(&self) -> core::slice::Iter<MemoryRegion> {
         self.regions[..self.len].iter()
     }
 }
 
-impl<const MAX: usize> Default for MemoryMap<MAX> {
+impl<const MAX: usize> Default for PhysMemMap<MAX> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<const MAX: usize> Deref for MemoryMap<MAX> {
+impl<const MAX: usize> Deref for PhysMemMap<MAX> {
     type Target = [MemoryRegion];
 
     fn deref(&self) -> &Self::Target {
@@ -100,7 +100,7 @@ impl<const MAX: usize> Deref for MemoryMap<MAX> {
     }
 }
 
-impl<const MAX: usize> DerefMut for MemoryMap<MAX> {
+impl<const MAX: usize> DerefMut for PhysMemMap<MAX> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.regions[..self.len]
     }

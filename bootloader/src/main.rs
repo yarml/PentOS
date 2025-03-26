@@ -8,5 +8,5 @@ mod entry;
 mod kernel;
 mod logger;
 mod misc;
-mod mmap;
+mod phys_mmap;
 mod panic;
