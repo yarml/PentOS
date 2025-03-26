@@ -6,6 +6,8 @@ pub struct Frame64KiB;
 pub struct Frame128KiB;
 #[derive(Clone, Copy)]
 pub struct Frame2MiB;
+#[derive(Clone, Copy)]
+pub struct Frame1GiB;
 
 pub trait FrameSize {
     const SHIFT: usize;
@@ -27,4 +29,8 @@ impl FrameSize for Frame128KiB {
 
 impl FrameSize for Frame2MiB {
     const SHIFT: usize = 21;
+}
+
+impl FrameSize for Frame1GiB {
+    const SHIFT: usize = 30;
 }

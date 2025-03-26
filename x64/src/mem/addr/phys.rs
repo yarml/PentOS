@@ -23,7 +23,7 @@ impl PhysAddr {
 impl PhysAddr {
     #[inline]
     pub const fn frame<S: FrameSize>(&self) -> Frame<S> {
-        Frame::containing(self)
+        Frame::containing(*self)
     }
 
     #[inline]

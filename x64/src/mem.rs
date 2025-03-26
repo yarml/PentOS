@@ -1,5 +1,6 @@
 pub mod addr;
 pub mod frame;
+pub mod page;
 pub mod map;
 
 mod region;
