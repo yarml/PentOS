@@ -7,7 +7,7 @@ use crate::mem::frame::size::FrameSize;
 
 use super::virt::VirtAddr;
 
-const PHYS_MASK: usize = 0x00FF_FFFF_FFFF_FFFF;
+const PHYS_MASK: usize = 0x000F_FFFF_FFFF_FFFF;
 
 // Bootloader keeps this at 0, since it always has identity mapping until the
 // last moment when it doesn't need direct access anymore. Kernel sets this to
