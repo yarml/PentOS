@@ -120,11 +120,8 @@ fn image(root: &Metadata) -> Result<(), ExitStatusError> {
         "run/esp/efi/boot/bootx64.efi",
     )
     .expect("Couldn't copy bootloader.efi");
-    fs::copy(
-        "target/kernel/debug/kernel",
-        "run/esp/pentos.kernel",
-    )
-    .expect("Couldn't copy pentos.kernel");
+    fs::copy("target/kernel/debug/kernel", "run/esp/pentos.kernel")
+        .expect("Couldn't copy pentos.kernel");
     Ok(())
 }
 
@@ -152,11 +149,20 @@ fn run(root: &Metadata) -> Result<(), ExitStatusError> {
 
 fn install(root: &Metadata, config: &ChefConfig) -> Result<(), ExitStatusError> {
     build(root, "bootloader")?;
-    let bootloader_location = &config.install_bootloader;
+    build(root, "kernel")?;
+    let bootloader_destination = &config.install_bootloader;
+    let kernel_destination = &config.install_kernel;
     Command::new("sudo")
         .arg("cp")
         .arg("target/x86_64-unknown-uefi/debug/bootloader.efi")
-        .arg(bootloader_location)
+        .arg(bootloader_destination)
+        .status()
+        .unwrap()
+        .exit_ok()?;
+    Command::new("sudo")
+        .arg("cp")
+        .arg("target/kernel/debug/kernel")
+        .arg(kernel_destination)
         .status()
         .unwrap()
         .exit_ok()

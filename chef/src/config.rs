@@ -7,6 +7,8 @@ pub struct ChefConfig {
     pub ovmf_source: String,
     #[serde(rename = "install-bootloader")]
     pub install_bootloader: String,
+    #[serde(rename = "install-kernel")]
+    pub install_kernel: String,
 }
 
 impl ChefConfig {
