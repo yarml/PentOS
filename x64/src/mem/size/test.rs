@@ -33,5 +33,5 @@ fn test_display() {
 #[test]
 fn test_debug() {
     let size = MemorySize::new(0x400000);
-    assert_eq!(format!("{:?}", size), "0000E0000P0000T0000G0004M0000K0000B");
+    assert_eq!(format!("{:?}", size), "4M");
 }

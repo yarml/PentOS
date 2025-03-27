@@ -59,7 +59,7 @@ fn test_ordering() {
 fn test_edge_cases() {
     // Helper to create masked address
     fn masked(n: usize) -> usize {
-        n & 0x00FFFFFFFFFFFFFF
+        n & 0x000FFFFFFFFFFFFF
     }
 
     // Zero-sized region
