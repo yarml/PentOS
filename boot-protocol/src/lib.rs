@@ -1,5 +1,7 @@
 #![no_std]
 
+pub mod features;
+
 use x64::mem::MemoryRegion;
 
 const MMAP_PG_COUNT: usize = 1;
