@@ -11,6 +11,7 @@ log.workspace = true
 boot-protocol.workspace = true
 x64.workspace = true
 elf.workspace = true
+spinlocks.workspace = true
 
 [features]
 default = ["log-debugcon"]

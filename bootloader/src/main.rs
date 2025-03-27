@@ -5,8 +5,9 @@
 mod allocator;
 mod bootstage;
 mod entry;
+mod features;
 mod kernel;
 mod logger;
 mod misc;
-mod phys_mmap;
 mod panic;
+mod phys_mmap;

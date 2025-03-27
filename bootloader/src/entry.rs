@@ -1,6 +1,7 @@
 use crate::allocator::PostBootAllocator;
 use crate::allocator::PreBootAllocator;
 use crate::bootstage;
+use crate::features;
 use crate::kernel;
 use crate::logger;
 use crate::phys_mmap::PhysMemMap;
@@ -29,6 +30,9 @@ fn main() -> Status {
         logger::init();
     }
     info!("Booting PentOS...");
+
+    let featureset = features::featureset();
+
     let allocator = PreBootAllocator;
 
     let kernel = kernel::load_kernel(&allocator);

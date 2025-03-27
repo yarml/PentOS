@@ -126,6 +126,7 @@ dependencies = [
  "boot-protocol",
  "elf",
  "log",
+ "spinlocks",
  "uefi",
  "x64",
 ]
