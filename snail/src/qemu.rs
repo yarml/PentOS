@@ -96,6 +96,7 @@ impl Drive {
 
 impl Qemu {
     fn append_args(&self, cmd: &mut Command) {
+        cmd.arg("-cpu").arg("qemu64,pdpe1gb=on");
         cmd.arg("-smp").arg(format!("{}", self.numcores));
         self.memory.append_args(cmd);
         if let Some(debugcon) = &self.debugcon {
