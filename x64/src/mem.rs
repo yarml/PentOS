@@ -1,7 +1,7 @@
 pub mod addr;
 pub mod frame;
 pub mod page;
-pub mod map;
+pub mod paging;
 
 mod region;
 mod size;

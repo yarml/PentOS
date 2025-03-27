@@ -1,6 +1,11 @@
 use crate::define_addr;
 
-define_addr!(Addr, 0x00FF_FFFF_FFFF_FFFF);
+define_addr!(Addr, make_canonical);
+
+#[inline]
+const fn make_canonical(addr: usize) -> usize {
+    addr & 0x00FF_FFFF_FFFF_FFFF
+}
 
 #[test]
 fn test_addr_creation() {

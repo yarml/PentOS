@@ -17,6 +17,10 @@ static PHYSICAL_MEMORY_OFFSET: AtomicUsize = AtomicUsize::new(0);
 define_addr!(PhysAddr, make_canonical);
 
 impl PhysAddr {
+    pub const MASK: usize = PHYS_MASK;
+}
+
+impl PhysAddr {
     #[inline]
     pub fn set_memory_offset(offset: usize) {
         PHYSICAL_MEMORY_OFFSET.store(offset, Ordering::Relaxed);
