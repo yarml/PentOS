@@ -3,6 +3,7 @@ use crate::types::Half;
 use crate::types::Offset;
 use crate::types::UChar;
 use crate::types::Word;
+use crate::types::XWord;
 use core::mem;
 
 #[derive(Debug, Clone, Copy)]
@@ -32,9 +33,9 @@ pub struct RawSegment {
     pub offset: Offset,
     pub vaddr: Addr,
     pub paddr: Addr,
-    pub file_size: Word,
-    pub mem_size: Word,
-    pub alignment: Word,
+    pub file_size: XWord,
+    pub mem_size: XWord,
+    pub alignment: XWord,
 }
 
 impl FileHeader {

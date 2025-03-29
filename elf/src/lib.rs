@@ -4,8 +4,6 @@
 pub mod headers;
 pub mod types;
 
-use x64::mem::MemorySize;
-use x64::mem::addr::VirtAddr;
 use core::ops::Index;
 use headers::FileHeader;
 use headers::RawSegment;
@@ -13,8 +11,11 @@ use types::Half;
 use types::Offset;
 use types::UChar;
 use types::Word;
+use x64::mem::MemorySize;
+use x64::mem::addr::VirtAddr;
 
 pub struct Elf<'a> {
+    pub data: &'a [u8],
     pub ident: ElfIdentification,
     pub ty: ElfType,
     pub entry: VirtAddr,
@@ -98,6 +99,7 @@ impl<'a> Elf<'a> {
         );
 
         Some(Self {
+            data,
             ident,
             ty,
             entry,
