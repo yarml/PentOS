@@ -1,15 +1,14 @@
-use core::ops::Deref;
-
+use super::PagingReferenceEntry;
+use super::pat::ReferencePatIndex;
+use super::pcid::Pcid;
 use crate::mem::addr::PhysAddr;
 use crate::mem::frame::Frame;
 use crate::mem::frame::size::Frame4KiB;
 use crate::mem::frame::size::FrameSize;
-use crate::mem::page::size::Page1GiB;
 use crate::mem::page::size::Page4KiB;
-
-use super::PagingReferenceEntry;
-use super::pat::ReferencePatIndex;
-use super::pcid::Pcid;
+use crate::mem::page::size::Page512GiB;
+use core::arch::asm;
+use core::ops::Deref;
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -65,7 +64,7 @@ impl PagingRootEntry {
     /// # Safety
     /// Must ensure that this entry is pointing to a valid sub table
     /// and that the memory location is not mutably aliased
-    pub unsafe fn target<'a>(&self) -> &'a [PagingReferenceEntry<Page1GiB>; 512] {
+    pub unsafe fn target<'a>(&self) -> &'a [PagingReferenceEntry<Page512GiB>; 512] {
         unsafe {
             // SAFETY: ensured by caller
             self.target_frame()
@@ -77,13 +76,36 @@ impl PagingRootEntry {
     /// # Safety
     /// Must ensure that this entry is pointing to a valid sub table
     /// and that the memory location is not aliased
-    pub unsafe fn target_mut<'a>(&self) -> &'a mut [PagingReferenceEntry<Page1GiB>; 512] {
+    pub unsafe fn target_mut<'a>(&self) -> &'a mut [PagingReferenceEntry<Page512GiB>; 512] {
         unsafe {
             // SAFETY: ensured by caller
             self.target_frame()
                 .to_virt::<Page4KiB>()
                 .boundary()
                 .to_mut()
+        }
+    }
+}
+
+impl PagingRootEntry {
+    #[inline]
+    pub fn current() -> Self {
+        let value: u64;
+        unsafe {
+            asm!(
+                "mov {value}, cr3",
+                value = out(reg) value,
+            );
+        }
+        Self { value }
+    }
+    #[inline]
+    pub fn load(&self) {
+        unsafe {
+            asm!(
+                "mov cr3, {value}",
+                value = in(reg) self.value,
+            );
         }
     }
 }

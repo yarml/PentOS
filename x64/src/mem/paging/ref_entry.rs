@@ -15,7 +15,7 @@ use core::ops::Deref;
 pub struct PagingReferenceEntry<PS>
 where
     PS: PageSize,
-    PS::NextPageSize: PageSize,
+    PS::ReferenceTarget: PageSize,
 {
     value: u64,
     _phantom: PhantomData<PS>,
@@ -24,7 +24,7 @@ where
 impl<PS> PagingReferenceEntry<PS>
 where
     PS: PageSize,
-    PS::NextPageSize: PageSize,
+    PS::ReferenceTarget: PageSize,
 {
     /// Defaults to nowrite, nouser, noexec, PAT = 0
     #[inline]
@@ -47,7 +47,7 @@ where
 impl<PS> PagingReferenceEntry<PS>
 where
     PS: PageSize,
-    PS::NextPageSize: PageSize,
+    PS::ReferenceTarget: PageSize,
 {
     #[inline]
     pub const fn nopresent(self) -> PagingAbsentEntry<PS> {
@@ -117,7 +117,7 @@ where
 impl<PS> PagingReferenceEntry<PS>
 where
     PS: PageSize,
-    PS::NextPageSize: PageSize,
+    PS::ReferenceTarget: PageSize,
 {
     #[inline]
     pub const fn is_write(&self) -> bool {
@@ -152,14 +152,30 @@ where
 impl<PS> PagingReferenceEntry<PS>
 where
     PS: PageSize,
-    PS::NextPageSize: PageSize,
+    PS::ReferenceTarget: PageSize,
+{
+    #[inline]
+    pub const fn as_raw(&mut self) -> &mut PagingRawEntry<PS> {
+        unsafe { &mut *(self as *mut Self as *mut PagingRawEntry<PS>) }
+    }
+
+    #[inline]
+    pub const fn to_raw(&self) -> PagingRawEntry<PS> {
+        PagingRawEntry::new(self.value)
+    }
+}
+
+impl<PS> PagingReferenceEntry<PS>
+where
+    PS: PageSize,
+    PS::ReferenceTarget: PageSize,
 {
     /// # Safety
     /// Must ensure that this entry is pointing to a valid sub table
     /// and that the memory location is not mutably aliased
-    pub unsafe fn target<'a>(&self) -> &'a [PagingRawEntry<PS::NextPageSize>; 512]
+    pub unsafe fn target<'a>(&self) -> &'a [PagingRawEntry<PS::ReferenceTarget>; 512]
     where
-        PS::NextPageSize: PageSize,
+        PS::ReferenceTarget: PageSize,
     {
         unsafe {
             self.target_frame()
@@ -172,9 +188,9 @@ where
     /// # Safety
     /// Must ensure that this entry is pointing to a valid sub table
     /// and that the memory location is not mutably aliased
-    pub unsafe fn target_mut<'a>(&self) -> &'a mut [PagingRawEntry<PS::NextPageSize>; 512]
+    pub unsafe fn target_mut<'a>(&self) -> &'a mut [PagingRawEntry<PS::ReferenceTarget>; 512]
     where
-        PS::NextPageSize: PageSize,
+        PS::ReferenceTarget: PageSize,
     {
         unsafe {
             self.target_frame()
@@ -188,7 +204,7 @@ where
 impl<PS> Deref for PagingReferenceEntry<PS>
 where
     PS: PageSize,
-    PS::NextPageSize: PageSize,
+    PS::ReferenceTarget: PageSize,
 {
     type Target = u64;
 

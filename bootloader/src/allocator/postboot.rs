@@ -1,6 +1,8 @@
 use crate::phys_mmap::PhysMemMap;
-use x64::mem::addr::PhysAddr;
 use core::mem;
+use x64::mem::addr::PhysAddr;
+
+pub const ALLOCATOR_CAP: usize = 256;
 
 /// Post boot services allocator
 pub struct PostBootAllocator<const MAX: usize> {
@@ -48,7 +50,7 @@ impl<const MAX: usize> PostBootAllocator<MAX> {
         }
         None
     }
-    pub fn alloc<T>(&mut self, init: T) -> Option<&'static mut T> {
+    pub fn alloc<'a, T>(&mut self, init: T) -> Option<&'a mut T> {
         let size = mem::size_of::<T>();
         let align = mem::align_of::<T>();
         let start = self.alloc_raw(size, align)?;

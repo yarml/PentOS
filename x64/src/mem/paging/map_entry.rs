@@ -1,3 +1,4 @@
+use super::PagingRawEntry;
 use super::absent_entry::PagingAbsentEntry;
 use super::pat::PatIndex;
 use super::pk::ProtectionKey;
@@ -10,12 +11,20 @@ use core::ops::Deref;
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct PagingMapEntry<PS: PageSize> {
+pub struct PagingMapEntry<PS>
+where
+    PS: PageSize,
+    PS::PhysicalPageSize: FrameSize,
+{
     value: u64,
     _phantom: PhantomData<PS>,
 }
 
-impl<PS: PageSize> PagingMapEntry<PS> {
+impl<PS> PagingMapEntry<PS>
+where
+    PS: PageSize,
+    PS::PhysicalPageSize: FrameSize,
+{
     #[inline]
     /// Defaults to nowrite, nouser, noexec, noglobal, PAT = 0, PK = 0
     pub const fn new(target: Frame<PS::PhysicalPageSize>) -> Self {
@@ -35,7 +44,11 @@ impl<PS: PageSize> PagingMapEntry<PS> {
     }
 }
 
-impl<PS: PageSize> PagingMapEntry<PS> {
+impl<PS> PagingMapEntry<PS>
+where
+    PS: PageSize,
+    PS::PhysicalPageSize: FrameSize,
+{
     #[inline]
     pub const fn nopresent(self) -> PagingAbsentEntry<PS> {
         PagingAbsentEntry::from_inner(self.value & !(1 << 0))
@@ -115,7 +128,11 @@ impl<PS: PageSize> PagingMapEntry<PS> {
     }
 }
 
-impl<PS: PageSize> PagingMapEntry<PS> {
+impl<PS> PagingMapEntry<PS>
+where
+    PS: PageSize,
+    PS::PhysicalPageSize: FrameSize,
+{
     #[inline]
     pub const fn is_write(&self) -> bool {
         self.value & (1 << 1) != 0
@@ -154,7 +171,22 @@ impl<PS: PageSize> PagingMapEntry<PS> {
     }
 }
 
-impl<PS: PageSize> Deref for PagingMapEntry<PS> {
+impl<PS> PagingMapEntry<PS>
+where
+    PS: PageSize,
+    PS::PhysicalPageSize: FrameSize,
+{
+    #[inline]
+    pub const fn to_raw(&self) -> PagingRawEntry<PS> {
+        PagingRawEntry::new(self.value)
+    }
+}
+
+impl<PS> Deref for PagingMapEntry<PS>
+where
+    PS: PageSize,
+    PS::PhysicalPageSize: FrameSize,
+{
     type Target = u64;
 
     fn deref(&self) -> &Self::Target {

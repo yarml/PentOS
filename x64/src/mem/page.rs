@@ -42,6 +42,10 @@ impl<S: PageSize> Page<S> {
     pub const fn number(&self) -> usize {
         self.boundary.as_usize() >> S::SHIFT
     }
+    #[inline]
+    pub const fn order_index<OtherSize: PageSize>(&self) -> usize {
+        (self.boundary().as_usize() >> OtherSize::SHIFT) & 0x1FF
+    }
 }
 
 impl<S: PageSize> Add<usize> for Page<S> {

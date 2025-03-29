@@ -8,8 +8,10 @@ pub struct Frame128KiB;
 pub struct Frame2MiB;
 #[derive(Clone, Copy)]
 pub struct Frame1GiB;
+#[derive(Clone, Copy)]
+pub struct FrameInvalidSize;
 
-pub trait FrameSize {
+pub trait FrameSize: Clone + Copy {
     const SHIFT: usize;
     const SIZE: usize = 1 << Self::SHIFT;
     const MASK: usize = usize::MAX >> Self::SHIFT << Self::SHIFT;
