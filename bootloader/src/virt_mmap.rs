@@ -1,7 +1,5 @@
 use crate::allocator::ALLOCATOR_CAP;
 use crate::allocator::PostBootAllocator;
-use log::debug;
-use x64::mem::MemorySize;
 use x64::mem::addr::PhysAddr;
 use x64::mem::frame::Frame;
 use x64::mem::frame::size::Frame4KiB;
@@ -23,13 +21,10 @@ pub fn map(
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
     frame: Frame<Frame4KiB>,
     page: Page<Page4KiB>,
+    write: bool,
+    exec: bool,
 ) {
     let pml4_table = unsafe { root.target_mut() };
-
-    let p4i = page.order_index::<Page512GiB>();
-    let p3i = page.order_index::<Page1GiB>();
-    let p2i = page.order_index::<Page2MiB>();
-    let p1i = page.order_index::<Page4KiB>();
 
     let pdp_table = target_or_alloc(
         pml4_table[page.order_index::<Page512GiB>()].as_raw(),
@@ -39,10 +34,16 @@ pub fn map(
     let pt_table = target_or_alloc(&mut pd_table[page.order_index::<Page2MiB>()], allocator);
     let pt_entry = &mut pt_table[page.order_index::<Page4KiB>()];
 
-    *pt_entry = PagingMapEntry::<Page4KiB>::new(frame)
-        .write()
-        .exec()
-        .to_raw();
+    let mut target = PagingMapEntry::<Page4KiB>::new(frame);
+
+    if write {
+        target = target.write();
+    }
+    if exec {
+        target = target.exec();
+    }
+
+    *pt_entry = target.to_raw();
 }
 
 pub fn new_root(allocator: &mut PostBootAllocator<ALLOCATOR_CAP>) -> PagingRootEntry {
