@@ -32,6 +32,7 @@ image: $(ovmf_target) build-bootloader build-kernel
 .PHONY: run
 run: image
 	qemu-system-x86_64 \
+		-cpu qemu64,pdpe1gb=on \
 		-smp 4 \
 		-m 8G \
 		-debugcon stdio \

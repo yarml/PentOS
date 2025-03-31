@@ -4,7 +4,6 @@ members = [
     "bootloader",
     "chef",
     "boot-protocol",
-    "snail",
     "builder",
     "x64",
     "elf",
