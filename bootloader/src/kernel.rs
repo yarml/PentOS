@@ -1,8 +1,14 @@
+use core::cmp::max;
+
+use crate::allocator::ALLOCATOR_CAP;
+use crate::allocator::PostBootAllocator;
 use crate::allocator::PreBootAllocator;
 use crate::misc;
+use crate::virt_mmap;
 use elf::Elf;
 use elf::ElfClass;
 use elf::ElfType;
+use elf::SegmentType;
 use uefi::CStr16;
 use uefi::Identify;
 use uefi::boot;
@@ -11,6 +17,10 @@ use uefi::proto::media::file::File;
 use uefi::proto::media::file::FileAttribute;
 use uefi::proto::media::file::FileMode;
 use uefi::proto::media::fs::SimpleFileSystem;
+use x64::mem::addr::PhysAddr;
+use x64::mem::frame::Frame;
+use x64::mem::page::Page;
+use x64::mem::paging::PagingRootEntry;
 
 // TODO: Load kernel from PentFS partition
 pub fn load_kernel(allocator: &PreBootAllocator) -> Elf<'static> {
@@ -54,6 +64,46 @@ pub fn load_kernel(allocator: &PreBootAllocator) -> Elf<'static> {
     }
 
     elf
+}
+
+pub fn map_kernel(
+    kernel: &Elf<'static>,
+    root_map: PagingRootEntry,
+    allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
+) {
+    for segment in &kernel.program_header {
+        if segment.ty == SegmentType::Load {
+            let pg_count = segment.mem_size.next_multiple_of(4096) / 4096;
+            let mut copied = 0;
+            for i in 0..pg_count {
+                let frame = Frame::containing(PhysAddr::new_truncate(
+                    allocator.alloc([0; 4096]).expect("Out of memory") as *const _ as usize,
+                ));
+                if copied < segment.file_size {
+                    let src = kernel.data.as_ptr() as u64 + segment.offset + copied as u64;
+                    let dst = frame.boundary();
+                    unsafe {
+                        // SAFETY: We are copying from a valid memory region to a valid memory region
+                        core::ptr::copy_nonoverlapping(
+                            src as *const u8,
+                            dst.as_mut_ptr(),
+                            max(segment.file_size - copied, 4096),
+                        );
+                    }
+                    copied += max(segment.file_size - copied, 4096);
+                }
+                let page = Page::containing(segment.vaddr + i * 4096);
+                virt_mmap::map(
+                    root_map,
+                    allocator,
+                    frame,
+                    page,
+                    segment.flags.write,
+                    segment.flags.exec,
+                );
+            }
+        }
+    }
 }
 
 /// Farewell, until another boot time...

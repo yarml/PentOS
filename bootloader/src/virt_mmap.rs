@@ -1,5 +1,12 @@
 use crate::allocator::ALLOCATOR_CAP;
 use crate::allocator::PostBootAllocator;
+use boot_protocol::BootInfo;
+use core::mem;
+use uefi::boot::MemoryType;
+use uefi::mem::memory_map::MemoryMap;
+use uefi::mem::memory_map::MemoryMapOwned;
+use x64::mem::MemoryRegion;
+use x64::mem::MemorySize;
 use x64::mem::addr::PhysAddr;
 use x64::mem::frame::Frame;
 use x64::mem::frame::size::Frame4KiB;
@@ -83,5 +90,60 @@ where
         target
     } else {
         unimplemented!()
+    }
+}
+
+pub fn identity_and_offset_mapping(
+    allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
+    mmap: &MemoryMapOwned,
+    offset: usize,
+) -> PagingRootEntry {
+    let root_map = new_root(allocator);
+    // TODO: Setup virtual memory for kernel
+
+    for entry in mmap.entries() {
+        let region = MemoryRegion::new(
+            PhysAddr::new_truncate(entry.phys_start as usize),
+            MemorySize::new(entry.page_count as usize * 4096),
+        );
+        if entry.phys_start < 1024 * 1024
+            || (entry.ty != MemoryType::CONVENTIONAL
+                && entry.ty != MemoryType::LOADER_CODE
+                && entry.ty != MemoryType::LOADER_DATA
+                && entry.ty != MemoryType::BOOT_SERVICES_CODE
+                && entry.ty != MemoryType::BOOT_SERVICES_DATA)
+        {
+            continue;
+        }
+
+        let exec = entry.ty == MemoryType::LOADER_CODE;
+
+        let pg_count = *region.size() / 4096;
+        for i in 0..pg_count {
+            let frame = Frame::containing(region.start() + i * 4096);
+            let identity_vaddr = region.start().to_virt() + i * 4096;
+            let offset_vadr = identity_vaddr + offset;
+            let page = Page::containing(identity_vaddr);
+            let offset_page = Page::containing(offset_vadr);
+            map(root_map, allocator, frame, page, true, exec);
+            map(root_map, allocator, frame, offset_page, true, false);
+        }
+    }
+
+    root_map
+}
+
+pub fn map_bootinfo(
+    bootinfo: &BootInfo,
+    target: Page<Page4KiB>,
+    root_map: PagingRootEntry,
+    allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
+) {
+    let bootinfo = Frame::containing(PhysAddr::new_truncate(bootinfo as *const _ as usize));
+    let pg_count = mem::size_of::<BootInfo>().next_multiple_of(4096) / 4096;
+    for i in 0..pg_count {
+        let frame = bootinfo + i;
+        let page = target + i;
+        map(root_map, allocator, frame, page, false, false);
     }
 }
