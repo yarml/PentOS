@@ -207,7 +207,6 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "snail",
  "tar",
  "xz",
 ]

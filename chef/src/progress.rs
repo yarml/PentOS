@@ -22,7 +22,3 @@ pub fn show_action(depth: usize, action: &str, description: &str) {
         action = action.green().bold()
     )
 }
-
-pub fn show_error(description: &str) {
-    eprintln!("    {header} {description}", header = "Error:".red().bold());
-}

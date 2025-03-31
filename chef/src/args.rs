@@ -9,10 +9,7 @@ pub struct ChefArgs {
 
 #[derive(Debug, Subcommand)]
 pub enum ChefCommand {
-    Check,
-    Build { package: String },
-    Image,
-    Run,
-    Install,
     Ovmf,
+    Packages,
+    Config { name: String },
 }

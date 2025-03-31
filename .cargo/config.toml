@@ -1,2 +1,2 @@
 [alias]
-chef = "run --bin chef -- "
+chef = "run --quiet --bin chef -- "

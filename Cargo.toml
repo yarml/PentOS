@@ -21,7 +21,6 @@ log = "0.4.26"
 boot-protocol = { path = "boot-protocol" }
 x64 = { path = "x64" }
 elf = { path = "elf" }
-snail = { path = "snail" }
 builder = { path = "builder" }
 spinlocks = { path = "spinlocks" }
 

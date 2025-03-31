@@ -3,7 +3,6 @@
 mod args;
 mod config;
 mod progress;
-mod utils;
 
 use args::ChefArgs;
 use args::ChefCommand;
@@ -11,68 +10,19 @@ use cargo_metadata::Metadata;
 use cargo_metadata::MetadataCommand;
 use clap::Parser;
 use config::ChefConfig;
-use snail::cargo::Cargo;
-use snail::cargo::Packages;
-use snail::qemu::Drive;
-use snail::qemu::DriveInterface;
-use snail::qemu::Memory;
-use snail::qemu::Qemu;
+use serde_json::Value;
 use std::fs;
 use std::io::Read;
-use std::process;
-use std::process::Command;
-use std::process::ExitStatusError;
+use std::process::exit;
 use tar::Archive;
-use utils::get_path;
 use xz::read::XzDecoder;
 
-fn check(root: &Metadata) -> Result<(), ExitStatusError> {
+fn packages(root: &Metadata) {
     for package in &root.workspace_members {
         let package = &root[package];
-        let check_cmd = Cargo::check()
-            .keep_going()
-            .quiet()
-            .message_format("json")
-            .packages(Packages::package_list(&[&package.id.repr]));
-        let path = get_path(package);
-        check_cmd
-            .command()
-            // Change PWD to use package's .cargo/config.toml
-            .current_dir(path)
-            .status()
-            .unwrap()
-            .exit_ok()?;
+        println!("{}", package.name);
     }
-    Ok(())
-}
-
-fn build(root: &Metadata, target_package_name: &str) -> Result<(), ExitStatusError> {
-    let mut target_package = None;
-
-    for package in &root.workspace_members {
-        let package = &root[package];
-        if package.name == target_package_name {
-            target_package = Some(package);
-            break;
-        }
-    }
-
-    if target_package.is_none() {
-        print_error!("Couldn't find package {target_package_name}");
-        process::exit(1);
-    }
-
-    let target_package = target_package.unwrap();
-
-    let build_cmd = Cargo::build().packages(Packages::package_list(&[&target_package.id.repr]));
-    let path = get_path(target_package);
-    build_cmd
-        .command()
-        // Change PWD to use package's .cargo/config.toml
-        .current_dir(path)
-        .status()
-        .unwrap()
-        .exit_ok()
+    exit(0);
 }
 
 fn ovmf(config: &ChefConfig) {
@@ -111,61 +61,13 @@ fn ovmf(config: &ChefConfig) {
     }
 }
 
-fn image(root: &Metadata) -> Result<(), ExitStatusError> {
-    build(root, "bootloader")?;
-    build(root, "kernel")?;
-    fs::create_dir_all("run/esp/efi/boot").expect("Couldn't create run/esp/efi/boot");
-    fs::copy(
-        "target/x86_64-unknown-uefi/debug/bootloader.efi",
-        "run/esp/efi/boot/bootx64.efi",
-    )
-    .expect("Couldn't copy bootloader.efi");
-    fs::copy("target/kernel/debug/kernel", "run/esp/pentos.kernel")
-        .expect("Couldn't copy pentos.kernel");
-    Ok(())
-}
-
-fn run(root: &Metadata) -> Result<(), ExitStatusError> {
-    image(root)?;
-    let qemu = Qemu::new()
-        .numcores(4)
-        .memory(Memory::Giga(8))
-        .debugcon("stdio")
-        .drive(
-            Drive::new("run/ovmf/code.fd")
-                .interface(DriveInterface::Pflash)
-                .raw()
-                .readonly(),
-        )
-        .drive(
-            Drive::new("run/ovmf/vars.fd")
-                .interface(DriveInterface::Pflash)
-                .raw()
-                .readonly(),
-        )
-        .drive(Drive::new("fat:rw:run/esp").raw());
-    qemu.command().status().unwrap().exit_ok()
-}
-
-fn install(root: &Metadata, config: &ChefConfig) -> Result<(), ExitStatusError> {
-    build(root, "bootloader")?;
-    build(root, "kernel")?;
-    let bootloader_destination = &config.install_bootloader;
-    let kernel_destination = &config.install_kernel;
-    Command::new("sudo")
-        .arg("cp")
-        .arg("target/x86_64-unknown-uefi/debug/bootloader.efi")
-        .arg(bootloader_destination)
-        .status()
-        .unwrap()
-        .exit_ok()?;
-    Command::new("sudo")
-        .arg("cp")
-        .arg("target/kernel/debug/kernel")
-        .arg(kernel_destination)
-        .status()
-        .unwrap()
-        .exit_ok()
+fn printconfig(raw_config: &Value, name: &str) {
+    if let Some(config) = raw_config[name].as_str() {
+        print!("{config}");
+        exit(0);
+    } else {
+        exit(1);
+    }
 }
 
 fn main() {
@@ -173,25 +75,17 @@ fn main() {
     let root = MetadataCommand::new()
         .exec()
         .expect("Couldn't get Cargo metadata");
+    let raw_config = &root.workspace_metadata["chef"];
     let config = ChefConfig::from(&root.workspace_metadata["chef"]);
     match args.command {
-        ChefCommand::Check => {
-            check(&root).expect("Couldn't check");
-        }
-        ChefCommand::Build { package } => {
-            build(&root, &package).expect("Couldn't build");
-        }
-        ChefCommand::Image => {
-            image(&root).expect("Couldn't make image");
-        }
-        ChefCommand::Run => {
-            run(&root).expect("Couldn't run");
-        }
-        ChefCommand::Install => {
-            install(&root, &config).expect("Couldn't install");
-        }
         ChefCommand::Ovmf => {
             ovmf(&config);
+        }
+        ChefCommand::Packages => {
+            packages(&root);
+        }
+        ChefCommand::Config { name } => {
+            printconfig(raw_config, &name);
         }
     }
 }
