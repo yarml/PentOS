@@ -3,6 +3,7 @@ mod test;
 
 use core::fmt::Debug;
 use core::fmt::Display;
+use core::iter::Sum;
 use core::ops::Add;
 use core::ops::AddAssign;
 use core::ops::Deref;
@@ -170,6 +171,12 @@ impl Mul<usize> for MemorySize {
 
     fn mul(self, rhs: usize) -> Self::Output {
         Self::new(self.inner * rhs)
+    }
+}
+
+impl Sum for MemorySize {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        Self::new(iter.map(|s| *s).sum())
     }
 }
 

@@ -4,4 +4,5 @@
 extern crate alloc;
 
 pub mod mem;
+pub mod framebuffer;
 pub mod msr;
