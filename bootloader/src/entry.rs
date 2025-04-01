@@ -26,6 +26,7 @@ use x64::mem::addr::PhysAddr;
 use x64::mem::addr::VirtAddr;
 use x64::mem::page::Page;
 use x64::msr::efer::Efer;
+use x64::msr::pat::standard_pat;
 
 #[entry]
 fn main() -> Status {
@@ -78,6 +79,7 @@ fn main() -> Status {
     };
 
     Efer::new().syscall(false).exec_disable(true).write();
+    standard_pat().write();
     let root_map =
         virt_mmap::identity_and_offset_mapping(&mut allocator, &real_mmap, OFFSET_MAPPING);
     kernel::map_kernel(&kernel, root_map, &mut allocator);

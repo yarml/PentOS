@@ -17,6 +17,7 @@ use x64::mem::addr::PhysAddr;
 use x64::mem::frame::Frame;
 use x64::mem::page::Page;
 use x64::mem::paging::PagingRootEntry;
+use x64::msr::pat::MemoryType;
 
 pub struct PrimaryFramebufferInfo {
     base: PhysAddr,
@@ -110,6 +111,7 @@ pub fn postboot_init(
             fb_page_start + i,
             true,
             false,
+            MemoryType::WriteCombining,
         );
         map(
             root_map,
@@ -118,6 +120,7 @@ pub fn postboot_init(
             buffer_page_start + i,
             true,
             false,
+            MemoryType::WriteBack,
         );
     }
     let fb = unsafe {

@@ -1,10 +1,9 @@
-use core::cmp::max;
-
 use crate::allocator::ALLOCATOR_CAP;
 use crate::allocator::PostBootAllocator;
 use crate::allocator::PreBootAllocator;
 use crate::misc;
 use crate::virt_mmap;
+use core::cmp::max;
 use elf::Elf;
 use elf::ElfClass;
 use elf::ElfType;
@@ -21,6 +20,7 @@ use x64::mem::addr::PhysAddr;
 use x64::mem::frame::Frame;
 use x64::mem::page::Page;
 use x64::mem::paging::PagingRootEntry;
+use x64::msr::pat::MemoryType;
 
 // TODO: Load kernel from PentFS partition
 pub fn load_kernel(allocator: &PreBootAllocator) -> Elf<'static> {
@@ -100,6 +100,7 @@ pub fn map_kernel(
                     page,
                     segment.flags.write,
                     segment.flags.exec,
+                    MemoryType::WriteBack,
                 );
             }
         }

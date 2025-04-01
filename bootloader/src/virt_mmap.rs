@@ -20,6 +20,8 @@ use x64::mem::paging::PagingMapEntry;
 use x64::mem::paging::PagingRawEntry;
 use x64::mem::paging::PagingReferenceEntry;
 use x64::mem::paging::PagingRootEntry;
+use x64::msr::pat::MemoryType as PatMemoryType;
+use x64::msr::pat::pat_index;
 
 pub struct VirtMemMap {}
 
@@ -30,6 +32,7 @@ pub fn map(
     page: Page<Page4KiB>,
     write: bool,
     exec: bool,
+    mtype: PatMemoryType,
 ) {
     let pml4_table = unsafe { root.target_mut() };
 
@@ -49,6 +52,8 @@ pub fn map(
     if exec {
         target = target.exec();
     }
+
+    target = target.with_pat_index(pat_index(mtype));
 
     *pt_entry = target.to_raw();
 }
@@ -125,8 +130,24 @@ pub fn identity_and_offset_mapping(
             let offset_vadr = identity_vaddr + offset;
             let page = Page::containing(identity_vaddr);
             let offset_page = Page::containing(offset_vadr);
-            map(root_map, allocator, frame, page, true, exec);
-            map(root_map, allocator, frame, offset_page, true, false);
+            map(
+                root_map,
+                allocator,
+                frame,
+                page,
+                true,
+                exec,
+                PatMemoryType::WriteBack,
+            );
+            map(
+                root_map,
+                allocator,
+                frame,
+                offset_page,
+                true,
+                false,
+                PatMemoryType::WriteBack,
+            );
         }
     }
 
@@ -144,6 +165,14 @@ pub fn map_bootinfo(
     for i in 0..pg_count {
         let frame = bootinfo + i;
         let page = target + i;
-        map(root_map, allocator, frame, page, false, false);
+        map(
+            root_map,
+            allocator,
+            frame,
+            page,
+            false,
+            false,
+            PatMemoryType::WriteBack,
+        );
     }
 }
