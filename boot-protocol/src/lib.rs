@@ -1,8 +1,10 @@
 #![no_std]
 
 pub mod features;
+pub mod framebuffer;
 
 use features::FeatureSet;
+use framebuffer::FramebufferInfo;
 use x64::mem::MemoryRegion;
 
 const MMAP_PG_COUNT: usize = 1;
@@ -15,4 +17,5 @@ pub struct BootInfo {
     pub mmap: [MemoryRegion; MAX_MMAP_SIZE],
     pub mmap_len: usize,
     pub features: FeatureSet,
+    pub framebuffer: FramebufferInfo,
 }
