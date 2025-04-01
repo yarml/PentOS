@@ -3,6 +3,7 @@ use crate::allocator::PostBootAllocator;
 use crate::allocator::PreBootAllocator;
 use crate::bootstage;
 use crate::features;
+use crate::framebuffer;
 use crate::kernel;
 use crate::logger;
 use crate::phys_mmap::PhysMemMap;
@@ -43,6 +44,8 @@ fn main() -> Status {
     let allocator = PreBootAllocator;
     let kernel = kernel::load_kernel(&allocator);
 
+    // Keep this last in PreBootStage
+    let primary_framebuffer_info = framebuffer::init();
     logger::disable();
     bootstage::set_postboot();
     let real_mmap = unsafe {
@@ -78,11 +81,14 @@ fn main() -> Status {
     let root_map =
         virt_mmap::identity_and_offset_mapping(&mut allocator, &real_mmap, OFFSET_MAPPING);
     kernel::map_kernel(&kernel, root_map, &mut allocator);
+    let framebuffer =
+        framebuffer::postboot_init(primary_framebuffer_info, root_map, &mut allocator);
 
     let bootinfo = BootInfo {
         mmap: [MemoryRegion::null(); MAX_MMAP_SIZE],
         mmap_len: 0,
         features,
+        framebuffer,
     };
     let bootinfo = allocator
         .alloc(bootinfo)

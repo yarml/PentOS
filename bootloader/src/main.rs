@@ -2,10 +2,13 @@
 #![no_main]
 #![allow(dead_code)]
 
+
+mod infoarea;
 mod allocator;
 mod bootstage;
 mod entry;
 mod features;
+mod framebuffer;
 mod kernel;
 mod logger;
 mod misc;
