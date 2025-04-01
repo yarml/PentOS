@@ -6,7 +6,6 @@ pub struct FeatureSet {
     pub shadow_stack: bool,
     pub pk_user: bool,
     pub pk_super: bool,
-    pub noexec: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

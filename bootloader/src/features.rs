@@ -30,6 +30,9 @@ pub enum InsufficientReason {
     NoHugePages,
     NoApic,
     NoSyscall,
+    NoPAT,
+    NoExecDisable,
+    NoLongMode, // Can we even get here???
 }
 
 impl FeatureDetect {
@@ -87,6 +90,9 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
     let has_huge_pages = (cpuidext1.edx >> 26) & 1 == 1;
     let has_apic = (cpuid1.edx >> 9) & 1 == 1;
     let has_syscall = (cpuidext1.edx >> 11) & 1 == 1;
+    let has_pat = (cpuid1.edx >> 16) & 1 == 1;
+    let has_noexec = (cpuidext1.edx >> 20) & 1 == 1;
+    let has_long_mode = (cpuidext1.edx >> 29) & 1 == 1;
 
     if !has_huge_pages {
         return FeatureDetect::Insufficient(InsufficientReason::NoHugePages);
@@ -97,8 +103,15 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
     if !has_syscall {
         return FeatureDetect::Insufficient(InsufficientReason::NoSyscall);
     }
-
-    let noexec = (cpuidext1.edx >> 20) & 1 == 1;
+    if !has_pat {
+        return FeatureDetect::Insufficient(InsufficientReason::NoPAT);
+    }
+    if !has_noexec {
+        return FeatureDetect::Insufficient(InsufficientReason::NoExecDisable);
+    }
+    if !has_long_mode {
+        return FeatureDetect::Insufficient(InsufficientReason::NoLongMode);
+    }
 
     // I couldn't find in AMD manual where PCID functionality is
     // However they do mention in APM Volume 2 Section 5.5.1 page 158 (March 2024)
@@ -131,7 +144,6 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
         shadow_stack,
         pk_user,
         pk_super,
-        noexec,
     })
 }
 
