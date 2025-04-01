@@ -1,4 +1,5 @@
 pub mod efer;
+pub mod pat;
 
 use core::arch::asm;
 use core::ops::Deref;
