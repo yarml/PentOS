@@ -171,13 +171,15 @@ pub fn featureset() -> FeatureSet {
     let numproc = mp
         .get_number_of_processors()
         .expect("Failed to get number of processors");
-    AP_REMAINING.store(numproc.enabled - 1, Ordering::Relaxed);
+    if numproc.enabled > 1 {
+        AP_REMAINING.store(numproc.enabled - 1, Ordering::Relaxed);
 
-    mp.startup_all_aps(false, ap_feature_detect, null_mut(), None, None)
-        .expect("Failed to start APs for feature detection");
+        mp.startup_all_aps(false, ap_feature_detect, null_mut(), None, None)
+            .expect("Failed to start APs for feature detection");
 
-    while AP_REMAINING.load(Ordering::Relaxed) > 0 {
-        hint::spin_loop();
+        while AP_REMAINING.load(Ordering::Relaxed) > 0 {
+            hint::spin_loop();
+        }
     }
 
     if !AP_SYMMETRIC.load(Ordering::Relaxed) {

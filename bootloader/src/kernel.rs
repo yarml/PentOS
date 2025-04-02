@@ -1,8 +1,11 @@
 use crate::allocator::ALLOCATOR_CAP;
 use crate::allocator::PostBootAllocator;
 use crate::allocator::PreBootAllocator;
+use crate::infoarea::allocate_info_space;
 use crate::misc;
 use crate::virt_mmap;
+use boot_protocol::STACK_SIZE;
+use core::arch::asm;
 use core::cmp::max;
 use elf::Elf;
 use elf::ElfClass;
@@ -17,6 +20,7 @@ use uefi::proto::media::file::FileAttribute;
 use uefi::proto::media::file::FileMode;
 use uefi::proto::media::fs::SimpleFileSystem;
 use x64::mem::addr::PhysAddr;
+use x64::mem::addr::VirtAddr;
 use x64::mem::frame::Frame;
 use x64::mem::page::Page;
 use x64::mem::paging::PagingRootEntry;
@@ -53,8 +57,8 @@ pub fn load_kernel(allocator: &PreBootAllocator) -> Elf<'static> {
         .read(buffer)
         .expect("Failed to read kernel file");
     let elf = Elf::parse(buffer).expect("Failed to parse kernel");
-    if elf.ty != ElfType::SharedObject {
-        panic!("Kernel is not an shared object");
+    if elf.ty != ElfType::Executable {
+        panic!("Kernel is not an executable");
     }
     if elf.ident.encoding != elf::DataEncoding::LittleEndian {
         panic!("Kernel is not little endian");
@@ -107,7 +111,39 @@ pub fn map_kernel(
     }
 }
 
-/// Farewell, until another boot time...
-pub fn cede_control() -> ! {
-    todo!()
+pub fn alloc_stack(
+    root_map: PagingRootEntry,
+    allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
+) -> VirtAddr {
+    let stack = Page::containing(allocate_info_space(STACK_SIZE));
+    let pg_count = STACK_SIZE.next_multiple_of(4096) / 4096;
+    for i in 0..pg_count {
+        let frame = Frame::containing(allocator.alloc_raw(0x1000, 0x1000).expect("Out of memory"));
+        let page = stack + i;
+        virt_mmap::map(
+            root_map,
+            allocator,
+            frame,
+            page,
+            true,
+            false,
+            MemoryType::WriteBack,
+        );
+    }
+    stack.boundary() + STACK_SIZE
+}
+
+pub fn cede_control(kernel: &Elf<'static>, stack: VirtAddr) -> ! {
+    let entry = kernel.entry;
+    let entry = entry.as_usize();
+    let stack = stack.as_usize();
+    unsafe {
+        asm!(
+            "mov rsp, {0}",
+            "jmp {1}",
+            in(reg) stack,
+            in(reg) entry,
+            options(noreturn)
+        );
+    }
 }

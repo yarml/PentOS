@@ -18,13 +18,13 @@
     },
     "panic-strategy": "abort",
     "plt-by-default": false,
-    "position-independent-executables": true,
+    "position-independent-executables": false,
     "relro-level": "full",
     "rustc-abi": "x86-softfloat",
     "stack-probes": {
         "kind": "inline"
     },
-    "static-position-independent-executables": true,
+    "static-position-independent-executables": false,
     "supported-sanitizers": [
         "kcfi",
         "kernel-address"

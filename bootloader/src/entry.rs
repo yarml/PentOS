@@ -11,7 +11,6 @@ use crate::virt_mmap;
 use boot_protocol::BootInfo;
 use boot_protocol::MAX_MMAP_SIZE;
 use boot_protocol::OFFSET_MAPPING;
-use core::arch::asm;
 use log::debug;
 use log::info;
 use uefi::Status;
@@ -40,6 +39,7 @@ fn main() -> Status {
         logger::init();
     }
     info!("Booting PentOS...");
+    debug!("cede_control: {:x}", kernel::cede_control as usize);
 
     let features = features::featureset();
     let allocator = PreBootAllocator;
@@ -101,16 +101,11 @@ fn main() -> Status {
         root_map,
         &mut allocator,
     );
+    let stack = kernel::alloc_stack(root_map, &mut allocator);
     root_map.load();
+    let mmap = allocator.fini(loader_mmap);
+    bootinfo.mmap = mmap.regions;
+    bootinfo.mmap_len = mmap.len;
 
-    let _mmap = allocator.fini(loader_mmap);
-
-    debug!("Check monitor");
-
-    // TODO: Jump to kernel
-    loop {
-        unsafe {
-            asm!("hlt");
-        }
-    }
+    kernel::cede_control(&kernel, stack);
 }

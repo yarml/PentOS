@@ -1,4 +1,4 @@
-!#/bin/bash
+#!/bin/bash
 
 DIR=$(mktemp -d)
 QMS=$DIR/qms
@@ -7,7 +7,7 @@ QEMU_CMD=$(echo qemu-system-x86_64 \
     -debugcon stdio \
     -monitor unix:$QMS,server \
     -s -S \
-    -smp 4 \
+    -smp 1 \
     -m 8G \
     -cpu qemu64,pdpe1gb=on \
     -drive if=pflash,format=raw,readonly=on,file=run/ovmf/code.fd \
