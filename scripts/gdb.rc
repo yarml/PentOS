@@ -1,0 +1,3 @@
+set disassembly-flavor intel
+symbol-file run/esp/efi/boot/bootx64.efi
+target remote localhost:1234

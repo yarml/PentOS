@@ -53,8 +53,8 @@ pub fn load_kernel(allocator: &PreBootAllocator) -> Elf<'static> {
         .read(buffer)
         .expect("Failed to read kernel file");
     let elf = Elf::parse(buffer).expect("Failed to parse kernel");
-    if elf.ty != ElfType::Executable {
-        panic!("Kernel is not an executable");
+    if elf.ty != ElfType::SharedObject {
+        panic!("Kernel is not an shared object");
     }
     if elf.ident.encoding != elf::DataEncoding::LittleEndian {
         panic!("Kernel is not little endian");

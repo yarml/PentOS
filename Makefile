@@ -26,21 +26,14 @@ $(ovmf_target):
 .PHONY: image
 image: $(ovmf_target) build-bootloader build-kernel
 	mkdir -p run/esp/efi/boot
-	cp target/x86_64-unknown-uefi/debug/bootloader.efi run/esp/efi/boot/bootx64.efi
+	cp target/uefi/debug/bootloader.efi run/esp/efi/boot/bootx64.efi
 	cp target/kernel/debug/kernel run/esp/pentos.kernel
 
 .PHONY: run
 run: image
-	qemu-system-x86_64 \
-		-cpu qemu64,pdpe1gb=on \
-		-smp 4 \
-		-m 8G \
-		-debugcon stdio \
-		-drive if=pflash,format=raw,readonly=on,file=run/ovmf/code.fd \
-		-drive if=pflash,format=raw,readonly=on,file=run/ovmf/vars.fd \
-		-drive format=raw,file=fat:rw:run/esp
+	bash scripts/debug.sh
 
 .PHONY: install
 install: build-bootloader build-kernel
-	sudo cp target/x86_64-unknown-uefi/debug/bootloader.efi $(bootloader_destination)
+	sudo cp target/uefi/debug/bootloader.efi $(bootloader_destination)
 	sudo cp target/kernel/debug/kernel $(kernel_destination)
