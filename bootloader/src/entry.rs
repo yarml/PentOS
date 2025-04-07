@@ -39,7 +39,6 @@ fn main() -> Status {
         logger::init();
     }
     info!("Booting PentOS...");
-    debug!("cede_control: {:x}", kernel::cede_control as usize);
 
     let features = features::featureset();
     let allocator = PreBootAllocator;
@@ -49,6 +48,7 @@ fn main() -> Status {
     let primary_framebuffer_info = framebuffer::init();
     logger::disable();
     bootstage::set_postboot();
+    // TODO: AP cede_control
     let real_mmap = unsafe {
         // SAFETY: Only thing we used was the UEFI console logger, and allocator, they are now disabled
         boot::exit_boot_services(MemoryType::LOADER_DATA)
@@ -107,5 +107,5 @@ fn main() -> Status {
     bootinfo.mmap = mmap.regions;
     bootinfo.mmap_len = mmap.len;
 
-    kernel::cede_control(&kernel, stack);
+    kernel::bsp_cede_control(&kernel, stack);
 }

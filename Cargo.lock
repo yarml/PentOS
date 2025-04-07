@@ -777,7 +777,9 @@ dependencies = [
 name = "kernel"
 version = "0.1.0"
 dependencies = [
+ "boot-protocol",
  "builder",
+ "x64",
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-ENTRY(bsp_entry)
+ENTRY(kernel_meta)
 
 MEMORY {
     kernel (rwx) : ORIGIN = 0xfffffffc00000000, LENGTH = 16384M - 1 /* Kernel code/rodata/data has the last 16Gib of kernel space */

@@ -2,6 +2,7 @@
 
 pub mod features;
 pub mod framebuffer;
+pub mod kernel_meta;
 
 use features::FeatureSet;
 use framebuffer::FramebufferInfo;

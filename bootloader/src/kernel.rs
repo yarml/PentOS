@@ -5,12 +5,18 @@ use crate::infoarea::allocate_info_space;
 use crate::misc;
 use crate::virt_mmap;
 use boot_protocol::STACK_SIZE;
+use boot_protocol::kernel_meta::KernelMeta;
 use core::arch::asm;
 use core::cmp::max;
+use core::hint;
+use core::mem;
+use core::sync::atomic::AtomicUsize;
+use core::sync::atomic::Ordering;
 use elf::Elf;
 use elf::ElfClass;
 use elf::ElfType;
 use elf::SegmentType;
+use spinlocks::once::Once;
 use uefi::CStr16;
 use uefi::Identify;
 use uefi::boot;
@@ -19,12 +25,21 @@ use uefi::proto::media::file::File;
 use uefi::proto::media::file::FileAttribute;
 use uefi::proto::media::file::FileMode;
 use uefi::proto::media::fs::SimpleFileSystem;
+use x64::hart;
 use x64::mem::addr::PhysAddr;
 use x64::mem::addr::VirtAddr;
 use x64::mem::frame::Frame;
 use x64::mem::page::Page;
 use x64::mem::paging::PagingRootEntry;
 use x64::msr::pat::MemoryType;
+
+struct ApInfo {
+    pub ap_entry: VirtAddr,
+    pub stack_base: VirtAddr,
+}
+
+static AP_CEDE: Once<ApInfo> = Once::new();
+static AP_REMAINING: AtomicUsize = AtomicUsize::new(0);
 
 // TODO: Load kernel from PentFS partition
 pub fn load_kernel(allocator: &PreBootAllocator) -> Elf<'static> {
@@ -133,16 +148,52 @@ pub fn alloc_stack(
     stack.boundary() + STACK_SIZE
 }
 
-pub fn cede_control(kernel: &Elf<'static>, stack: VirtAddr) -> ! {
+pub fn bsp_cede_control(kernel: &Elf<'static>, stack: VirtAddr) -> ! {
     let entry = kernel.entry;
     let entry = entry.as_usize();
+    let entry: extern "C" fn() -> KernelMeta = unsafe {
+        // SAFETY: sometimes rust sucks
+        mem::transmute(entry)
+    };
+    let meta = entry();
+
+    let bsp_entry = meta.bsp_entry.as_usize();
+
+    AP_CEDE.init(|| ApInfo {
+        ap_entry: meta.ap_entry,
+        stack_base: stack,
+    });
+    while AP_REMAINING.load(Ordering::Relaxed) > 0 {
+        hint::spin_loop();
+    }
+
     let stack = stack.as_usize();
+
+    do_jump(stack, bsp_entry);
+}
+
+pub fn ap_cede_control() {
+    AP_REMAINING.fetch_add(1, Ordering::Relaxed);
+    while AP_CEDE.get().is_none() {
+        hint::spin_loop();
+    }
+
+    let ap_info = AP_CEDE.get().unwrap();
+
+    let ap_entry = ap_info.ap_entry.as_usize();
+    let stack = ap_info.stack_base.as_usize() + STACK_SIZE * hart::get_id();
+
+    AP_REMAINING.fetch_sub(1, Ordering::Relaxed);
+    do_jump(stack, ap_entry);
+}
+
+fn do_jump(stack: usize, dest: usize) -> ! {
     unsafe {
         asm!(
             "mov rsp, {0}",
             "jmp {1}",
             in(reg) stack,
-            in(reg) entry,
+            in(reg) dest,
             options(noreturn)
         );
     }

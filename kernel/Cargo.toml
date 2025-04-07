@@ -6,6 +6,8 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
+boot-protocol.workspace = true
+x64.workspace = true
 
 [build-dependencies]
 builder.workspace = true
