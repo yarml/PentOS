@@ -48,7 +48,7 @@ pub fn init() -> PrimaryFramebufferInfo {
                 let (this_width, this_height) = this_mode.info().resolution();
                 let best_area = best_width * best_height;
                 let this_area = this_width * this_height;
-                best_area < this_area
+                best_area > this_area
             }) {
                 Some(this_mode)
             } else {

@@ -188,6 +188,7 @@ pub fn ap_cede_control() {
 }
 
 fn do_jump(stack: usize, dest: usize) -> ! {
+    loop {}
     unsafe {
         asm!(
             "mov rsp, {0}",

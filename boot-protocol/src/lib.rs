@@ -15,6 +15,8 @@ pub const OFFSET_MAPPING: usize = 0xFFFF800000000000;
 
 pub const STACK_SIZE: usize = 512 * 1024;
 
+pub const MAX_CPU_COUNT: usize = 64;
+
 #[repr(C, align(4096))]
 pub struct BootInfo {
     pub mmap: [MemoryRegion; MAX_MMAP_SIZE],

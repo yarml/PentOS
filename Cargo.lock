@@ -127,7 +127,9 @@ dependencies = [
 name = "bootloader"
 version = "0.1.0"
 dependencies = [
+ "acpi",
  "boot-protocol",
+ "common",
  "elf",
  "log",
  "spinlocks",

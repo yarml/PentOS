@@ -8,7 +8,7 @@ QEMU_CMD=$(echo qemu-system-x86_64 \
     -debugcon stdio \
     -monitor unix:$QMS,server \
     -s -S \
-    -smp 1 \
+    -smp 4 \
     -m 8G \
     -d unimp,guest_errors \
     -cpu qemu64,pdpe1gb=on \
