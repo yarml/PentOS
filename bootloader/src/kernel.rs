@@ -186,9 +186,10 @@ pub fn ap_cede_control() {
     AP_REMAINING.fetch_sub(1, Ordering::Relaxed);
     do_jump(stack, ap_entry);
 }
-
 fn do_jump(stack: usize, dest: usize) -> ! {
-    loop {}
+    loop {
+        hint::spin_loop();
+    }
     unsafe {
         asm!(
             "mov rsp, {0}",

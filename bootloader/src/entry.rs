@@ -13,6 +13,8 @@ use boot_protocol::BootInfo;
 use boot_protocol::MAX_MMAP_SIZE;
 use boot_protocol::OFFSET_MAPPING;
 use core::arch::asm;
+use core::hint;
+use log::debug;
 use log::info;
 use uefi::Status;
 use uefi::boot;
@@ -43,9 +45,32 @@ fn main() -> Status {
 
     let features = features::featureset();
     let allocator = PreBootAllocator;
-    acpi::init();
+    let acpi_info = acpi::init();
     let kernel = kernel::load_kernel(&allocator);
 
+    info!("System info:");
+    info!("\tCPU count: {}", acpi_info.lapics.len());
+    for lapic in &acpi_info.lapics {
+        debug!("\t\tCPU#{id}@{proc}", id = lapic.id, proc = lapic.proc_uid,);
+    }
+    debug!("\tI/O APIC count: {}", acpi_info.ioapics.len());
+    for ioapic in &acpi_info.ioapics {
+        debug!(
+            "\t\tI/O Apic #{id}: {base}",
+            id = ioapic.id,
+            base = ioapic.gsi_base
+        );
+    }
+    debug!(
+        "\tInterrupt source overrides: {}",
+        acpi_info.is_overrides.len()
+    );
+    for iso in &acpi_info.is_overrides {
+        debug!("\t\t{} -> {}", iso.source, iso.gsi);
+    }
+    loop {
+        hint::spin_loop();
+    }
     // Keep this last in PreBootStage
     let primary_framebuffer_info = framebuffer::init();
 
