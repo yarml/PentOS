@@ -1,0 +1,28 @@
+#[repr(C, packed)]
+pub struct AcpiHeader {
+    pub sig: [u8; 4],
+    pub len: u32,
+    pub revision: u8,
+    pub checksum: u8,
+    pub oemid: [u8; 6],
+    pub oemtableid: [u8; 8],
+    pub oemrevision: u32,
+    pub creatorid: u32,
+    pub creatorrevision: u32,
+}
+
+impl AcpiHeader {
+    pub fn signature(&self) -> Option<&str> {
+        Some(str::from_utf8(&self.sig).ok()?)
+    }
+    pub fn verify_checksum(&self) -> bool {
+        let bytes = unsafe {
+            core::slice::from_raw_parts(self as *const _ as *const u8, self.len as usize)
+        };
+        let mut sum = 0u8;
+        for &byte in bytes {
+            sum = sum.wrapping_add(byte);
+        }
+        sum == 0
+    }
+}
