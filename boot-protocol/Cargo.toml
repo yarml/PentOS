@@ -7,3 +7,4 @@ authors.workspace = true
 
 [dependencies]
 x64.workspace = true
+common.workspace = true

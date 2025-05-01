@@ -3,7 +3,7 @@
 pub mod features;
 pub mod framebuffer;
 pub mod kernel_meta;
-pub mod acpi;
+pub mod topology;
 
 use features::FeatureSet;
 use framebuffer::FramebufferInfo;
