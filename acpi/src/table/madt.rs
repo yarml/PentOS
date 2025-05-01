@@ -22,9 +22,33 @@ pub struct LocalApic {
     pub flags: u32,
 }
 
+#[repr(C, packed)]
+pub struct IOApic {
+    pub header: MadtEntryHeader,
+    pub ioapic_id: u8,
+    pub res0: u8,
+    pub address: u32,
+    pub gsi_base: u32,
+}
+
+#[repr(C, packed)]
+pub struct InterruptSourceOverride {
+    pub header: MadtEntryHeader,
+    pub bus: u8,
+    pub source: u8,
+    pub gsi: u32,
+    pub flags: u16,
+}
+
 pub struct MadtIterator<'a> {
     madt: &'a Madt,
     cursor: usize,
+}
+
+impl Madt {
+    pub const LOCAL_APIC_TY: u8 = 0;
+    pub const IO_APIC_TY: u8 = 1;
+    pub const IS_OVERRIDE_TY: u8 = 2;
 }
 
 impl Madt {

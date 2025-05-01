@@ -7,6 +7,8 @@ mod xsdt;
 
 pub use gas::GenericAddress;
 pub use header::AcpiHeader;
+pub use madt::IOApic;
+pub use madt::InterruptSourceOverride;
 pub use madt::LocalApic;
 pub use madt::Madt;
 pub use madt::MadtEntryHeader;
