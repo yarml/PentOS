@@ -1,6 +1,8 @@
 use super::AcpiHeader;
+use super::AcpiTable;
+use super::FADT_SIG;
 use super::GenericAddress;
-use core::mem;
+use super::Signature;
 
 // In the beginning...
 #[repr(C, packed)]
@@ -68,11 +70,6 @@ pub struct Fadt {
 }
 // Amen
 
-impl Fadt {
-    pub fn verify(&self) -> bool {
-        if &self.header.sig != b"FACP" || (self.header.len as usize) < mem::size_of::<Self>() {
-            return false;
-        }
-        self.header.verify_checksum()
-    }
+impl AcpiTable for Fadt {
+    const SIG: Signature = FADT_SIG;
 }

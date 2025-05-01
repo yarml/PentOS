@@ -1,4 +1,8 @@
 use super::AcpiHeader;
+use super::AcpiTable;
+use super::MADT_SIG;
+use super::Signature;
+use core::marker::PhantomData;
 use core::mem;
 
 #[repr(C, packed)]
@@ -45,25 +49,33 @@ pub struct MadtIterator<'a> {
     cursor: usize,
 }
 
+pub struct MadtFilteredIterator<'a, T: MadtEntry> {
+    iterator: MadtIterator<'a>,
+    _phantom: PhantomData<T>,
+}
+
 impl Madt {
     pub const LOCAL_APIC_TY: u8 = 0;
     pub const IO_APIC_TY: u8 = 1;
     pub const IS_OVERRIDE_TY: u8 = 2;
-    pub const LOCAL_APIC_NMI: u8 = 4;
+    pub const LOCAL_APIC_NMI_TY: u8 = 4;
 }
 
 impl Madt {
-    pub fn verify(&self) -> bool {
-        if &self.header.sig != b"APIC" || (self.header.len as usize) < mem::size_of::<Self>() {
-            return false;
-        }
-        self.header.verify_checksum()
-    }
-
     pub fn iter(&self) -> MadtIterator {
         MadtIterator {
             madt: self,
             cursor: mem::size_of::<Madt>(),
+        }
+    }
+
+    pub fn entries<T: MadtEntry>(&self) -> MadtFilteredIterator<'_, T> {
+        MadtFilteredIterator {
+            iterator: MadtIterator {
+                madt: self,
+                cursor: mem::size_of::<Madt>(),
+            },
+            _phantom: PhantomData,
         }
     }
 }
@@ -92,35 +104,52 @@ impl<'a> Iterator for MadtIterator<'a> {
     }
 }
 
+impl<'a, T: 'a + MadtEntry> Iterator for MadtFilteredIterator<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(next) = self.iterator.next() {
+            if next.ty == T::TYPE {
+                // Unwrapping then wrapping again to avoid
+                // a corrupt ACPI being seen as end of iterator
+                return Some(next.getas().expect("Corrupt ACPI"));
+            }
+        }
+        None
+    }
+}
+
 impl MadtEntryHeader {
-    pub fn type_as_str(ty: u8) -> Option<&'static str> {
-        match ty {
-            0 => Some("Processor Local APIC"),
-            1 => Some("IO APIC"),
-            2 => Some("Interrupt Source Override"),
-            3 => Some("NMI Source"),
-            4 => Some("Local APIC NMI"),
-            5 => Some("Local APIC Address Override"),
-            6 => Some("IO SAPIC"),
-            7 => Some("Local SAPIC"),
-            8 => Some("Platform Interrupt Sources"),
-            9 => Some("Local X2APIC"),
-            10 => Some("Local X2APIC NMI"),
-            11 => Some("Local X2APIC Address Override"),
-            12 => Some("GIC"),
-            13 => Some("GIC Distributor"),
-            14 => Some("GIC Redistributor"),
-            15 => Some("GIC ITS"),
-            16 => Some("Multiprocessor Wakup"),
-            17 => Some("Core Programmable Interrupt Controller (CORE PIC)"),
-            18 => Some("Legacy I/O Programmable Interrupt Controller (LIO PIC)"),
-            19 => Some("HyperTransport Programmable Interrupt Controller (HT PIC)"),
-            20 => Some("Extend I/O Programmable Interrupt Controller (EIO PIC)"),
-            21 => Some("MSI Programmable Interrupt Controller (MSI PIC)"),
-            22 => Some("Bridge I/O Programmable Interrupt Controller (BIO PIC)"),
-            23 => Some("Low Pin Count Programmable Interrupt Controller (LPC PIC)"),
-            0x18..=0x7F => Some("Reserved"),
-            0x80..=0xFF => Some("OEM Specific"),
+    pub fn getas<T: MadtEntry>(&self) -> Option<&T> {
+        if self.ty == T::TYPE {
+            Some(unsafe {
+                // # Safety
+                // If type checks out, and this is still unsafe,
+                // it is the vendor's problem, not mine
+                &*(self as *const _ as *const T)
+            })
+        } else {
+            None
         }
     }
+}
+
+impl AcpiTable for Madt {
+    const SIG: Signature = MADT_SIG;
+}
+
+pub trait MadtEntry {
+    const TYPE: u8;
+}
+
+impl MadtEntry for LocalApic {
+    const TYPE: u8 = Madt::LOCAL_APIC_TY;
+}
+
+impl MadtEntry for IOApic {
+    const TYPE: u8 = Madt::IO_APIC_TY;
+}
+
+impl MadtEntry for InterruptSourceOverride {
+    const TYPE: u8 = Madt::IS_OVERRIDE_TY;
 }
