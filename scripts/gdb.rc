@@ -1,3 +1,7 @@
 set disassembly-flavor intel
 symbol-file run/esp/pentos.kernel
+
+set script-extension strict
+source scripts/gdb.py
+
 target remote localhost:1234
