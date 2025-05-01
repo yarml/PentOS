@@ -8,6 +8,7 @@ members = [
     "x64",
     "elf",
     "spinlocks",
+    "common",
 ]
 resolver = "3"
 
@@ -22,6 +23,7 @@ x64 = { path = "x64" }
 elf = { path = "elf" }
 builder = { path = "builder" }
 spinlocks = { path = "spinlocks" }
+common ={ path = "common"}
 
 [workspace.metadata.chef]
 ovmf-source = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/edk2-stable202408.01-r1/edk2-stable202408.01-r1-bin.tar.xz"
