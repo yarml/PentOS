@@ -121,6 +121,8 @@ pub fn init() -> AcpiInitInfo {
                             complain_big_system("interrupt source override", MAX_IS_OVERRIDES);
                         }
                     }
+                    // Linux also seems to just print that it found this entry, and not do anything further with it
+                    Madt::LOCAL_APIC_NMI => {}
                     unsupported => {
                         warn!("Unsupported MADT entry: {unsupported}")
                     }

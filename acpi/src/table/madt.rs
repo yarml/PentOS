@@ -49,6 +49,7 @@ impl Madt {
     pub const LOCAL_APIC_TY: u8 = 0;
     pub const IO_APIC_TY: u8 = 1;
     pub const IS_OVERRIDE_TY: u8 = 2;
+    pub const LOCAL_APIC_NMI: u8 = 4;
 }
 
 impl Madt {
