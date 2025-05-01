@@ -14,4 +14,5 @@ mod logger;
 mod misc;
 mod panic;
 mod phys_mmap;
+mod topology;
 mod virt_mmap;

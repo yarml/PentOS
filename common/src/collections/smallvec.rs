@@ -145,3 +145,9 @@ impl<T: Debug, const N: usize> Debug for SmallVec<T, N> {
         self.deref().fmt(f)
     }
 }
+
+impl<T, const N: usize> Default for SmallVec<T, N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
