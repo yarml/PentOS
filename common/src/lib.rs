@@ -3,3 +3,4 @@
 #![feature(maybe_uninit_slice)]
 
 pub mod collections;
+pub mod debug;
