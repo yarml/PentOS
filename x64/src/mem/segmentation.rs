@@ -54,7 +54,7 @@ impl<const N: usize> GlobalDescriptorTable<N> {
     /// # Safety
     /// Caller must ensure the selectors come from this GDT, and that the priviliege levels
     /// are set appropriatly for the continued work of the system
-    pub unsafe fn load(&self, code_segment: SegmentSelector, data_segment: SegmentSelector) {
+    pub unsafe fn load(&self, code_selector: SegmentSelector, data_selector: SegmentSelector) {
         let gdtr = GDTPointer {
             gdt: VirtAddr::new_truncate(self as *const _ as usize),
             limit: (self.len * mem::size_of::<SegmentDescriptorEntry>() - 1) as u16,
@@ -65,6 +65,19 @@ impl<const N: usize> GlobalDescriptorTable<N> {
             // Guarenteed by caller
             asm! {
                 "lgdt [{gdtrp}]",
+                gdtrp = in(reg) gdtrp,
+            }
+            Self::load_selectors(code_selector, data_selector);
+        }
+    }
+
+    /// # Safety
+    /// Caller must ensure that selectors come from current loaded selectors
+    pub unsafe fn load_selectors(code_selector: SegmentSelector, data_selector: SegmentSelector) {
+        unsafe {
+            // # Safety
+            // Guarenteed by caller
+            asm! {
                 "mov ss, {ds:x}",
                 "mov ds, {ds:x}",
                 "mov es, {ds:x}",
@@ -77,14 +90,14 @@ impl<const N: usize> GlobalDescriptorTable<N> {
                 "call 2", // -> manip
                 "jmp 3", // -> leave
                 "2:", // manip:
-                "pop {gdtrp}",
+                "pop {scratch:r}",
                 "push {cs:r}",
-                "push {gdtrp}",
+                "push {scratch:r}",
+                "retfq",
                 "3:", // leave:
-
-                gdtrp = in(reg) gdtrp,
-                ds = in(reg) *data_segment,
-                cs = in(reg) *code_segment,
+                scratch = in(reg) 0,
+                ds = in(reg) *data_selector,
+                cs = in(reg) *code_selector,
             }
         }
     }
