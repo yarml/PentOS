@@ -34,7 +34,7 @@ pub enum IPIDeliveryMode {
     SMI = 0b010,
     NMI = 0b100,
     Init { level: IPILevel } = 0b101,
-    StartUp = 0b110,
+    StartUp { vector: u8 } = 0b110,
 }
 
 #[derive(Clone, Copy)]
@@ -112,7 +112,9 @@ impl LocalApicPointer {
             _ => 0,
         };
         let (vector, level, trigger_mode) = match ipi.delivery_mode {
-            IPIDeliveryMode::Fixed { vector } => (vector, 1, 0),
+            IPIDeliveryMode::Fixed { vector } | IPIDeliveryMode::StartUp { vector } => {
+                (vector, 1, 0)
+            }
             IPIDeliveryMode::Init {
                 level: IPILevel::Deassert { trigger },
             } => (0, 0, trigger as u8),
