@@ -18,6 +18,12 @@ pub struct MemoryRegion {
     size: MemorySize,
 }
 
+pub struct ChunkIter {
+    current: PhysAddr,
+    region: MemoryRegion,
+    increment: MemorySize,
+}
+
 impl MemoryRegion {
     #[inline]
     pub const fn null() -> Self {
@@ -115,6 +121,19 @@ impl MemoryRegion {
     }
 }
 
+impl MemoryRegion {
+    #[inline]
+    pub const fn chunks(&self, align: MemorySize, size: MemorySize) -> ChunkIter {
+        let start =
+            PhysAddr::new_truncate(self.start.as_usize().next_multiple_of(align.as_usize()));
+        ChunkIter {
+            current: start,
+            region: *self,
+            increment: size,
+        }
+    }
+}
+
 impl Default for MemoryRegion {
     fn default() -> Self {
         Self::null()
@@ -167,5 +186,20 @@ impl Display for MemoryRegion {
 impl Debug for MemoryRegion {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f, "MemoryRegion({} - {})", self.start(), self.end())
+    }
+}
+
+impl Iterator for ChunkIter {
+    type Item = MemoryRegion;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.region.contains(self.current) && self.region.contains(self.current + self.increment)
+        {
+            let current_region = MemoryRegion::new(self.current, self.increment);
+            self.current += self.increment;
+            Some(current_region)
+        } else {
+            None
+        }
     }
 }

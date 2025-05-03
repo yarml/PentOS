@@ -41,6 +41,13 @@ impl MemorySize {
     }
 }
 
+impl MemorySize {
+    #[inline]
+    pub const fn as_usize(&self) -> usize {
+        self.inner
+    }
+}
+
 impl MemoryUnit {
     const MEMORY_ORDERS: usize = 7;
     const MEMORY_UNITS: [char; Self::MEMORY_ORDERS] = ['B', 'K', 'M', 'G', 'T', 'P', 'E'];
