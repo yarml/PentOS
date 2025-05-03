@@ -3,7 +3,7 @@
 #[cfg(test)]
 extern crate alloc;
 
-pub mod mem;
 pub mod framebuffer;
+pub mod lapic;
+pub mod mem;
 pub mod msr;
-pub mod hart;

@@ -25,7 +25,7 @@ use uefi::proto::media::file::File;
 use uefi::proto::media::file::FileAttribute;
 use uefi::proto::media::file::FileMode;
 use uefi::proto::media::fs::SimpleFileSystem;
-use x64::hart;
+use x64::lapic;
 use x64::mem::addr::PhysAddr;
 use x64::mem::addr::VirtAddr;
 use x64::mem::frame::Frame;
@@ -181,7 +181,7 @@ pub fn ap_cede_control() {
     let ap_info = AP_CEDE.get().unwrap();
 
     let ap_entry = ap_info.ap_entry.as_usize();
-    let stack = ap_info.stack_base.as_usize() + STACK_SIZE * hart::get_id();
+    let stack = ap_info.stack_base.as_usize() + STACK_SIZE * lapic::id_cpuid();
 
     AP_REMAINING.fetch_sub(1, Ordering::Relaxed);
     do_jump(stack, ap_entry);

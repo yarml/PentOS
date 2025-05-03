@@ -4,7 +4,6 @@ mod xsdt;
 use acpi::table::Madt;
 use acpi::table::MadtEntryHeader;
 use acpi::table::Rsdp;
-use common::collections::smallvec::SmallVec;
 use spinlocks::once::Once;
 use uefi::system;
 use uefi::table;

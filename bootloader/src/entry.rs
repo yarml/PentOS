@@ -15,7 +15,6 @@ use boot_protocol::MAX_MMAP_SIZE;
 use boot_protocol::OFFSET_MAPPING;
 use core::arch::asm;
 use core::hint;
-use log::debug;
 use log::info;
 use uefi::Status;
 use uefi::boot;
