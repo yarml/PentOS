@@ -1,6 +1,7 @@
 use core::cmp::Ordering;
 use core::ops::Deref;
 use core::ops::DerefMut;
+use core::slice;
 use x64::mem::MemoryRegion;
 
 pub struct PhysMemMap<const MAX: usize> {
@@ -81,7 +82,7 @@ impl<const MAX: usize> PhysMemMap<MAX> {
 }
 
 impl<const MAX: usize> PhysMemMap<MAX> {
-    pub fn iter(&self) -> core::slice::Iter<MemoryRegion> {
+    pub fn iter(&self) -> slice::Iter<MemoryRegion> {
         self.regions[..self.len].iter()
     }
 }
@@ -103,5 +104,14 @@ impl<const MAX: usize> Deref for PhysMemMap<MAX> {
 impl<const MAX: usize> DerefMut for PhysMemMap<MAX> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.regions[..self.len]
+    }
+}
+
+impl<'a, const MAX: usize> IntoIterator for &'a PhysMemMap<MAX> {
+    type Item = &'a MemoryRegion;
+    type IntoIter = slice::Iter<'a, MemoryRegion>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }

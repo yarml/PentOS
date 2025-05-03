@@ -43,7 +43,7 @@ fn main() -> Status {
     }
     info!("Booting PentOS...");
 
-    let features = features::featureset();
+    let features = features::bsp_featureset();
     let allocator = PreBootAllocator;
     acpi::init();
     let kernel = kernel::load_kernel(&allocator);

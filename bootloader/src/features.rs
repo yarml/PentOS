@@ -1,20 +1,9 @@
+use boot_protocol::features::FeatureSet;
+use boot_protocol::features::Vendor;
 use core::arch::x86_64::__cpuid;
 use core::arch::x86_64::__cpuid_count;
 use core::arch::x86_64::CpuidResult;
-use core::ffi::c_void;
-use core::hint;
-use core::ptr::null_mut;
-use core::sync::atomic::AtomicBool;
-use core::sync::atomic::AtomicUsize;
-use core::sync::atomic::Ordering;
-
-use boot_protocol::features::FeatureSet;
-use boot_protocol::features::Vendor;
 use spinlocks::once::Once;
-use uefi::Identify;
-use uefi::boot;
-use uefi::boot::SearchType;
-use uefi::proto::pi::mp::MpServices;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum FeatureDetect {
@@ -148,10 +137,8 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
 }
 
 static BSP_FEATURES: Once<FeatureSet> = Once::new();
-static AP_SYMMETRIC: AtomicBool = AtomicBool::new(true);
-static AP_REMAINING: AtomicUsize = AtomicUsize::new(0);
 
-pub fn featureset() -> FeatureSet {
+pub fn bsp_featureset() -> FeatureSet {
     let features_detect = FeatureDetect::detect();
     let features = match features_detect {
         FeatureDetect::Sufficient(features) => features,
@@ -162,38 +149,5 @@ pub fn featureset() -> FeatureSet {
 
     BSP_FEATURES.init(|| features);
 
-    let mp_handle = *boot::locate_handle_buffer(SearchType::ByProtocol(&MpServices::GUID))
-        .expect("Failed to locate MP Services protocol")
-        .first()
-        .expect("No MP Services protocol found");
-    let mp = boot::open_protocol_exclusive::<MpServices>(mp_handle)
-        .expect("Failed to open MP Services protocol");
-    let numproc = mp
-        .get_number_of_processors()
-        .expect("Failed to get number of processors");
-    if numproc.enabled > 1 {
-        AP_REMAINING.store(numproc.enabled - 1, Ordering::Relaxed);
-
-        mp.startup_all_aps(false, ap_feature_detect, null_mut(), None, None)
-            .expect("Failed to start APs for feature detection");
-
-        while AP_REMAINING.load(Ordering::Relaxed) > 0 {
-            hint::spin_loop();
-        }
-    }
-
-    if !AP_SYMMETRIC.load(Ordering::Relaxed) {
-        todo!("APs have different features");
-    }
-
     features
-}
-
-extern "efiapi" fn ap_feature_detect(_: *mut c_void) {
-    let bsp_features = *BSP_FEATURES.get().unwrap();
-    let my_features = FeatureDetect::detect();
-    if my_features != FeatureDetect::Sufficient(bsp_features) {
-        AP_SYMMETRIC.store(false, Ordering::Relaxed);
-    }
-    AP_REMAINING.fetch_sub(1, Ordering::Relaxed);
 }
