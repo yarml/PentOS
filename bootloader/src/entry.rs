@@ -8,12 +8,12 @@ use crate::framebuffer;
 use crate::kernel;
 use crate::logger;
 use crate::phys_mmap::PhysMemMap;
+use crate::pic;
 use crate::topology;
 use crate::virt_mmap;
 use boot_protocol::BootInfo;
 use boot_protocol::MAX_MMAP_SIZE;
 use boot_protocol::OFFSET_MAPPING;
-use core::arch::asm;
 use core::hint;
 use log::info;
 use uefi::Status;
@@ -63,6 +63,9 @@ fn main() -> Status {
         // SAFETY: Only thing we used was the UEFI console logger, and allocator, they are now disabled
         boot::exit_boot_services(MemoryType::LOADER_DATA)
     };
+    
+    pic::disable();
+
     let mut mmap = PhysMemMap::<ALLOCATOR_CAP>::new();
     let mut loader_mmap = PhysMemMap::<64>::new();
     for entry in real_mmap.entries() {
@@ -110,13 +113,6 @@ fn main() -> Status {
         root_map,
         &mut allocator,
     );
-    unsafe {
-        asm! {
-            "out dx, al",
-            in("dx") 0x402,
-            in("al") 8u8
-        };
-    }
     let stack = kernel::alloc_stack(root_map, &mut allocator);
     root_map.load();
     let mmap = allocator.fini(loader_mmap);
