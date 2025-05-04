@@ -7,6 +7,7 @@ extern crate alloc;
 
 pub mod framebuffer;
 pub mod interrupts;
+pub mod io;
 pub mod lapic;
 pub mod mem;
 pub mod msr;
