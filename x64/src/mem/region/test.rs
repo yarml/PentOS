@@ -1,14 +1,15 @@
 // All written by deepseek
 
-use crate::mem::PhysicalMemoryRegion;
 use crate::mem::MemorySize;
+use crate::mem::PhysicalMemoryRegion;
+use crate::mem::addr::Address;
 use crate::mem::addr::PhysAddr;
 use alloc::format;
 use alloc::vec;
 
 // Helper functions to create test objects
 fn addr(n: usize) -> PhysAddr {
-    PhysAddr::new_panic(n)
+    PhysAddr::new_truncate(n)
 }
 
 fn memsize(n: usize) -> MemorySize {
@@ -184,7 +185,8 @@ fn test_intersect() {
 
 #[test]
 fn take_start_partial() {
-    let mut region = PhysicalMemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
+    let mut region =
+        PhysicalMemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
     let taken = region.take_start(0x500);
     assert_eq!(taken, PhysAddr::new(0x1000).unwrap());
     assert_eq!(region.start(), PhysAddr::new(0x1500).unwrap());
@@ -193,7 +195,8 @@ fn take_start_partial() {
 
 #[test]
 fn take_start_full() {
-    let mut region = PhysicalMemoryRegion::new(PhysAddr::new(0x2000).unwrap(), MemorySize::new(0x1000));
+    let mut region =
+        PhysicalMemoryRegion::new(PhysAddr::new(0x2000).unwrap(), MemorySize::new(0x1000));
     let taken = region.take_start(0x1000);
     assert_eq!(taken, PhysAddr::new(0x2000).unwrap());
     assert!(region.is_null());
@@ -202,13 +205,15 @@ fn take_start_full() {
 #[test]
 #[should_panic] // In debug mode only
 fn take_start_over_size() {
-    let mut region = PhysicalMemoryRegion::new(PhysAddr::new(0x3000).unwrap(), MemorySize::new(0x500));
+    let mut region =
+        PhysicalMemoryRegion::new(PhysAddr::new(0x3000).unwrap(), MemorySize::new(0x500));
     region.take_start(0x1000); // Panics in debug due to underflow
 }
 
 #[test]
 fn take_start_zero() {
-    let mut region = PhysicalMemoryRegion::new(PhysAddr::new(0x4000).unwrap(), MemorySize::new(0x1000));
+    let mut region =
+        PhysicalMemoryRegion::new(PhysAddr::new(0x4000).unwrap(), MemorySize::new(0x1000));
     let taken = region.take_start(0);
     assert_eq!(taken, PhysAddr::new(0x4000).unwrap());
     assert_eq!(*region.size(), 0x1000);
@@ -219,4 +224,10 @@ fn take_start_zero() {
 fn take_start_from_null() {
     let mut region = PhysicalMemoryRegion::null();
     region.take_start(0x1000); // Will panic due to underflow
+}
+
+#[test]
+#[should_panic]
+fn invalid_addr() {
+    PhysAddr::new_panic(0xFF123456789ABCDE);
 }

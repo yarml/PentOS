@@ -1,3 +1,4 @@
+use crate::mem::addr::Address;
 use crate::mem::addr::PhysAddr;
 use crate::mem::frame::Frame;
 use crate::mem::frame::size::Frame2MiB;

@@ -12,14 +12,17 @@ bootloader_destination = $(shell cargo chef config install-bootloader)
 
 ovmf_target = run/ovmf/vars.fd run/ovmf/code.fd
 
-.PHONY: check-all
+.PHONY: check-all clippy
 define package_build_recipe =
-.PHONY: build-$(1) check-$(1)
+.PHONY: build-$(1) check-$(1) clippy-$(1)
 build-$(1):
 	cd $(1) && cargo build -p $(1)
+check-all: check-$(1)
 check-$(1):
 	@cd $(1) && cargo check --keep-going --quiet --message-format=json -p $(1)
-check-all: check-$(1)
+clippy: clippy-$(1)
+clippy-$(1):
+	cd $(1) && cargo clippy --all-features -p $(1)
 endef
 
 $(foreach package,$(packages),$(eval $(call package_build_recipe,$(package))))
@@ -41,3 +44,7 @@ run: image
 install: build-bootloader build-kernel
 	sudo cp target/uefi/debug/bootloader.efi $(bootloader_destination)
 	sudo cp target/kernel/debug/kernel $(kernel_destination)
+
+.PHONY: test
+test:
+	cargo test --workspace --no-fail-fast --exclude kernel --exclude bootloader

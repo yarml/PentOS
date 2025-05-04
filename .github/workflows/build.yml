@@ -1,0 +1,56 @@
+name: Build and Test
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install nasm
+      - name: Setup Build System
+        run: make
+      - name: Build Bootloader
+        run: make build-bootloader
+      - name: Upload Bootloader
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootloader
+          path: target/uefi/debug/bootloader.efi
+      - name: Build Kernel
+        run: make build-kernel
+      - name: Upload Kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel
+          path: target/kernel/debug/kernel
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install nasm
+      - name: Setup Build System
+        run: make
+      - name: Lint
+        run: make clippy
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Build System
+        run: make
+      - name: Run tests
+        run: make test

@@ -123,7 +123,7 @@ macro_rules! define_addr {
             }
             #[inline]
             fn add_truncate(&self, offset: usize) -> Self {
-                Self::new_panic(self.inner + offset)
+                Self::new_truncate(self.inner + offset)
             }
             #[inline]
             fn sub_truncate(&self, offset: usize) -> Self {
