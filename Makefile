@@ -19,10 +19,10 @@ build-$(1):
 	cd $(1) && cargo build -p $(1)
 check-all: check-$(1)
 check-$(1):
-	@cd $(1) && cargo check --keep-going --quiet --message-format=json -p $(1)
+	@cd $(1) && cargo clippy --all-features --keep-going --quiet --message-format=json -p $(1)
 clippy: clippy-$(1)
 clippy-$(1):
-	cd $(1) && cargo clippy --all-features -p $(1)
+	cd $(1) && cargo clippy --all-features --keep-going -p $(1)
 endef
 
 $(foreach package,$(packages),$(eval $(call package_build_recipe,$(package))))
