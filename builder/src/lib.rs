@@ -38,8 +38,8 @@ fn getcfg() -> Config {
 impl Config {
     fn nasm_flags(&self) -> Vec<&'static str> {
         match self.target {
-            Target::Elf64 => vec!["-felf64"],
-            Target::PE32P => vec!["-fwin64"],
+            Target::Elf64 => vec!["-felf64", "-gdwarf"],
+            Target::PE32P => vec!["-fwin64", "-gcv8"],
         }
     }
 }

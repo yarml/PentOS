@@ -1,3 +1,7 @@
+ifeq ("$(wildcard target/debug/chef)","")
+$(info Compiling chef: May take a while)
+endif
+
 .PHONY: nothing
 nothing:
 
