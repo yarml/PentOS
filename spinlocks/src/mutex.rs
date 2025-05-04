@@ -16,19 +16,19 @@ pub struct MutexGuard<'mutex, T: 'mutex + ?Sized> {
 }
 
 /// # Safety
-/// With T: Send, borrow checker will prevent any move when Mutex is locked
+/// With `T: Send`, borrow checker will prevent any move when Mutex is locked
 /// There is no issue moving an unlocked Mutex between harts.
-/// The UnsafeCell<T> within the Mutex<T> is only accessible to 1 hart at most
+/// The `UnsafeCell<T>` within the `Mutex<T>` is only accessible to 1 hart at most
 /// at any point in time.
 unsafe impl<T: ?Sized + Send> Send for Mutex<T> {}
 
 /// # Safety
-/// The UnsafeCell<T> is not directly accessible to harts unless they lock the entire
-/// Mutex<T>.
+/// The `UnsafeCell<T>` is not directly accessible to harts unless they lock the entire
+/// `Mutex<T>`.
 unsafe impl<T: ?Sized + Send> Sync for Mutex<T> {}
 
 /// # Safety
-/// No problem dropping a MutexGuard<T> in a hart it was not locked in, or
+/// No problem dropping a `MutexGuard<T>` in a hart it was not locked in, or
 /// accessing the data behind the mutex.
 unsafe impl<T: ?Sized + Send> Send for MutexGuard<'_, T> {}
 

@@ -81,7 +81,7 @@ macro_rules! define_addr {
         }
 
         impl $name {
-            pub const MAX: Self = Self::new_panic(usize::MAX);
+            pub const MAX: Self = Self::new_truncate(usize::MAX);
             pub const MIN: Self = Self::null();
         }
 

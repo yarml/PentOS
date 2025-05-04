@@ -39,7 +39,7 @@ pub enum RwLockState {
 
 /// # Safety
 /// Borrow checker will stop moves across thread boundaries if there is any reader
-/// or writer. So T: Send should allow RwLock<T>: Send
+/// or writer. So `T: Send` should allow `RwLock<T>: Send`
 unsafe impl<T: ?Sized + Send> Send for RwLock<T> {}
 
 /// # Safety
@@ -48,15 +48,15 @@ unsafe impl<T: ?Sized + Send> Send for RwLock<T> {}
 unsafe impl<T: ?Sized + Send + Sync> Sync for RwLock<T> {}
 
 /// # Safety
-/// RwLockReadGuard<T> is equivalent to &T
+/// `RwLockReadGuard<T>` is equivalent to &T
 unsafe impl<T: ?Sized + Sync> Send for RwLockReadGuard<'_, T> {}
 /// # Safety
-/// RwLockReadGuard<T> is equivalent to &T
+/// `RwLockReadGuard<T>` is equivalent to &T
 unsafe impl<T: ?Sized + Sync> Sync for RwLockReadGuard<'_, T> {}
 
 /// # Safety
-/// RwLockWriteuard<T> is equivalent to &mut T
-/// &RwLockWriteuard<T> is equivalent to &&mut T, which is equivalent to &T
+/// `RwLockWriteuard<T>` is equivalent to &mut T
+/// `&RwLockWriteuard<T>` is equivalent to &&mut T, which is equivalent to &T
 unsafe impl<T: ?Sized + Send + Sync> Send for RwLockWriteGuard<'_, T> {}
 unsafe impl<T: ?Sized + Send + Sync> Sync for RwLockWriteGuard<'_, T> {}
 

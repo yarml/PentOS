@@ -1,4 +1,4 @@
-name: Build and Test
+name: Build, Lint, Test, Doc
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-bootloader:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,6 +26,15 @@ jobs:
         with:
           name: bootloader
           path: target/uefi/debug/bootloader.efi
+  build-kernel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install nasm
+      - name: Setup Build System
+        run: make
       - name: Build Kernel
         run: make build-kernel
       - name: Upload Kernel
@@ -54,3 +63,19 @@ jobs:
         run: make
       - name: Run tests
         run: make test
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install nasm
+      - name: Setup Build System
+        run: make
+      - name: Generate Docs
+        run: make doc
+      - name: Upload Docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: target/doc
