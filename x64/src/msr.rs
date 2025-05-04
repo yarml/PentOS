@@ -1,3 +1,4 @@
+pub mod apic_base;
 pub mod efer;
 pub mod pat;
 

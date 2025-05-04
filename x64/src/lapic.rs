@@ -1,4 +1,5 @@
 use crate::mem::addr::VirtAddr;
+use crate::msr::apic_base::ApicBase;
 use core::arch::x86_64::__cpuid;
 use core::hint;
 use core::ptr;
@@ -11,16 +12,19 @@ pub fn id_cpuid() -> usize {
     .ebx >> 24) as usize
 }
 
+#[derive(Clone, Copy)]
 pub struct LocalApicPointer {
     pointer: VirtAddr,
 }
 
+#[derive(Clone, Copy)]
 pub struct LocalApicVersion {
     pub version: usize,
     pub lvt_count: usize,
     pub supress_eoi_ability: bool,
 }
 
+#[derive(Clone, Copy)]
 pub struct InterProcessorInterrupt {
     pub delivery_mode: IPIDeliveryMode,
     pub destination_mode: IPIDestinationMode,
@@ -67,6 +71,7 @@ pub enum IPIDestination {
     EveryoneExceptSelf = 0b11,
 }
 
+#[derive(Clone, Copy)]
 #[repr(usize)]
 pub enum LocalApicRegister {
     ID = 0x20,
