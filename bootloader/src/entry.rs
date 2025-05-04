@@ -14,7 +14,6 @@ use crate::virt_mmap;
 use boot_protocol::BootInfo;
 use boot_protocol::MAX_MMAP_SIZE;
 use boot_protocol::OFFSET_MAPPING;
-use core::hint;
 use log::info;
 use uefi::Status;
 use uefi::boot;
@@ -51,9 +50,6 @@ fn main() -> Status {
 
     topology::dump();
 
-    loop {
-        hint::spin_loop();
-    }
     // Keep this last in PreBootStage
     let primary_framebuffer_info = framebuffer::init();
 

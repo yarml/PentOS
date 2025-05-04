@@ -20,7 +20,7 @@ fn parse_lapic(lapic: &LocalApic) {
     // https://lists.freebsd.org/pipermail/freebsd-current/2017-January/064312.html?utm_source=chatgpt.com
     // And Linux calls 0xFF an invalid ID
     // https://github.com/torvalds/linux/blob/4f79eaa2ceac86a0e0f304b0bab556cca5bf4f30/arch/x86/kernel/acpi/boot.c#L265C4-L265C5
-    if lapic.apic_id == 255 || (lapic.flags & 1 != 1 && lapic.flags & 2 != 1) {
+    if lapic.apic_id == 255 || (lapic.flags & 1 == 0 && lapic.flags & 2 == 0) {
         return;
     }
     register_hart(Hart {

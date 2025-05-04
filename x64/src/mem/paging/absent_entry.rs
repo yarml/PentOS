@@ -21,10 +21,14 @@ impl<PS: PageSize> PagingAbsentEntry<PS> {
     pub const fn from_inner(value: u64) -> Self {
         assert!(value & 1 == 0);
         Self {
-            value: value,
+            value,
             _phantom: PhantomData,
         }
     }
 }
 
-impl<PS: PageSize> PagingAbsentEntry<PS> {}
+impl<PS: PageSize> Default for PagingAbsentEntry<PS> {
+    fn default() -> Self {
+        Self::new()
+    }
+}

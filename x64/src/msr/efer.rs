@@ -55,3 +55,9 @@ impl Efer {
         *self.raw & (1 << 11) != 0
     }
 }
+
+impl Default for Efer {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(incomplete_features)] // FIXME: I don't want to resort to this
 #![feature(cold_path)]
 #![feature(abi_x86_interrupt)]
 #![feature(const_trait_impl)]

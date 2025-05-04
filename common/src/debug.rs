@@ -18,7 +18,6 @@ pub fn memory_dump(start: usize, size: usize) {
         let mut line = [0u8; BYTE_PER_LINE * 2 + BYTE_PER_LINE];
         let mut head = 0;
         for byte in line_start..line_start + BYTE_PER_LINE {
-            let byte = byte as usize;
             if byte >= end {
                 break;
             }
@@ -40,8 +39,8 @@ pub fn memory_dump(start: usize, size: usize) {
 
 fn hex_nibble(nibble: u8) -> u8 {
     match nibble {
-        0..=9 => '0' as u8 + nibble,
-        10..=15 => 'A' as u8 + nibble - 10,
+        0..=9 => b'0' + nibble,
+        10..=15 => b'A' + nibble - 10,
         _ => unimplemented!(),
     }
 }

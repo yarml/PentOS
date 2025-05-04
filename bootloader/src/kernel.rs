@@ -6,7 +6,6 @@ use crate::misc;
 use crate::virt_mmap;
 use boot_protocol::STACK_SIZE;
 use boot_protocol::kernel_meta::KernelMeta;
-use x64::mem::addr::Address;
 use core::arch::asm;
 use core::cmp::max;
 use core::hint;
@@ -27,6 +26,7 @@ use uefi::proto::media::file::FileAttribute;
 use uefi::proto::media::file::FileMode;
 use uefi::proto::media::fs::SimpleFileSystem;
 use x64::lapic;
+use x64::mem::addr::Address;
 use x64::mem::addr::PhysAddr;
 use x64::mem::addr::VirtAddr;
 use x64::mem::frame::Frame;
@@ -187,6 +187,8 @@ pub fn ap_cede_control() {
     AP_REMAINING.fetch_sub(1, Ordering::Relaxed);
     do_jump(stack, ap_entry);
 }
+
+#[allow(unreachable_code, unused_variables)]
 fn do_jump(stack: usize, dest: usize) -> ! {
     loop {
         hint::spin_loop();

@@ -37,7 +37,7 @@ pub fn init() {
     xsdt::parse(xsdt);
 }
 
-fn is_lapic_or_ioapic<'a>(entry: &'a MadtEntryHeader) -> bool {
+fn is_lapic_or_ioapic(entry: &MadtEntryHeader) -> bool {
     entry.ty == Madt::LOCAL_APIC_TY || entry.ty == Madt::IO_APIC_TY
 }
 

@@ -17,8 +17,7 @@ pub struct XsdtIter<'a> {
 impl Xsdt {
     pub const fn entry_count(&self) -> usize {
         const HEADER_SIZE: usize = mem::size_of::<AcpiHeader>();
-        let len = (self.header.len as usize - HEADER_SIZE) / 8;
-        len
+        (self.header.len as usize - HEADER_SIZE) / 8
     }
 
     pub const fn entry_at(&self, index: usize) -> Option<&AcpiHeader> {

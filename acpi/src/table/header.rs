@@ -16,7 +16,7 @@ pub struct AcpiHeader {
 
 impl AcpiHeader {
     pub fn signature(&self) -> Option<&str> {
-        Some(str::from_utf8(&self.sig).ok()?)
+        str::from_utf8(&self.sig).ok()
     }
     pub fn verify_checksum(&self) -> bool {
         let bytes = unsafe {

@@ -1,13 +1,13 @@
 use crate::allocator::ALLOCATOR_CAP;
 use crate::allocator::PostBootAllocator;
 use boot_protocol::BootInfo;
-use x64::mem::addr::Address;
 use core::mem;
 use uefi::boot::MemoryType;
 use uefi::mem::memory_map::MemoryMap;
 use uefi::mem::memory_map::MemoryMapOwned;
-use x64::mem::PhysicalMemoryRegion;
 use x64::mem::MemorySize;
+use x64::mem::PhysicalMemoryRegion;
+use x64::mem::addr::Address;
 use x64::mem::addr::PhysAddr;
 use x64::mem::frame::Frame;
 use x64::mem::frame::size::Frame4KiB;
@@ -77,12 +77,11 @@ where
     PS::ReferenceTarget: PageSize,
 {
     if let Some(entry_reference) = entry.as_reference() {
-        let target = unsafe {
+        unsafe {
             // SAFETY: trust in the process
             entry_reference.target_mut()
-        };
-        target
-    } else if let Some(_) = entry.as_absent() {
+        }
+    } else if entry.as_absent().is_some() {
         let target = allocator
             .alloc([PagingRawEntry::new(0); 512])
             .expect("Out of memory");

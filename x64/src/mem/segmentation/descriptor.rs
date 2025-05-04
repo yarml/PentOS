@@ -56,7 +56,6 @@ impl SegmentDescriptorEntry {
         let sizebit = if exec { 0 } else { 1 };
         let access = 1 // accessed
                     | 1 << 1 // code:readable, data:writable
-                    | 0 << 2 // code:nonconforming, data:growdown
                     | execbit << 3
                     | 1 << 4 // type:access
                     | (dpl as u8) << 5
@@ -65,7 +64,7 @@ impl SegmentDescriptorEntry {
         let flags = execbit << 1
                     | sizebit << 2
                     | 1 << 3 // Granularity=4KiB
-                    ;
+                    ; // code:nonconforming, data:growdown
         let flags_limit_high = flags << 4 | 0xF;
         Self {
             access,

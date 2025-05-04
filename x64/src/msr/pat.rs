@@ -87,3 +87,9 @@ pub fn standard_pat() -> Pat {
         .set(PatIndex::new(7), MemoryType::WriteBack);
     val
 }
+
+impl Default for Pat {
+    fn default() -> Self {
+        Self::new()
+    }
+}

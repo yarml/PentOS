@@ -102,7 +102,7 @@ impl LocalApicPointer {
     pub fn version(&self) -> LocalApicVersion {
         let reg = self.read_reg32(LocalApicRegister::Version) as usize;
         let version = reg & 0xF;
-        let lvt_count = (reg >> 16) & 0xFF + 1;
+        let lvt_count = ((reg >> 16) & 0xFF) + 1;
         let supress_eoi_ability = (reg >> 24) & 1 == 1;
         LocalApicVersion {
             version,
@@ -133,7 +133,7 @@ impl LocalApicPointer {
         let destination_shorthand = ipi.destination.discriminant();
 
         let upper_dword = (destination_field as u32) >> 24;
-        let lower_dword = (vector as u32) << 0
+        let lower_dword = (vector as u32)
             | (delivery_mode as u32) << 8
             | (destination_mode as u32) << 11
             | (level as u32) << 14
@@ -143,7 +143,7 @@ impl LocalApicPointer {
         self.write_reg32(LocalApicRegister::ICRHigh, upper_dword);
         self.write_reg32(LocalApicRegister::ICRHigh, lower_dword);
 
-        while self.read_reg32(LocalApicRegister::ICRLow) & (1 << 12) == 1 {
+        while self.read_reg32(LocalApicRegister::ICRLow) & (1 << 12) != 0 {
             hint::spin_loop();
         }
     }

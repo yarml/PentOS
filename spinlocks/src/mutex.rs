@@ -70,10 +70,10 @@ impl<T: ?Sized> Mutex<T> {
                 // The lock also guarentees exclusivity of the unique reference
                 self.data.get().as_mut_unchecked()
             };
-            return Some(MutexGuard {
+            Some(MutexGuard {
                 lock: &self.lock,
                 data,
-            });
+            })
         } else {
             None
         }

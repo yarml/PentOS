@@ -112,6 +112,12 @@ impl<T> Once<T> {
     }
 }
 
+impl<T> Default for Once<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 mod status {
     use core::mem;
     use core::sync::atomic::AtomicU8;

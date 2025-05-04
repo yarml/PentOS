@@ -32,3 +32,9 @@ impl Topology {
         }
     }
 }
+
+impl Default for Topology {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -42,6 +42,8 @@ pub trait Address:
     fn null() -> Self;
     fn new(addr: usize) -> Option<Self>;
     fn new_truncate(addr: usize) -> Self;
+    /// # Safety
+    /// Caller must ensure the provided addr is valid for the implementing type
     unsafe fn new_unchecked(addr: usize) -> Self;
     fn new_panic(addr: usize) -> Self;
 

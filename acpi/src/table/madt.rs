@@ -108,11 +108,11 @@ impl<'a, T: 'a + MadtEntry> Iterator for MadtFilteredIterator<'a, T> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(next) = self.iterator.next() {
-            if next.ty == T::TYPE {
+        for entry in self.iterator.by_ref() {
+            if entry.ty == T::TYPE {
                 // Unwrapping then wrapping again to avoid
                 // a corrupt ACPI being seen as end of iterator
-                return Some(next.getas().expect("Corrupt ACPI"));
+                return Some(entry.getas().expect("Corrupt ACPI"));
             }
         }
         None
