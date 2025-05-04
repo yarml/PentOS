@@ -13,6 +13,7 @@ x64.workspace = true
 elf.workspace = true
 spinlocks.workspace = true
 acpi.workspace = true
+config.workspace = true
 common.workspace = true
 
 [features]

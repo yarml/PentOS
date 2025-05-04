@@ -1,5 +1,4 @@
 use crate::mem::addr::VirtAddr;
-use crate::msr::apic_base::ApicBase;
 use core::arch::x86_64::__cpuid;
 use core::hint;
 use core::ptr;

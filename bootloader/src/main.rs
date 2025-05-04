@@ -15,5 +15,6 @@ mod misc;
 mod panic;
 mod phys_mmap;
 mod pic;
+mod pit;
 mod topology;
 mod virt_mmap;

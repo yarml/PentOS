@@ -12,7 +12,7 @@ pub fn sleep_us(t: usize) {
     const TU_PER_5US: usize = 6;
     let us5_amount = (t / 5) + 1;
     let delta_units = us5_amount * TU_PER_5US;
-    let expected_delivery_time = 0xFF - delta_units;
+    let expected_delivery_time = 0xFFFF - delta_units;
 
     // Start timer
     unsafe {

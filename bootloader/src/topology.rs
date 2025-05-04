@@ -1,10 +1,11 @@
 use boot_protocol::topology::Hart;
 use boot_protocol::topology::InterruptController;
-use boot_protocol::topology::MAX_HART_COUNT;
-use boot_protocol::topology::MAX_INTCTL_COUNT;
 use boot_protocol::topology::Topology;
+use config::topology::hart::MAX_HART_COUNT;
+use config::topology::hart::MAX_INTCTL_COUNT;
 use log::debug;
 use spinlocks::mutex::Mutex;
+use spinlocks::mutex::MutexGuard;
 
 static SYSTEM_TOPOLOGY: Mutex<Topology> = Mutex::new(Topology::new());
 
@@ -21,6 +22,11 @@ pub fn register_interrupt_controller(interrupt_controller: InterruptController) 
         complain_big_system("interrupt controllers", MAX_INTCTL_COUNT);
     }
 }
+
+pub fn topology() -> MutexGuard<'static, Topology> {
+    SYSTEM_TOPOLOGY.lock()
+}
+
 pub fn dump() {
     let topology = SYSTEM_TOPOLOGY.lock();
     debug!("System topology");

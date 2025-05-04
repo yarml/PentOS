@@ -121,6 +121,7 @@ name = "boot-protocol"
 version = "0.1.0"
 dependencies = [
  "common",
+ "config",
  "x64",
 ]
 
@@ -131,6 +132,7 @@ dependencies = [
  "acpi",
  "boot-protocol",
  "common",
+ "config",
  "elf",
  "log",
  "spinlocks",
@@ -279,6 +281,10 @@ version = "0.1.0"
 dependencies = [
  "log",
 ]
+
+[[package]]
+name = "config"
+version = "0.1.0"
 
 [[package]]
 name = "core-foundation"

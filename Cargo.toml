@@ -10,6 +10,7 @@ members = [
     "spinlocks",
     "acpi",
     "common",
+    "config",
 ]
 resolver = "3"
 
@@ -26,6 +27,7 @@ builder = { path = "builder" }
 spinlocks = { path = "spinlocks" }
 acpi = { path = "acpi" }
 common = { path = "common" }
+config = { path = "config" }
 
 [workspace.metadata.chef]
 ovmf-source = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/edk2-stable202408.01-r1/edk2-stable202408.01-r1-bin.tar.xz"
