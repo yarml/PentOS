@@ -1,6 +1,6 @@
 // All written by deepseek
 
-use crate::mem::MemoryRegion;
+use crate::mem::PhysicalMemoryRegion;
 use crate::mem::MemorySize;
 use crate::mem::addr::PhysAddr;
 use alloc::format;
@@ -8,15 +8,15 @@ use alloc::vec;
 
 // Helper functions to create test objects
 fn addr(n: usize) -> PhysAddr {
-    PhysAddr::new_truncate(n)
+    PhysAddr::new_panic(n)
 }
 
 fn memsize(n: usize) -> MemorySize {
     MemorySize::new(n)
 }
 
-fn region(start: usize, size: usize) -> MemoryRegion {
-    MemoryRegion::new(addr(start), memsize(size))
+fn region(start: usize, size: usize) -> PhysicalMemoryRegion {
+    PhysicalMemoryRegion::new(addr(start), memsize(size))
 }
 
 #[test]
@@ -134,14 +134,14 @@ fn test_compound_operations() {
 fn test_constructors() {
     let start = PhysAddr::new(0x1000).unwrap();
     let size = MemorySize::new(0x1000);
-    let region = MemoryRegion::new(start, size);
+    let region = PhysicalMemoryRegion::new(start, size);
     assert_eq!(region.start(), start);
     assert_eq!(region.size(), size);
     assert_eq!(region.end(), start.add_truncate(0x1000));
 
     // Test new_boundaries
     let end = start.add_truncate(0x1000);
-    let region2 = MemoryRegion::new_boundaries(start, end);
+    let region2 = PhysicalMemoryRegion::new_boundaries(start, end);
     assert_eq!(region2.size(), size);
 }
 
@@ -150,12 +150,12 @@ fn test_constructors() {
 fn test_invalid_boundaries() {
     let start = PhysAddr::new(0x2000).unwrap();
     let end = PhysAddr::new(0x1000).unwrap();
-    let _region = MemoryRegion::new_boundaries(start, end);
+    let _region = PhysicalMemoryRegion::new_boundaries(start, end);
 }
 
 #[test]
 fn test_contains() {
-    let region = MemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
+    let region = PhysicalMemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
     assert!(region.contains(PhysAddr::new(0x1000).unwrap()));
     assert!(region.contains(PhysAddr::new(0x1FFF).unwrap()));
     assert!(!region.contains(PhysAddr::new(0x2000).unwrap()));
@@ -163,11 +163,11 @@ fn test_contains() {
 
 #[test]
 fn test_union() {
-    let r1 = MemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
-    let r2 = MemoryRegion::new(PhysAddr::new(0x3000).unwrap(), MemorySize::new(0x1000));
+    let r1 = PhysicalMemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
+    let r2 = PhysicalMemoryRegion::new(PhysAddr::new(0x3000).unwrap(), MemorySize::new(0x1000));
     assert_eq!(r1.union(r2), None); // Disjoint
 
-    let r3 = MemoryRegion::new(PhysAddr::new(0x1800).unwrap(), MemorySize::new(0x1000));
+    let r3 = PhysicalMemoryRegion::new(PhysAddr::new(0x1800).unwrap(), MemorySize::new(0x1000));
     let union = r1.union(r3).unwrap();
     assert_eq!(union.start(), PhysAddr::new(0x1000).unwrap());
     assert_eq!(union.end(), PhysAddr::new(0x2800).unwrap());
@@ -175,8 +175,8 @@ fn test_union() {
 
 #[test]
 fn test_intersect() {
-    let r1 = MemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
-    let r2 = MemoryRegion::new(PhysAddr::new(0x1800).unwrap(), MemorySize::new(0x1000));
+    let r1 = PhysicalMemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
+    let r2 = PhysicalMemoryRegion::new(PhysAddr::new(0x1800).unwrap(), MemorySize::new(0x1000));
     let intersection = r1.intersect(r2);
     assert_eq!(intersection.start(), PhysAddr::new(0x1800).unwrap());
     assert_eq!(intersection.end(), PhysAddr::new(0x2000).unwrap());
@@ -184,7 +184,7 @@ fn test_intersect() {
 
 #[test]
 fn take_start_partial() {
-    let mut region = MemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
+    let mut region = PhysicalMemoryRegion::new(PhysAddr::new(0x1000).unwrap(), MemorySize::new(0x1000));
     let taken = region.take_start(0x500);
     assert_eq!(taken, PhysAddr::new(0x1000).unwrap());
     assert_eq!(region.start(), PhysAddr::new(0x1500).unwrap());
@@ -193,7 +193,7 @@ fn take_start_partial() {
 
 #[test]
 fn take_start_full() {
-    let mut region = MemoryRegion::new(PhysAddr::new(0x2000).unwrap(), MemorySize::new(0x1000));
+    let mut region = PhysicalMemoryRegion::new(PhysAddr::new(0x2000).unwrap(), MemorySize::new(0x1000));
     let taken = region.take_start(0x1000);
     assert_eq!(taken, PhysAddr::new(0x2000).unwrap());
     assert!(region.is_null());
@@ -202,13 +202,13 @@ fn take_start_full() {
 #[test]
 #[should_panic] // In debug mode only
 fn take_start_over_size() {
-    let mut region = MemoryRegion::new(PhysAddr::new(0x3000).unwrap(), MemorySize::new(0x500));
+    let mut region = PhysicalMemoryRegion::new(PhysAddr::new(0x3000).unwrap(), MemorySize::new(0x500));
     region.take_start(0x1000); // Panics in debug due to underflow
 }
 
 #[test]
 fn take_start_zero() {
-    let mut region = MemoryRegion::new(PhysAddr::new(0x4000).unwrap(), MemorySize::new(0x1000));
+    let mut region = PhysicalMemoryRegion::new(PhysAddr::new(0x4000).unwrap(), MemorySize::new(0x1000));
     let taken = region.take_start(0);
     assert_eq!(taken, PhysAddr::new(0x4000).unwrap());
     assert_eq!(*region.size(), 0x1000);
@@ -217,6 +217,6 @@ fn take_start_zero() {
 #[test]
 #[should_panic]
 fn take_start_from_null() {
-    let mut region = MemoryRegion::null();
+    let mut region = PhysicalMemoryRegion::null();
     region.take_start(0x1000); // Will panic due to underflow
 }

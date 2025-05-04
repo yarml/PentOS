@@ -35,7 +35,7 @@ impl PhysAddr {
 
     #[inline]
     pub fn to_virt(&self) -> VirtAddr {
-        VirtAddr::new_truncate(self.inner + PHYSICAL_MEMORY_OFFSET.load(Ordering::Relaxed))
+        VirtAddr::new_panic(self.inner + PHYSICAL_MEMORY_OFFSET.load(Ordering::Relaxed))
     }
 
     #[inline]

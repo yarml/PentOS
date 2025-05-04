@@ -22,7 +22,8 @@ use uefi::boot::MemoryType;
 use uefi::entry;
 use uefi::mem::memory_map::MemoryMap as UefiMemoryMap;
 use uefi::system;
-use x64::mem::MemoryRegion;
+use x64::mem::addr::Address;
+use x64::mem::PhysicalMemoryRegion;
 use x64::mem::MemorySize;
 use x64::mem::addr::PhysAddr;
 use x64::mem::addr::VirtAddr;
@@ -69,8 +70,8 @@ fn main() -> Status {
     let mut mmap = PhysMemMap::<ALLOCATOR_CAP>::new();
     let mut loader_mmap = PhysMemMap::<64>::new();
     for entry in real_mmap.entries() {
-        let region = MemoryRegion::new(
-            PhysAddr::new_truncate(entry.phys_start as usize),
+        let region = PhysicalMemoryRegion::new(
+            PhysAddr::new_panic(entry.phys_start as usize),
             MemorySize::new(entry.page_count as usize * 4096),
         );
         if entry.phys_start >= 1024 * 1024 && (entry.ty == MemoryType::CONVENTIONAL) {
@@ -99,7 +100,7 @@ fn main() -> Status {
     let framebuffer =
         framebuffer::postboot_init(primary_framebuffer_info, root_map, &mut allocator);
     let bootinfo = BootInfo {
-        mmap: [MemoryRegion::null(); MAX_MMAP_SIZE],
+        mmap: [PhysicalMemoryRegion::null(); MAX_MMAP_SIZE],
         mmap_len: 0,
         features,
         framebuffer,
@@ -109,7 +110,7 @@ fn main() -> Status {
         .expect("Failed to allocate bootinfo");
     virt_mmap::map_bootinfo(
         bootinfo,
-        Page::containing(VirtAddr::new_truncate(OFFSET_MAPPING)),
+        Page::containing(VirtAddr::new_panic(OFFSET_MAPPING)),
         root_map,
         &mut allocator,
     );

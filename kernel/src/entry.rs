@@ -1,12 +1,13 @@
 use boot_protocol::kernel_meta::KernelMeta;
 use core::arch::asm;
+use x64::mem::addr::Address;
 use x64::mem::addr::VirtAddr;
 
 #[unsafe(no_mangle)]
 extern "C" fn kernel_meta() -> KernelMeta {
     KernelMeta {
-        bsp_entry: VirtAddr::new_truncate(bsp_entry as usize),
-        ap_entry: VirtAddr::new_truncate(ap_entry as usize),
+        bsp_entry: VirtAddr::new_panic(bsp_entry as usize),
+        ap_entry: VirtAddr::new_panic(ap_entry as usize),
     }
 }
 

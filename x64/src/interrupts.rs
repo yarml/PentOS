@@ -1,6 +1,7 @@
 pub mod gate;
 pub mod stackframe;
 
+use crate::mem::addr::Address;
 use crate::mem::addr::VirtAddr;
 use core::arch::asm;
 use core::mem;
@@ -37,7 +38,7 @@ impl InterruptDescriptorTable {
     /// Self IDT must only use selectors which come from the currently loaded GDT
     pub unsafe fn load(&self) {
         let idtr = IDTPointer {
-            idt: VirtAddr::new_truncate(self as *const _ as usize),
+            idt: VirtAddr::new_panic(self as *const _ as usize),
             limit: (256 * mem::size_of::<InterruptGateEntry>() - 1) as u16,
         };
         let idtrp = &idtr as *const _;

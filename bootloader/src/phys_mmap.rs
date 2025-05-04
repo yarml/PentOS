@@ -2,10 +2,10 @@ use core::cmp::Ordering;
 use core::ops::Deref;
 use core::ops::DerefMut;
 use core::slice;
-use x64::mem::MemoryRegion;
+use x64::mem::PhysicalMemoryRegion;
 
 pub struct PhysMemMap<const MAX: usize> {
-    pub regions: [MemoryRegion; MAX],
+    pub regions: [PhysicalMemoryRegion; MAX],
     pub len: usize,
 }
 
@@ -13,7 +13,7 @@ impl<const MAX: usize> PhysMemMap<MAX> {
     #[inline]
     pub const fn new() -> Self {
         Self {
-            regions: [MemoryRegion::null(); MAX],
+            regions: [PhysicalMemoryRegion::null(); MAX],
             len: 0,
         }
     }
@@ -35,7 +35,7 @@ impl<const MAX: usize> PhysMemMap<MAX> {
 }
 
 impl<const MAX: usize> PhysMemMap<MAX> {
-    pub fn add(&mut self, region: MemoryRegion) {
+    pub fn add(&mut self, region: PhysicalMemoryRegion) {
         // Merge with entry if overlapping or if tail of one is head of other
         for entry in &mut self.regions[..self.len] {
             if let Some(combined) = *entry + region {
@@ -55,11 +55,11 @@ impl<const MAX: usize> PhysMemMap<MAX> {
         for i in 0..self.len {
             if i > 0 && (self.regions[i - 1] + self.regions[i]).is_some() {
                 self.regions[i - 1] += self.regions[i];
-                self.regions[i] = MemoryRegion::null();
+                self.regions[i] = PhysicalMemoryRegion::null();
             }
             if i + 1 < self.len && (self.regions[i] + self.regions[i + 1]).is_some() {
                 self.regions[i] += self.regions[i + 1];
-                self.regions[i + 1] = MemoryRegion::null();
+                self.regions[i + 1] = PhysicalMemoryRegion::null();
             }
         }
         self.regions[..self.len].sort_unstable_by(|r0, r1| {
@@ -82,7 +82,7 @@ impl<const MAX: usize> PhysMemMap<MAX> {
 }
 
 impl<const MAX: usize> PhysMemMap<MAX> {
-    pub fn iter(&self) -> slice::Iter<MemoryRegion> {
+    pub fn iter(&self) -> slice::Iter<PhysicalMemoryRegion> {
         self.regions[..self.len].iter()
     }
 }
@@ -94,7 +94,7 @@ impl<const MAX: usize> Default for PhysMemMap<MAX> {
 }
 
 impl<const MAX: usize> Deref for PhysMemMap<MAX> {
-    type Target = [MemoryRegion];
+    type Target = [PhysicalMemoryRegion];
 
     fn deref(&self) -> &Self::Target {
         &self.regions[..self.len]
@@ -108,8 +108,8 @@ impl<const MAX: usize> DerefMut for PhysMemMap<MAX> {
 }
 
 impl<'a, const MAX: usize> IntoIterator for &'a PhysMemMap<MAX> {
-    type Item = &'a MemoryRegion;
-    type IntoIter = slice::Iter<'a, MemoryRegion>;
+    type Item = &'a PhysicalMemoryRegion;
+    type IntoIter = slice::Iter<'a, PhysicalMemoryRegion>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()

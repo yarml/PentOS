@@ -7,5 +7,6 @@ pub mod segmentation;
 mod region;
 mod size;
 
-pub use region::MemoryRegion;
+pub use region::PhysicalMemoryRegion;
+pub use region::VirtualMemoryRegion;
 pub use size::MemorySize;

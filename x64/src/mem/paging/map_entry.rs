@@ -2,6 +2,7 @@ use super::PagingRawEntry;
 use super::absent_entry::PagingAbsentEntry;
 use super::pat::PatIndex;
 use super::pk::ProtectionKey;
+use crate::mem::addr::Address;
 use crate::mem::addr::PhysAddr;
 use crate::mem::frame::Frame;
 use crate::mem::frame::size::FrameSize;

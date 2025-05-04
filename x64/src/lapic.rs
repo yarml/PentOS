@@ -1,3 +1,4 @@
+use crate::mem::addr::Address;
 use crate::mem::addr::VirtAddr;
 use core::arch::x86_64::__cpuid;
 use core::hint;

@@ -1,6 +1,7 @@
 use core::sync::atomic::AtomicUsize;
 use core::sync::atomic::Ordering;
 
+use x64::mem::addr::Address;
 use x64::mem::addr::VirtAddr;
 
 static INFO_AREA: AtomicUsize = AtomicUsize::new(0xfffffff000000000);
@@ -12,5 +13,5 @@ pub fn allocate_info_space(size: usize) -> VirtAddr {
         panic!("Out of memory for info area");
     }
 
-    VirtAddr::new_truncate(addr)
+    VirtAddr::new_panic(addr)
 }

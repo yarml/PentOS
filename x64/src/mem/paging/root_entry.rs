@@ -1,6 +1,7 @@
 use super::PagingReferenceEntry;
 use super::pat::ReferencePatIndex;
 use super::pcid::Pcid;
+use crate::mem::addr::Address;
 use crate::mem::addr::PhysAddr;
 use crate::mem::frame::Frame;
 use crate::mem::frame::size::Frame4KiB;
@@ -54,7 +55,7 @@ impl PagingRootEntry {
     }
     #[inline]
     pub const fn target_frame(&self) -> Frame<Frame4KiB> {
-        Frame::containing(PhysAddr::new_truncate(
+        Frame::containing(PhysAddr::new_panic(
             (self.value & (Frame4KiB::MASK & PhysAddr::MASK) as u64) as usize,
         ))
     }

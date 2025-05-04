@@ -1,14 +1,14 @@
 pub mod descriptor;
 pub mod selector;
 
+use super::addr::Address;
+use super::addr::VirtAddr;
 use core::arch::asm;
 use core::hint;
 use core::mem;
 use descriptor::SegmentDescriptor;
 use descriptor::SegmentDescriptorEntry;
 use selector::SegmentSelector;
-
-use super::addr::VirtAddr;
 
 #[repr(C)]
 pub struct GlobalDescriptorTable<const N: usize> {
@@ -56,7 +56,7 @@ impl<const N: usize> GlobalDescriptorTable<N> {
     /// are set appropriatly for the continued work of the system
     pub unsafe fn load(&self, code_selector: SegmentSelector, data_selector: SegmentSelector) {
         let gdtr = GDTPointer {
-            gdt: VirtAddr::new_truncate(self as *const _ as usize),
+            gdt: VirtAddr::new_panic(self as *const _ as usize),
             limit: (self.len * mem::size_of::<SegmentDescriptorEntry>() - 1) as u16,
         };
         let gdtrp = &gdtr as *const _;

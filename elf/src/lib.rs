@@ -11,6 +11,7 @@ use types::Half;
 use types::Offset;
 use types::UChar;
 use types::Word;
+use x64::mem::addr::Address;
 use x64::mem::MemorySize;
 use x64::mem::addr::VirtAddr;
 

@@ -1,8 +1,10 @@
 #[cfg(test)]
 mod test;
 
+use super::addr::Address;
+use super::addr::PhysAddr;
+use super::addr::VirtAddr;
 use crate::mem::MemorySize;
-use crate::mem::addr::PhysAddr;
 use core::cmp::Ordering;
 use core::fmt::Debug;
 use core::fmt::Display;
@@ -11,33 +13,36 @@ use core::ops::AddAssign;
 use core::ops::BitAnd;
 use core::ops::BitAndAssign;
 
+pub type PhysicalMemoryRegion = MemoryRegion<PhysAddr>;
+pub type VirtualMemoryRegion = MemoryRegion<VirtAddr>;
+
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct MemoryRegion {
-    start: PhysAddr,
+pub struct MemoryRegion<S: const Address> {
+    start: S,
     size: MemorySize,
 }
 
-pub struct ChunkIter {
-    current: PhysAddr,
-    region: MemoryRegion,
+pub struct ChunkIter<S: const Address> {
+    current: S,
+    region: MemoryRegion<S>,
     increment: MemorySize,
 }
 
-impl MemoryRegion {
+impl<S: const Address> MemoryRegion<S> {
     #[inline]
     pub const fn null() -> Self {
         Self {
-            start: PhysAddr::null(),
+            start: S::null(),
             size: MemorySize::zero(),
         }
     }
     #[inline]
-    pub const fn new(start: PhysAddr, size: MemorySize) -> Self {
+    pub const fn new(start: S, size: MemorySize) -> Self {
         Self { start, size }
     }
     #[inline]
-    pub fn new_boundaries(start: PhysAddr, end: PhysAddr) -> Self {
+    pub fn new_boundaries(start: S, end: S) -> Self {
         Self {
             start,
             size: end - start,
@@ -45,21 +50,21 @@ impl MemoryRegion {
     }
 }
 
-impl MemoryRegion {
+impl<S: const Address> MemoryRegion<S> {
     #[inline]
-    pub fn contains(&self, addr: PhysAddr) -> bool {
+    pub fn contains(&self, addr: S) -> bool {
         self.start() <= addr && addr < self.end()
     }
     #[inline]
-    pub fn contains_start(&self, other: MemoryRegion) -> bool {
+    pub fn contains_start(&self, other: MemoryRegion<S>) -> bool {
         self.end() == other.start() || self.contains(other.start())
     }
     #[inline]
-    pub fn contains_end(&self, other: MemoryRegion) -> bool {
+    pub fn contains_end(&self, other: MemoryRegion<S>) -> bool {
         self.end() == other.end() || self.contains(other.end())
     }
     #[inline]
-    pub fn contains_region(&self, other: MemoryRegion) -> bool {
+    pub fn contains_region(&self, other: MemoryRegion<S>) -> bool {
         self.contains_start(other) && self.contains_end(other)
     }
     #[inline]
@@ -67,11 +72,11 @@ impl MemoryRegion {
         self.size
     }
     #[inline]
-    pub const fn start(&self) -> PhysAddr {
+    pub const fn start(&self) -> S {
         self.start
     }
     #[inline]
-    pub fn end(&self) -> PhysAddr {
+    pub fn end(&self) -> S {
         self.start().add_truncate(*self.size)
     }
     #[inline]
@@ -80,8 +85,8 @@ impl MemoryRegion {
     }
 }
 
-impl MemoryRegion {
-    pub fn union(&self, other: MemoryRegion) -> Option<MemoryRegion> {
+impl<S: const Address> MemoryRegion<S> {
+    pub fn union(&self, other: MemoryRegion<S>) -> Option<MemoryRegion<S>> {
         if self.contains_region(other) {
             Some(*self)
         } else if other.contains_region(*self) {
@@ -94,7 +99,7 @@ impl MemoryRegion {
             None
         }
     }
-    pub fn intersect(&self, other: MemoryRegion) -> MemoryRegion {
+    pub fn intersect(&self, other: MemoryRegion<S>) -> MemoryRegion<S> {
         if self.contains_region(other) {
             other
         } else if other.contains_region(*self) {
@@ -109,8 +114,8 @@ impl MemoryRegion {
     }
 }
 
-impl MemoryRegion {
-    pub fn take_start(&mut self, amount: usize) -> PhysAddr {
+impl<S: const Address> MemoryRegion<S> {
+    pub fn take_start(&mut self, amount: usize) -> S {
         let start = self.start();
         self.start += amount;
         self.size -= amount;
@@ -121,11 +126,10 @@ impl MemoryRegion {
     }
 }
 
-impl MemoryRegion {
+impl<S: const Address> MemoryRegion<S> {
     #[inline]
-    pub const fn chunks(&self, align: MemorySize, size: MemorySize) -> ChunkIter {
-        let start =
-            PhysAddr::new_truncate(self.start.as_usize().next_multiple_of(align.as_usize()));
+    pub const fn chunks(&self, align: MemorySize, size: MemorySize) -> ChunkIter<S> {
+        let start = S::new_panic(self.start.as_usize().next_multiple_of(align.as_usize()));
         ChunkIter {
             current: start,
             region: *self,
@@ -134,31 +138,31 @@ impl MemoryRegion {
     }
 }
 
-impl Default for MemoryRegion {
+impl<S: const Address> Default for MemoryRegion<S> {
     fn default() -> Self {
         Self::null()
     }
 }
 
-impl PartialOrd for MemoryRegion {
+impl<S: const Address> PartialOrd for MemoryRegion<S> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
-impl Ord for MemoryRegion {
+impl<S: const Address> Ord for MemoryRegion<S> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.start.cmp(&other.start)
     }
 }
 
-impl Add for MemoryRegion {
+impl<S: const Address> Add for MemoryRegion<S> {
     type Output = Option<Self>;
 
     fn add(self, rhs: Self) -> Self::Output {
         self.union(rhs)
     }
 }
-impl BitAnd for MemoryRegion {
+impl<S: const Address> BitAnd for MemoryRegion<S> {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
@@ -166,31 +170,31 @@ impl BitAnd for MemoryRegion {
     }
 }
 
-impl AddAssign for MemoryRegion {
+impl<S: const Address> AddAssign for MemoryRegion<S> {
     fn add_assign(&mut self, rhs: Self) {
         *self = self.union(rhs).unwrap();
     }
 }
-impl BitAndAssign for MemoryRegion {
+impl<S: const Address> BitAndAssign for MemoryRegion<S> {
     fn bitand_assign(&mut self, rhs: Self) {
         *self = self.intersect(rhs);
     }
 }
 
-impl Display for MemoryRegion {
+impl<S: const Address> Display for MemoryRegion<S> {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f, "{} - {}", self.start(), self.end())
     }
 }
 
-impl Debug for MemoryRegion {
+impl<S: const Address> Debug for MemoryRegion<S> {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f, "MemoryRegion({} - {})", self.start(), self.end())
     }
 }
 
-impl Iterator for ChunkIter {
-    type Item = MemoryRegion;
+impl<S: const Address> Iterator for ChunkIter<S> {
+    type Item = MemoryRegion<S>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.region.contains(self.current) && self.region.contains(self.current + self.increment)

@@ -3,6 +3,7 @@ use acpi::table::LocalApic;
 use acpi::table::Madt;
 use boot_protocol::topology::Hart;
 use boot_protocol::topology::InterruptController;
+use x64::mem::addr::Address;
 use x64::mem::addr::PhysAddr;
 
 use crate::topology::register_hart;
@@ -31,7 +32,7 @@ fn parse_lapic(lapic: &LocalApic) {
 fn parse_ioapic(ioapic: &IOApic) {
     register_interrupt_controller(InterruptController {
         id: ioapic.ioapic_id as usize,
-        register_base: PhysAddr::new_truncate(ioapic.address as usize),
+        register_base: PhysAddr::new_panic(ioapic.address as usize),
         gsi_base: ioapic.gsi_base as usize,
     });
 }

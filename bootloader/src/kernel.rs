@@ -6,6 +6,7 @@ use crate::misc;
 use crate::virt_mmap;
 use boot_protocol::STACK_SIZE;
 use boot_protocol::kernel_meta::KernelMeta;
+use x64::mem::addr::Address;
 use core::arch::asm;
 use core::cmp::max;
 use core::hint;
@@ -95,7 +96,7 @@ pub fn map_kernel(
             let pg_count = segment.mem_size.next_multiple_of(4096) / 4096;
             let mut copied = 0;
             for i in 0..pg_count {
-                let frame = Frame::containing(PhysAddr::new_truncate(
+                let frame = Frame::containing(PhysAddr::new_panic(
                     allocator.alloc([0; 4096]).expect("Out of memory") as *const _ as usize,
                 ));
                 if copied < segment.file_size {

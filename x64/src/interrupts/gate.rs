@@ -1,4 +1,5 @@
 use super::stackframe::InterruptStackFrame;
+use crate::mem::addr::Address;
 use crate::mem::addr::VirtAddr;
 use crate::mem::segmentation::selector::SegmentSelector;
 use crate::prot::PrivilegeLevel;
@@ -19,7 +20,7 @@ macro_rules! impl_interrupt_handler {
         unsafe impl InterruptHandler for $f {
             #[inline]
             fn addr(self) -> VirtAddr {
-                VirtAddr::new_truncate(self as usize)
+                VirtAddr::new_panic(self as usize)
             }
         }
     };

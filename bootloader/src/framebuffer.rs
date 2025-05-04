@@ -3,6 +3,7 @@ use crate::allocator::PostBootAllocator;
 use crate::infoarea::allocate_info_space;
 use crate::virt_mmap::map;
 use boot_protocol::framebuffer::FramebufferInfo;
+use x64::mem::addr::Address;
 use core::mem;
 use core::slice;
 use uefi::Identify;
@@ -65,7 +66,7 @@ pub fn init() -> PrimaryFramebufferInfo {
     let stride = info.stride();
 
     let mut fb = gop.frame_buffer();
-    let base = PhysAddr::new_truncate(fb.as_mut_ptr() as usize);
+    let base = PhysAddr::new_panic(fb.as_mut_ptr() as usize);
     let size = MemorySize::new(fb.size());
 
     PrimaryFramebufferInfo {

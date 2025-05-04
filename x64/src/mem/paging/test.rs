@@ -11,7 +11,7 @@ use crate::mem::paging::PagingReferenceEntry;
 
 #[test]
 fn test_map_entry_pte() {
-    let frame = Frame::<Frame4KiB>::containing(PhysAddr::new_truncate(0x1000));
+    let frame = Frame::<Frame4KiB>::containing(PhysAddr::new_panic(0x1000));
     let entry = PagingMapEntry::<Page4KiB>::new(frame);
     assert_eq!(*entry & 1, 1); // Present bit set
     assert_eq!(*entry & Page4KiB::USE_MAP_FLAG, 0); // No PS bit
@@ -19,7 +19,7 @@ fn test_map_entry_pte() {
 
 #[test]
 fn test_map_entry_pde() {
-    let frame = Frame::<Frame2MiB>::containing(PhysAddr::new_truncate(0x200000));
+    let frame = Frame::<Frame2MiB>::containing(PhysAddr::new_panic(0x200000));
     let entry = PagingMapEntry::<Page2MiB>::new(frame);
     assert_eq!(*entry & 1, 1); // Present bit set
     assert_eq!(*entry & Page2MiB::USE_MAP_FLAG, 1 << 7); // PS bit set
@@ -34,7 +34,7 @@ fn test_invalid_map_entry_pde() {
 
 #[test]
 fn test_reference_entry() {
-    let frame = Frame::<Frame4KiB>::containing(PhysAddr::new_truncate(0x3000));
+    let frame = Frame::<Frame4KiB>::containing(PhysAddr::new_panic(0x3000));
     let entry = PagingReferenceEntry::<Page1GiB>::new(frame);
     assert_eq!(*entry & 1, 1); // Present bit set
     assert_eq!(*entry & Page1GiB::USE_MAP_FLAG, 0); // PS bit cleared

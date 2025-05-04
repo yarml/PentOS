@@ -1,5 +1,6 @@
 pub mod size;
 
+use super::addr::Address;
 use crate::mem::MemorySize;
 use crate::mem::addr::VirtAddr;
 use core::fmt::Debug;
@@ -19,14 +20,14 @@ impl<S: PageSize> Page<S> {
     #[inline]
     pub const fn containing(addr: VirtAddr) -> Self {
         Self {
-            boundary: VirtAddr::new_truncate(addr.as_usize() & S::MASK),
+            boundary: VirtAddr::new_panic(addr.as_usize() & S::MASK),
             _phantom: PhantomData,
         }
     }
     #[inline]
     pub const fn from_number(num: usize) -> Self {
         Self {
-            boundary: VirtAddr::new_truncate(num << S::SHIFT),
+            boundary: VirtAddr::new_panic(num << S::SHIFT),
             _phantom: PhantomData,
         }
     }

@@ -1,5 +1,8 @@
 pub mod size;
 
+use super::addr::Address;
+use super::page::Page;
+use super::page::size::PageSize;
 use crate::mem::MemorySize;
 use crate::mem::addr::PhysAddr;
 use core::fmt::Debug;
@@ -7,9 +10,6 @@ use core::fmt::Display;
 use core::marker::PhantomData;
 use core::ops::Add;
 use size::FrameSize;
-
-use super::page::Page;
-use super::page::size::PageSize;
 
 #[repr(transparent)]
 #[derive(Clone, Copy)]
@@ -22,14 +22,14 @@ impl<S: FrameSize> Frame<S> {
     #[inline]
     pub const fn containing(addr: PhysAddr) -> Self {
         Self {
-            boundary: PhysAddr::new_truncate(addr.as_usize() & S::MASK),
+            boundary: PhysAddr::new_panic(addr.as_usize() & S::MASK),
             _phantom: PhantomData,
         }
     }
     #[inline]
     pub const fn from_number(num: usize) -> Self {
         Self {
-            boundary: PhysAddr::new_truncate(num << S::SHIFT),
+            boundary: PhysAddr::new_panic(num << S::SHIFT),
             _phantom: PhantomData,
         }
     }

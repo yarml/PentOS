@@ -1,11 +1,12 @@
 use crate::allocator::ALLOCATOR_CAP;
 use crate::allocator::PostBootAllocator;
 use boot_protocol::BootInfo;
+use x64::mem::addr::Address;
 use core::mem;
 use uefi::boot::MemoryType;
 use uefi::mem::memory_map::MemoryMap;
 use uefi::mem::memory_map::MemoryMapOwned;
-use x64::mem::MemoryRegion;
+use x64::mem::PhysicalMemoryRegion;
 use x64::mem::MemorySize;
 use x64::mem::addr::PhysAddr;
 use x64::mem::frame::Frame;
@@ -62,7 +63,7 @@ pub fn new_root(allocator: &mut PostBootAllocator<ALLOCATOR_CAP>) -> PagingRootE
     let target = allocator
         .alloc([PagingRawEntry::<Page512GiB>::new(0); 512])
         .expect("Out of memory");
-    PagingRootEntry::new(Frame::containing(PhysAddr::new_truncate(
+    PagingRootEntry::new(Frame::containing(PhysAddr::new_panic(
         target as *const _ as usize,
     )))
 }
@@ -85,7 +86,7 @@ where
         let target = allocator
             .alloc([PagingRawEntry::new(0); 512])
             .expect("Out of memory");
-        let reference = PagingReferenceEntry::<PS>::new(Frame::containing(PhysAddr::new_truncate(
+        let reference = PagingReferenceEntry::<PS>::new(Frame::containing(PhysAddr::new_panic(
             target as *const _ as usize,
         )))
         .write()
@@ -107,8 +108,8 @@ pub fn identity_and_offset_mapping(
     // TODO: Setup virtual memory for kernel
 
     for entry in mmap.entries() {
-        let region = MemoryRegion::new(
-            PhysAddr::new_truncate(entry.phys_start as usize),
+        let region = PhysicalMemoryRegion::new(
+            PhysAddr::new_panic(entry.phys_start as usize),
             MemorySize::new(entry.page_count as usize * 4096),
         );
         if entry.phys_start < 1024 * 1024
@@ -160,7 +161,7 @@ pub fn map_bootinfo(
     root_map: PagingRootEntry,
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
 ) {
-    let bootinfo = Frame::containing(PhysAddr::new_truncate(bootinfo as *const _ as usize));
+    let bootinfo = Frame::containing(PhysAddr::new_panic(bootinfo as *const _ as usize));
     let pg_count = mem::size_of::<BootInfo>().next_multiple_of(4096) / 4096;
     for i in 0..pg_count {
         let frame = bootinfo + i;

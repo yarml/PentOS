@@ -4,8 +4,57 @@ mod test;
 mod phys;
 mod virt;
 
+use super::MemorySize;
+use core::fmt::Debug;
+use core::fmt::Display;
+use core::ops::Add;
+use core::ops::AddAssign;
+use core::ops::DerefMut;
+use core::ops::Sub;
+use core::ops::SubAssign;
+
 pub use phys::PhysAddr;
 pub use virt::VirtAddr;
+
+#[const_trait]
+pub trait Address:
+    Clone
+    + Copy
+    + DerefMut<Target = usize>
+    + From<usize>
+    + From<u64>
+    + for<T> From<*const T>
+    + for<T> From<*mut T>
+    + AddAssign<usize>
+    + AddAssign<MemorySize>
+    + SubAssign<usize>
+    + SubAssign<MemorySize>
+    + Add<usize, Output = Self>
+    + Add<MemorySize, Output = Self>
+    + Sub<usize, Output = Self>
+    + Sub<MemorySize, Output = Self>
+    + Sub<Self, Output = MemorySize>
+    + Eq
+    + Ord
+    + Debug
+    + Display
+{
+    fn null() -> Self;
+    fn new(addr: usize) -> Option<Self>;
+    fn new_truncate(addr: usize) -> Self;
+    unsafe fn new_unchecked(addr: usize) -> Self;
+    fn new_panic(addr: usize) -> Self;
+
+    fn add(&self, offset: usize) -> Option<Self>;
+    fn add_truncate(&self, offset: usize) -> Self;
+    fn sub_truncate(&self, offset: usize) -> Self;
+    fn is_null(&self) -> bool;
+
+    fn as_usize(&self) -> usize;
+    fn as_u64(&self) -> u64;
+    fn as_ptr<T>(&self) -> *const T;
+    fn as_mut_ptr<T>(&self) -> *mut T;
+}
 
 /// Implementation detail
 #[doc(hidden)]
@@ -21,6 +70,7 @@ macro_rules! define_addr {
         use core::ops::Sub;
         use core::ops::SubAssign;
         use $crate::mem::MemorySize;
+        use $crate::mem::addr::Address;
 
         #[repr(transparent)]
         #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -29,11 +79,18 @@ macro_rules! define_addr {
         }
 
         impl $name {
-            pub const MAX: Self = Self::new_truncate(usize::MAX);
+            pub const MAX: Self = Self::new_panic(usize::MAX);
             pub const MIN: Self = Self::null();
+        }
 
+        impl const Address for $name {
+            // Constructors
             #[inline]
-            pub const fn new(addr: usize) -> Option<Self> {
+            fn null() -> Self {
+                Self { inner: 0 }
+            }
+            #[inline]
+            fn new(addr: usize) -> Option<Self> {
                 if addr == $make_canonical(addr) {
                     Some(Self { inner: addr })
                 } else {
@@ -41,52 +98,58 @@ macro_rules! define_addr {
                 }
             }
             #[inline]
-            pub const fn new_truncate(addr: usize) -> Self {
+            fn new_truncate(addr: usize) -> Self {
                 Self {
                     inner: $make_canonical(addr),
                 }
             }
             #[inline]
-            pub const fn null() -> Self {
-                Self { inner: 0 }
+            unsafe fn new_unchecked(addr: usize) -> Self {
+                Self { inner: addr }
             }
-        }
-
-        impl $name {
             #[inline]
-            pub const fn add(&self, offset: usize) -> Option<Self> {
+            fn new_panic(addr: usize) -> Self {
+                if let Some(addr) = Self::new(addr) {
+                    addr
+                } else {
+                    panic!("Invalid address")
+                }
+            }
+
+            // Operations
+            #[inline]
+            fn add(&self, offset: usize) -> Option<Self> {
                 Self::new(self.inner + offset)
             }
             #[inline]
-            pub const fn add_truncate(&self, offset: usize) -> Self {
-                Self::new_truncate(self.inner + offset)
+            fn add_truncate(&self, offset: usize) -> Self {
+                Self::new_panic(self.inner + offset)
             }
             #[inline]
-            pub const fn sub_truncate(&self, offset: usize) -> Self {
-                Self::new_truncate(self.inner - offset)
+            fn sub_truncate(&self, offset: usize) -> Self {
+                Self::new_panic(self.inner - offset)
             }
 
             #[inline]
-            pub const fn is_null(&self) -> bool {
+            fn is_null(&self) -> bool {
                 self.inner == 0
             }
-        }
 
-        impl $name {
+            // Casts
             #[inline]
-            pub const fn as_usize(&self) -> usize {
+            fn as_usize(&self) -> usize {
                 self.inner
             }
             #[inline]
-            pub const fn as_u64(&self) -> u64 {
+            fn as_u64(&self) -> u64 {
                 self.inner as u64
             }
             #[inline]
-            pub const fn as_ptr<T>(&self) -> *const T {
+            fn as_ptr<T>(&self) -> *const T {
                 self.inner as *const T
             }
             #[inline]
-            pub const fn as_mut_ptr<T>(&self) -> *mut T {
+            fn as_mut_ptr<T>(&self) -> *mut T {
                 self.inner as *mut T
             }
         }
@@ -110,28 +173,28 @@ macro_rules! define_addr {
         impl From<usize> for $name {
             #[inline]
             fn from(value: usize) -> Self {
-                Self::new_truncate(value)
+                Self::new_panic(value)
             }
         }
 
         impl From<u64> for $name {
             #[inline]
             fn from(value: u64) -> Self {
-                Self::new_truncate(value as usize)
+                Self::new_panic(value as usize)
             }
         }
 
-        impl<T> From<*const T> for $name {
+        impl<T: ?Sized> From<*const T> for $name {
             #[inline]
             fn from(value: *const T) -> Self {
-                Self::new_truncate(value as usize)
+                Self::new_panic(value as *const () as usize)
             }
         }
 
-        impl<T> From<*mut T> for $name {
+        impl<T: ?Sized> From<*mut T> for $name {
             #[inline]
             fn from(value: *mut T) -> Self {
-                Self::new_truncate(value as usize)
+                Self::new_panic(value as *const () as usize)
             }
         }
 
