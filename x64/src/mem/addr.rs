@@ -49,6 +49,7 @@ pub trait Address:
 
     fn add(&self, offset: usize) -> Option<Self>;
     fn add_truncate(&self, offset: usize) -> Self;
+    fn add_panic(&self, offset: usize) -> Self;
     fn sub_truncate(&self, offset: usize) -> Self;
     fn is_null(&self) -> bool;
 
@@ -126,6 +127,10 @@ macro_rules! define_addr {
             #[inline]
             fn add_truncate(&self, offset: usize) -> Self {
                 Self::new_truncate(self.inner + offset)
+            }
+            #[inline]
+            fn add_panic(&self, offset: usize) -> Self {
+                Self::new_panic(self.inner + offset)
             }
             #[inline]
             fn sub_truncate(&self, offset: usize) -> Self {

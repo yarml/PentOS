@@ -12,9 +12,9 @@ bootloader_destination = $(shell cargo chef config install-bootloader)
 
 ovmf_target = run/ovmf/vars.fd run/ovmf/code.fd
 
-.PHONY: check-all clippy
+.PHONY: check-all clippy doc
 define package_build_recipe =
-.PHONY: build-$(1) check-$(1) clippy-$(1)
+.PHONY: build-$(1) check-$(1) clippy-$(1) doc-$(1)
 build-$(1):
 	cd $(1) && cargo build -p $(1)
 check-all: check-$(1)
@@ -23,6 +23,9 @@ check-$(1):
 clippy: clippy-$(1)
 clippy-$(1):
 	cd $(1) && cargo clippy --no-deps --all-features --keep-going -p $(1)
+doc: doc-$(1)
+doc-$(1):
+	cd $(1) && cargo doc --no-deps --all-features -p $(1)
 endef
 
 $(foreach package,$(packages),$(eval $(call package_build_recipe,$(package))))
@@ -48,7 +51,3 @@ install: build-bootloader build-kernel
 .PHONY: test
 test:
 	cargo test --workspace --no-fail-fast --exclude kernel --exclude bootloader
-
-.PHONY: doc
-doc:
-	cargo doc --no-deps
