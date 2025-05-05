@@ -131,6 +131,7 @@ version = "0.1.0"
 dependencies = [
  "acpi",
  "boot-protocol",
+ "builder",
  "common",
  "config",
  "elf",
@@ -881,6 +882,15 @@ dependencies = [
  "libc",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "mman"
+version = "0.1.0"
+dependencies = [
+ "config",
+ "log",
+ "x64",
 ]
 
 [[package]]

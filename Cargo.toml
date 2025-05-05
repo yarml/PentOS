@@ -11,6 +11,7 @@ members = [
     "acpi",
     "common",
     "config",
+    "mman",
 ]
 resolver = "3"
 
@@ -34,3 +35,4 @@ ovmf-source = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/edk
 
 install-bootloader = "/boot/efi/pentos.efi"
 install-kernel = "/boot/efi/pentos.kernel"
+

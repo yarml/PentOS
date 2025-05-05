@@ -11,6 +11,7 @@ use crate::mem::page::size::PageSize;
 use core::marker::PhantomData;
 use core::ops::Deref;
 
+/// Acts like a &mut PagingReferenceEntry
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PagingReferenceEntry<PS>

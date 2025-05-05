@@ -7,6 +7,7 @@ use crate::features;
 use crate::framebuffer;
 use crate::kernel;
 use crate::logger;
+use crate::mp;
 use crate::phys_mmap::PhysMemMap;
 use crate::pic;
 use crate::topology;
@@ -21,9 +22,9 @@ use uefi::boot::MemoryType;
 use uefi::entry;
 use uefi::mem::memory_map::MemoryMap as UefiMemoryMap;
 use uefi::system;
-use x64::mem::addr::Address;
-use x64::mem::PhysicalMemoryRegion;
 use x64::mem::MemorySize;
+use x64::mem::PhysicalMemoryRegion;
+use x64::mem::addr::Address;
 use x64::mem::addr::PhysAddr;
 use x64::mem::addr::VirtAddr;
 use x64::mem::page::Page;
@@ -52,26 +53,30 @@ fn main() -> Status {
 
     // Keep this last in PreBootStage
     let primary_framebuffer_info = framebuffer::init();
-
     logger::disable();
     bootstage::set_postboot();
-    // TODO: AP wait_for_config
     let real_mmap = unsafe {
         // SAFETY: Only thing we used was the UEFI console logger, and allocator, they are now disabled
         boot::exit_boot_services(MemoryType::LOADER_DATA)
     };
-    
+
     pic::disable();
 
     let mut mmap = PhysMemMap::<ALLOCATOR_CAP>::new();
     let mut loader_mmap = PhysMemMap::<64>::new();
+    let mut legacy_mmap = PhysMemMap::<16>::new();
     for entry in real_mmap.entries() {
         let region = PhysicalMemoryRegion::new(
             PhysAddr::new_panic(entry.phys_start as usize),
             MemorySize::new(entry.page_count as usize * 4096),
         );
-        if entry.phys_start >= 1024 * 1024 && (entry.ty == MemoryType::CONVENTIONAL) {
-            mmap.add(region);
+
+        if entry.ty == MemoryType::CONVENTIONAL {
+            if entry.phys_start >= 1024 * 1024 {
+                mmap.add(region);
+            } else {
+                legacy_mmap.add(region);
+            }
         }
         if entry.phys_start >= 1024 * 1024
             && (entry.ty == MemoryType::LOADER_CODE
@@ -84,7 +89,7 @@ fn main() -> Status {
     }
 
     let mut allocator = unsafe {
-        // SAFETY: We didn't include any memory under 1M, nor LOADER_* memory in mmap
+        // SAFETY: We didn't include any legacy memory, nor LOADER_* memory in mmap
         PostBootAllocator::init(mmap)
     };
 
@@ -95,6 +100,9 @@ fn main() -> Status {
     kernel::map_kernel(&kernel, root_map, &mut allocator);
     let framebuffer =
         framebuffer::postboot_init(primary_framebuffer_info, root_map, &mut allocator);
+
+    mp::init(legacy_mmap);
+
     let bootinfo = BootInfo {
         mmap: [PhysicalMemoryRegion::null(); MAX_MMAP_SIZE],
         mmap_len: 0,

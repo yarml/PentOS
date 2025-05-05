@@ -35,7 +35,7 @@ pub fn map(
     exec: bool,
     mtype: PatMemoryType,
 ) {
-    let pml4_table = unsafe { root.target_mut() };
+    let pml4_table = root.target_mut();
 
     let pdp_table = target_or_alloc(
         pml4_table[page.order_index::<Page512GiB>()].as_raw(),

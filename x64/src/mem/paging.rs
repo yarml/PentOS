@@ -4,6 +4,7 @@ mod test;
 pub mod pat;
 pub mod pcid;
 pub mod pk;
+pub mod flush;
 
 mod absent_entry;
 mod map_entry;

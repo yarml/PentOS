@@ -76,8 +76,8 @@ impl<S: const Address> MemoryRegion<S> {
         self.start
     }
     #[inline]
-    pub fn end(&self) -> S {
-        self.start().add_truncate(*self.size)
+    pub const fn end(&self) -> S {
+        self.start().add_truncate(self.size.as_usize())
     }
     #[inline]
     pub fn is_null(&self) -> bool {

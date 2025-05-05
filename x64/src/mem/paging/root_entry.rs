@@ -11,6 +11,7 @@ use crate::mem::page::size::Page512GiB;
 use core::arch::asm;
 use core::ops::Deref;
 
+/// This must be considered like a `&mut [PaginReferenceEntry<Page512GiB>]`
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PagingRootEntry {
@@ -25,6 +26,11 @@ impl PagingRootEntry {
         }
     }
 }
+
+/// `PaginRootEntry` is hart dependent and should not be shared
+impl !Send for PagingRootEntry {}
+/// `PaginRootEntry` is hart dependent and should not be shared
+impl !Sync for PagingRootEntry {}
 
 impl PagingRootEntry {
     #[inline]
@@ -62,24 +68,18 @@ impl PagingRootEntry {
 }
 
 impl PagingRootEntry {
-    /// # Safety
-    /// Must ensure that this entry is pointing to a valid sub table
-    /// and that the memory location is not mutably aliased
-    pub unsafe fn target<'a>(&self) -> &'a [PagingReferenceEntry<Page512GiB>; 512] {
+    pub fn target<'a>(&self) -> &'a [PagingReferenceEntry<Page512GiB>; 512] {
         unsafe {
-            // SAFETY: ensured by caller
+            // SAFETY: Safe because this type is !Send & !Sync
             self.target_frame()
                 .to_virt::<Page4KiB>()
                 .boundary()
                 .to_ref()
         }
     }
-    /// # Safety
-    /// Must ensure that this entry is pointing to a valid sub table
-    /// and that the memory location is not aliased
-    pub unsafe fn target_mut<'a>(&self) -> &'a mut [PagingReferenceEntry<Page512GiB>; 512] {
+    pub fn target_mut<'a>(&self) -> &'a mut [PagingReferenceEntry<Page512GiB>; 512] {
         unsafe {
-            // SAFETY: ensured by caller
+            // SAFETY: Safe because this type is !Send & !Sync
             self.target_frame()
                 .to_virt::<Page4KiB>()
                 .boundary()
