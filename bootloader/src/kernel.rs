@@ -6,6 +6,7 @@ use crate::misc;
 use crate::virt_mmap;
 use boot_protocol::STACK_SIZE;
 use boot_protocol::kernel_meta::KernelMeta;
+use x64::mem::page::size::PageSize;
 use core::arch::asm;
 use core::cmp::max;
 use core::hint;
@@ -16,6 +17,8 @@ use elf::Elf;
 use elf::ElfClass;
 use elf::ElfType;
 use elf::SegmentType;
+use mman::phys::PhysicalAllocationRequest;
+use mman::phys::PhysicalMemoryAllocator;
 use spinlocks::once::Once;
 use uefi::CStr16;
 use uefi::Identify;
@@ -31,6 +34,7 @@ use x64::mem::addr::PhysAddr;
 use x64::mem::addr::VirtAddr;
 use x64::mem::frame::Frame;
 use x64::mem::page::Page;
+use x64::mem::page::size::Page4KiB;
 use x64::mem::paging::PagingRootEntry;
 use x64::msr::pat::MemoryType;
 
@@ -134,7 +138,14 @@ pub fn alloc_stack(
     let stack = Page::containing(allocate_info_space(STACK_SIZE));
     let pg_count = STACK_SIZE.next_multiple_of(4096) / 4096;
     for i in 0..pg_count {
-        let frame = Frame::containing(allocator.alloc_raw(0x1000, 0x1000).expect("Out of memory"));
+        let frame = Frame::containing(
+            allocator
+                .maybe_allocate(PhysicalAllocationRequest::size_align(
+                    Page4KiB::SIZE,
+                    Page4KiB::SIZE,
+                ))
+                .expect("Out of memory").start(),
+        );
         let page = stack + i;
         virt_mmap::map(
             root_map,

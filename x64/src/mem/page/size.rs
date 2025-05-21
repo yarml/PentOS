@@ -1,3 +1,4 @@
+use crate::mem::MemorySize;
 use crate::mem::frame::size::Frame1GiB;
 use crate::mem::frame::size::Frame2MiB;
 use crate::mem::frame::size::Frame4KiB;
@@ -20,7 +21,7 @@ pub trait PageSize: Clone + Copy {
     type PhysicalPageSize;
 
     const SHIFT: usize;
-    const SIZE: usize;
+    const SIZE: MemorySize;
     const MASK: usize;
 
     // Paging structure related
@@ -36,7 +37,7 @@ impl PageSize for Page4KiB {
     type PhysicalPageSize = Frame4KiB;
 
     const SHIFT: usize = Self::PhysicalPageSize::SHIFT;
-    const SIZE: usize = Self::PhysicalPageSize::SIZE;
+    const SIZE: MemorySize = Self::PhysicalPageSize::SIZE;
     const MASK: usize = Self::PhysicalPageSize::MASK;
 
     const PAT_INDEX: usize = 7;
@@ -49,7 +50,7 @@ impl PageSize for Page2MiB {
     type PhysicalPageSize = Frame2MiB;
 
     const SHIFT: usize = Self::PhysicalPageSize::SHIFT;
-    const SIZE: usize = Self::PhysicalPageSize::SIZE;
+    const SIZE: MemorySize = Self::PhysicalPageSize::SIZE;
     const MASK: usize = Self::PhysicalPageSize::MASK;
 
     const PAT_INDEX: usize = 12;
@@ -62,7 +63,7 @@ impl PageSize for Page1GiB {
     type PhysicalPageSize = Frame1GiB;
 
     const SHIFT: usize = Self::PhysicalPageSize::SHIFT;
-    const SIZE: usize = Self::PhysicalPageSize::SIZE;
+    const SIZE: MemorySize = Self::PhysicalPageSize::SIZE;
     const MASK: usize = Self::PhysicalPageSize::MASK;
 
     const PAT_INDEX: usize = 12;
@@ -75,7 +76,7 @@ impl PageSize for Page512GiB {
     type PhysicalPageSize = FrameInvalidSize;
 
     const SHIFT: usize = 39;
-    const SIZE: usize = 1 << Self::SHIFT;
+    const SIZE: MemorySize = MemorySize::new(1 << Self::SHIFT);
     const MASK: usize = usize::MAX >> Self::SHIFT << Self::SHIFT;
 
     const PAT_INDEX: usize = 0;

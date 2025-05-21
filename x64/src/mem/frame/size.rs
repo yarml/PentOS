@@ -1,3 +1,5 @@
+use crate::mem::MemorySize;
+
 #[derive(Clone, Copy)]
 pub struct Frame4KiB;
 #[derive(Clone, Copy)]
@@ -13,7 +15,7 @@ pub struct FrameInvalidSize;
 
 pub trait FrameSize: Clone + Copy {
     const SHIFT: usize;
-    const SIZE: usize = 1 << Self::SHIFT;
+    const SIZE: MemorySize = MemorySize::new(1 << Self::SHIFT);
     const MASK: usize = usize::MAX >> Self::SHIFT << Self::SHIFT;
 }
 

@@ -55,6 +55,8 @@ pub const GLOBAL_KHEAP_REGION: VirtualMemoryRegion = after(KBIN_REGION, G512, B0
 /// them into their paging structure whenever they synchronize.
 ///
 /// Bootloader information is also kept here.
+/// 
+/// More information could be found in [SysinfoAllocator](../../mman/sysinfo/struct.SysinfoAllocator.html)
 pub const SYSINFO_REGION: VirtualMemoryRegion = after(GLOBAL_KHEAP_REGION, G512, B0, B0);
 
 /// This part is used by the memory manager, it contains the bookkeeping sturctures for physical memory

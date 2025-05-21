@@ -1,7 +1,6 @@
 pub mod size;
 
 use super::addr::Address;
-use crate::mem::MemorySize;
 use crate::mem::addr::VirtAddr;
 use core::fmt::Debug;
 use core::fmt::Display;
@@ -59,18 +58,12 @@ impl<S: PageSize> Add<usize> for Page<S> {
 
 impl<S: PageSize> Debug for Page<S> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "Page{}#{}@{}",
-            MemorySize::new(S::SIZE),
-            self.number(),
-            self.boundary()
-        )
+        write!(f, "Page{}#{}@{}", S::SIZE, self.number(), self.boundary())
     }
 }
 
 impl<S: PageSize> Display for Page<S> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Page{}#{}", MemorySize::new(S::SIZE), self.number())
+        write!(f, "Page{}#{}", S::SIZE, self.number())
     }
 }

@@ -2,6 +2,7 @@ use x64::mem::MemorySize;
 use x64::mem::PhysicalMemoryRegion;
 use x64::mem::addr::PhysAddr;
 
+#[derive(Default)]
 pub struct PhysicalAllocationRequest {
     pub size: MemorySize,
     pub alignment: Option<MemorySize>,
@@ -16,6 +17,17 @@ pub trait PhysicalMemoryAllocator {
 
     fn allocate(&self, req: PhysicalAllocationRequest) -> PhysicalMemoryRegion {
         self.maybe_allocate(req)
-            .expect("Run out of physical memory")
+            .expect("Ran out of physical memory")
+    }
+}
+
+impl PhysicalAllocationRequest {
+    pub const fn size_align(size: MemorySize, align: MemorySize) -> Self {
+        Self {
+            size,
+            alignment: Some(align),
+            below: None,
+            continuous: false,
+        }
     }
 }

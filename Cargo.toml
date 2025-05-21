@@ -29,10 +29,10 @@ spinlocks = { path = "spinlocks" }
 acpi = { path = "acpi" }
 common = { path = "common" }
 config = { path = "config" }
+mman = { path = "mman" }
 
 [workspace.metadata.chef]
 ovmf-source = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/edk2-stable202408.01-r1/edk2-stable202408.01-r1-bin.tar.xz"
 
 install-bootloader = "/boot/efi/pentos.efi"
 install-kernel = "/boot/efi/pentos.kernel"
-

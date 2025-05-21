@@ -36,6 +36,7 @@ pub trait Address:
     + Sub<Self, Output = MemorySize>
     + Eq
     + Ord
+    + Default
     + Debug
     + Display
 {
@@ -76,7 +77,7 @@ macro_rules! define_addr {
         use $crate::mem::addr::Address;
 
         #[repr(transparent)]
-        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
         pub struct $name {
             inner: usize,
         }

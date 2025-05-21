@@ -3,9 +3,10 @@ use crate::allocator::PostBootAllocator;
 use crate::infoarea::allocate_info_space;
 use crate::virt_mmap::map;
 use boot_protocol::framebuffer::FramebufferInfo;
-use x64::mem::addr::Address;
 use core::mem;
 use core::slice;
+use mman::phys::PhysicalAllocationRequest;
+use mman::phys::PhysicalMemoryAllocator;
 use uefi::Identify;
 use uefi::boot;
 use uefi::boot::SearchType;
@@ -14,9 +15,12 @@ use uefi::proto::console::gop::Mode;
 use uefi::proto::console::gop::PixelFormat;
 use x64::framebuffer::PixelMode;
 use x64::mem::MemorySize;
+use x64::mem::addr::Address;
 use x64::mem::addr::PhysAddr;
 use x64::mem::frame::Frame;
 use x64::mem::page::Page;
+use x64::mem::page::size::Page4KiB;
+use x64::mem::page::size::PageSize;
 use x64::mem::paging::PagingRootEntry;
 use x64::msr::pat::MemoryType;
 
@@ -89,8 +93,12 @@ pub fn postboot_init(
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
 ) -> FramebufferInfo {
     let buffer = allocator
-        .alloc_raw(*primary.size, 0x1000)
-        .expect("Out of memory");
+        .maybe_allocate(PhysicalAllocationRequest::size_align(
+            primary.size,
+            Page4KiB::SIZE,
+        ))
+        .expect("Out of memory")
+        .start();
     let buffer_frame_start = Frame::containing(buffer);
     let buffer = unsafe {
         // SAFETY: trust in the process

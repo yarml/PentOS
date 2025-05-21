@@ -23,10 +23,13 @@ pub struct MemoryRegion<S: const Address> {
     size: MemorySize,
 }
 
-pub struct ChunkIter<S: const Address> {
-    current: S,
-    region: MemoryRegion<S>,
-    increment: MemorySize,
+pub enum ChunkIter<S: const Address> {
+    Working {
+        current: S,
+        region: MemoryRegion<S>,
+        increment: MemorySize,
+    },
+    Empty,
 }
 
 impl<S: const Address> MemoryRegion<S> {
@@ -77,7 +80,7 @@ impl<S: const Address> MemoryRegion<S> {
     }
     #[inline]
     pub const fn end(&self) -> S {
-        self.start().add_truncate(self.size.as_usize())
+        self.start().add_panic(self.size.as_usize())
     }
     #[inline]
     pub fn is_null(&self) -> bool {
@@ -115,25 +118,39 @@ impl<S: const Address> MemoryRegion<S> {
 }
 
 impl<S: const Address> MemoryRegion<S> {
-    pub fn take_start(&mut self, amount: usize) -> S {
+    pub fn take_start(&mut self, amount: MemorySize) -> S {
         let start = self.start();
         self.start += amount;
-        self.size -= amount;
-        if *self.size() == 0 {
-            *self = MemoryRegion::null();
+        self.size -= amount.clamp(MemorySize::zero(), self.size);
+        if *self.size == 0 {
+            *self = Self::null();
         }
         start
+    }
+    pub fn take_end(&mut self, amount: MemorySize) -> S {
+        let end = self.end();
+        self.size -= amount.clamp(MemorySize::zero(), self.size);
+        if *self.size == 0 {
+            *self = Self::null();
+        }
+        end
     }
 }
 
 impl<S: const Address> MemoryRegion<S> {
     #[inline]
-    pub const fn chunks(&self, align: MemorySize, size: MemorySize) -> ChunkIter<S> {
-        let start = S::new_panic(self.start.as_usize().next_multiple_of(align.as_usize()));
-        ChunkIter {
-            current: start,
-            region: *self,
-            increment: size,
+    pub fn chunks(&self, align: MemorySize, size: MemorySize) -> ChunkIter<S> {
+        let Some(start) = S::new(self.start.as_usize().next_multiple_of(align.as_usize())) else {
+            return ChunkIter::Empty;
+        };
+        if self.contains(start) && self.contains(start + size) {
+            ChunkIter::Working {
+                current: start,
+                region: *self,
+                increment: size,
+            }
+        } else {
+            ChunkIter::Empty
         }
     }
 }
@@ -197,13 +214,21 @@ impl<S: const Address> Iterator for ChunkIter<S> {
     type Item = MemoryRegion<S>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.region.contains(self.current) && self.region.contains(self.current + self.increment)
-        {
-            let current_region = MemoryRegion::new(self.current, self.increment);
-            self.current += self.increment;
-            Some(current_region)
-        } else {
-            None
+        match self {
+            ChunkIter::Working {
+                current,
+                region,
+                increment,
+            } => {
+                if region.contains(*current) && region.contains(*current + *increment) {
+                    let current_region = MemoryRegion::new(*current, *increment);
+                    *current += *increment;
+                    Some(current_region)
+                } else {
+                    None
+                }
+            }
+            ChunkIter::Empty => None,
         }
     }
 }

@@ -2,6 +2,7 @@ use core::cmp::Ordering;
 use core::ops::Deref;
 use core::ops::DerefMut;
 use core::slice;
+use log::warn;
 use x64::mem::PhysicalMemoryRegion;
 
 pub struct PhysMemMap<const MAX: usize> {
@@ -48,6 +49,29 @@ impl<const MAX: usize> PhysMemMap<MAX> {
             self.regions[self.len] = region;
             self.len += 1;
             self.minimize();
+        } else {
+            warn!("Skipping memory as we ran out of map location")
+        }
+    }
+    pub fn sub(&mut self, other: PhysicalMemoryRegion) {
+        let mut to_add = Self::new();
+        for region in self.regions.iter_mut().filter(|region| !region.is_null()) {
+            let intersection = region.intersect(other);
+            if !intersection.is_null() {
+                if region.start() == intersection.start() {
+                    region.take_start(intersection.size());
+                } else if region.end() == intersection.end() {
+                    region.take_end(intersection.size());
+                } else {
+                    let head_size = intersection.start() - region.start();
+                    let tail_size = region.size() - head_size - intersection.size();
+                    region.take_end(tail_size + intersection.size());
+                    to_add.add(PhysicalMemoryRegion::new(intersection.end(), tail_size));
+                }
+            }
+        }
+        for region in &to_add {
+            self.add(*region);
         }
     }
     pub fn minimize(&mut self) {
@@ -85,6 +109,10 @@ impl<const MAX: usize> PhysMemMap<MAX> {
     pub fn iter(&self) -> slice::Iter<PhysicalMemoryRegion> {
         self.regions[..self.len].iter()
     }
+
+    pub fn iter_mut(&mut self) -> slice::IterMut<PhysicalMemoryRegion> {
+        self.regions[..self.len].iter_mut()
+    }
 }
 
 impl<const MAX: usize> Default for PhysMemMap<MAX> {
@@ -113,5 +141,14 @@ impl<'a, const MAX: usize> IntoIterator for &'a PhysMemMap<MAX> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
+    }
+}
+
+impl<'a, const MAX: usize> IntoIterator for &'a mut PhysMemMap<MAX> {
+    type Item = &'a mut PhysicalMemoryRegion;
+    type IntoIter = slice::IterMut<'a, PhysicalMemoryRegion>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
     }
 }

@@ -14,7 +14,7 @@ use core::ops::Sub;
 use core::ops::SubAssign;
 
 #[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct MemorySize {
     inner: usize,
 }

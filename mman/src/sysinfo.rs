@@ -8,6 +8,7 @@ use log::error;
 use x64::mem::addr::Address;
 use x64::mem::addr::VirtAddr;
 
+/// Allocates objects in the [SYSINFO_REGION].
 pub struct SysinfoAllocator {
     bump: VirtAddr,
 }

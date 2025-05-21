@@ -3,7 +3,6 @@ pub mod size;
 use super::addr::Address;
 use super::page::Page;
 use super::page::size::PageSize;
-use crate::mem::MemorySize;
 use crate::mem::addr::PhysAddr;
 use core::fmt::Debug;
 use core::fmt::Display;
@@ -65,18 +64,12 @@ impl<S: FrameSize> Add<usize> for Frame<S> {
 
 impl<S: FrameSize> Debug for Frame<S> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "Frame{}#{}@{}",
-            MemorySize::new(S::SIZE),
-            self.number(),
-            self.boundary()
-        )
+        write!(f, "Frame{}#{}@{}", S::SIZE, self.number(), self.boundary())
     }
 }
 
 impl<S: FrameSize> Display for Frame<S> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Frame{}#{}", MemorySize::new(S::SIZE), self.number())
+        write!(f, "Frame{}#{}", S::SIZE, self.number())
     }
 }
