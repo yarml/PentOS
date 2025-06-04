@@ -6,6 +6,8 @@
 //! - Local Kernel space: Contains hart specific data, such as the stack, local APIC mapping, local heap, ...
 
 // TODO: proc macro to do this in a tree structure easily
+// I'm dreaming, but maybe I should make a crate which shows this as graphs
+// Gonna look good for the capstone
 
 use x64::mem::MemorySize;
 use x64::mem::VirtualMemoryRegion;
