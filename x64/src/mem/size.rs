@@ -31,6 +31,8 @@ pub enum MemoryUnit {
 }
 
 impl MemorySize {
+    pub const MAX: Self = Self::new(usize::MAX);
+
     #[inline]
     pub const fn new(size: usize) -> Self {
         Self { inner: size }
