@@ -884,6 +884,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mman"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "spinlocks",
+ "x64",
+]
+
+[[package]]
 name = "nasm-rs"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

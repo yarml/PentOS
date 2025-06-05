@@ -103,3 +103,9 @@ impl<'lock, T> DerefMut for MutexGuard<'lock, T> {
         self.data
     }
 }
+
+impl<T: Default> Default for Mutex<T> {
+    fn default() -> Self {
+        Self::new(T::default())
+    }
+}
