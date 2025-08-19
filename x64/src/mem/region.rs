@@ -1,17 +1,15 @@
 #[cfg(test)]
 mod test;
 
-use super::addr::Address;
-use super::addr::PhysAddr;
-use super::addr::VirtAddr;
-use crate::mem::MemorySize;
-use core::cmp::Ordering;
-use core::fmt::Debug;
-use core::fmt::Display;
-use core::ops::Add;
-use core::ops::AddAssign;
-use core::ops::BitAnd;
-use core::ops::BitAndAssign;
+use {
+    super::addr::{Address, PhysAddr, VirtAddr},
+    crate::mem::MemorySize,
+    core::{
+        cmp::Ordering,
+        fmt::{Debug, Display},
+        ops::{Add, AddAssign, BitAnd, BitAndAssign},
+    },
+};
 
 pub type PhysicalMemoryRegion = MemoryRegion<PhysAddr>;
 pub type VirtualMemoryRegion = MemoryRegion<VirtAddr>;

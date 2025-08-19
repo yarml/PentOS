@@ -1,38 +1,37 @@
-use crate::allocator::ALLOCATOR_CAP;
-use crate::allocator::PostBootAllocator;
-use crate::allocator::PreBootAllocator;
-use crate::infoarea::allocate_info_space;
-use crate::misc;
-use crate::virt_mmap;
-use boot_protocol::STACK_SIZE;
-use boot_protocol::kernel_meta::KernelMeta;
-use core::arch::asm;
-use core::cmp::max;
-use core::hint;
-use core::mem;
-use core::sync::atomic::AtomicUsize;
-use core::sync::atomic::Ordering;
-use elf::Elf;
-use elf::ElfClass;
-use elf::ElfType;
-use elf::SegmentType;
-use spinlocks::once::Once;
-use uefi::CStr16;
-use uefi::Identify;
-use uefi::boot;
-use uefi::boot::SearchType;
-use uefi::proto::media::file::File;
-use uefi::proto::media::file::FileAttribute;
-use uefi::proto::media::file::FileMode;
-use uefi::proto::media::fs::SimpleFileSystem;
-use x64::lapic;
-use x64::mem::addr::Address;
-use x64::mem::addr::PhysAddr;
-use x64::mem::addr::VirtAddr;
-use x64::mem::frame::Frame;
-use x64::mem::page::Page;
-use x64::mem::paging::PagingRootEntry;
-use x64::msr::pat::MemoryType;
+use {
+    crate::{
+        allocator::{ALLOCATOR_CAP, PostBootAllocator, PreBootAllocator},
+        infoarea::allocate_info_space,
+        misc, virt_mmap,
+    },
+    boot_protocol::{STACK_SIZE, kernel_meta::KernelMeta},
+    core::{
+        arch::asm,
+        cmp::max,
+        hint, mem,
+        sync::atomic::{AtomicUsize, Ordering},
+    },
+    elf::{Elf, ElfClass, ElfType, SegmentType},
+    spinlocks::once::Once,
+    uefi::{
+        CStr16, Identify,
+        boot::{self, SearchType},
+        proto::media::{
+            file::{File, FileAttribute, FileMode},
+            fs::SimpleFileSystem,
+        },
+    },
+    x64::{
+        lapic,
+        mem::{
+            addr::{Address, PhysAddr, VirtAddr},
+            frame::Frame,
+            page::Page,
+            paging::PagingRootEntry,
+        },
+        msr::pat::MemoryType,
+    },
+};
 
 struct ApInfo {
     pub ap_entry: VirtAddr,

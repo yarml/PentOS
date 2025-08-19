@@ -1,14 +1,12 @@
 pub mod descriptor;
 pub mod selector;
 
-use super::addr::Address;
-use super::addr::VirtAddr;
-use core::arch::asm;
-use core::hint;
-use core::mem;
-use descriptor::SegmentDescriptor;
-use descriptor::SegmentDescriptorEntry;
-use selector::SegmentSelector;
+use {
+    super::addr::{Address, VirtAddr},
+    core::{arch::asm, hint, mem},
+    descriptor::{SegmentDescriptor, SegmentDescriptorEntry},
+    selector::SegmentSelector,
+};
 
 #[repr(C)]
 pub struct GlobalDescriptorTable<const N: usize> {

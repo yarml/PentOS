@@ -1,8 +1,11 @@
-use common::collections::smallvec::SmallVec;
-use spinlocks::mutex::Mutex;
-use x64::mem::frame::Frame;
-use x64::mem::frame::size::Frame64KiB;
-use x64::mem::frame::size::Frame128KiB;
+use {
+    common::collections::smallvec::SmallVec,
+    spinlocks::mutex::Mutex,
+    x64::mem::frame::{
+        Frame,
+        size::{Frame64KiB, Frame128KiB},
+    },
+};
 
 #[derive(Default)]
 pub struct LowMemAllocator {

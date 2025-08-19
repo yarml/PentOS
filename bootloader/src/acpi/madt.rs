@@ -1,13 +1,10 @@
-use acpi::table::IOApic;
-use acpi::table::LocalApic;
-use acpi::table::Madt;
-use boot_protocol::topology::Hart;
-use boot_protocol::topology::InterruptController;
-use x64::mem::addr::Address;
-use x64::mem::addr::PhysAddr;
+use {
+    acpi::table::{IOApic, LocalApic, Madt},
+    boot_protocol::topology::{Hart, InterruptController},
+    x64::mem::addr::{Address, PhysAddr},
+};
 
-use crate::topology::register_hart;
-use crate::topology::register_interrupt_controller;
+use crate::topology::{register_hart, register_interrupt_controller};
 
 pub fn parse(madt: &Madt) {
     madt.entries::<LocalApic>().for_each(parse_lapic);

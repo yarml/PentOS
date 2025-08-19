@@ -1,5 +1,4 @@
-use crate::mem::page::size::PageSize;
-use core::ops::Deref;
+use {crate::mem::page::size::PageSize, core::ops::Deref};
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq)]

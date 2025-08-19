@@ -1,6 +1,7 @@
-use crate::define_addr;
-use crate::mem::page::Page;
-use crate::mem::page::size::PageSize;
+use crate::{
+    define_addr,
+    mem::page::{Page, size::PageSize},
+};
 
 define_addr!(VirtAddr, make_canonical);
 

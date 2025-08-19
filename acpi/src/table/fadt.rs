@@ -1,8 +1,4 @@
-use super::AcpiHeader;
-use super::AcpiTable;
-use super::FADT_SIG;
-use super::GenericAddress;
-use super::Signature;
+use super::{AcpiHeader, AcpiTable, FADT_SIG, GenericAddress, Signature};
 
 // In the beginning...
 #[repr(C, packed)]

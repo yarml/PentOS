@@ -1,24 +1,28 @@
-use crate::allocator::ALLOCATOR_CAP;
-use crate::allocator::PostBootAllocator;
-use crate::infoarea::allocate_info_space;
-use crate::virt_mmap::map;
-use boot_protocol::framebuffer::FramebufferInfo;
-use x64::mem::addr::Address;
-use core::mem;
-use core::slice;
-use uefi::Identify;
-use uefi::boot;
-use uefi::boot::SearchType;
-use uefi::proto::console::gop::GraphicsOutput;
-use uefi::proto::console::gop::Mode;
-use uefi::proto::console::gop::PixelFormat;
-use x64::framebuffer::PixelMode;
-use x64::mem::MemorySize;
-use x64::mem::addr::PhysAddr;
-use x64::mem::frame::Frame;
-use x64::mem::page::Page;
-use x64::mem::paging::PagingRootEntry;
-use x64::msr::pat::MemoryType;
+use {
+    crate::{
+        allocator::{ALLOCATOR_CAP, PostBootAllocator},
+        infoarea::allocate_info_space,
+        virt_mmap::map,
+    },
+    boot_protocol::framebuffer::FramebufferInfo,
+    core::{mem, slice},
+    uefi::{
+        Identify,
+        boot::{self, SearchType},
+        proto::console::gop::{GraphicsOutput, Mode, PixelFormat},
+    },
+    x64::{
+        framebuffer::PixelMode,
+        mem::{
+            MemorySize,
+            addr::{Address, PhysAddr},
+            frame::Frame,
+            page::Page,
+            paging::PagingRootEntry,
+        },
+        msr::pat::MemoryType,
+    },
+};
 
 pub struct PrimaryFramebufferInfo {
     base: PhysAddr,

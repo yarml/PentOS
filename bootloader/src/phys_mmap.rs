@@ -1,8 +1,11 @@
-use core::cmp::Ordering;
-use core::ops::Deref;
-use core::ops::DerefMut;
-use core::slice;
-use x64::mem::PhysicalMemoryRegion;
+use {
+    core::{
+        cmp::Ordering,
+        ops::{Deref, DerefMut},
+        slice,
+    },
+    x64::mem::PhysicalMemoryRegion,
+};
 
 pub struct PhysMemMap<const MAX: usize> {
     pub regions: [PhysicalMemoryRegion; MAX],

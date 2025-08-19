@@ -1,34 +1,29 @@
-use crate::acpi;
-use crate::allocator::ALLOCATOR_CAP;
-use crate::allocator::PostBootAllocator;
-use crate::allocator::PreBootAllocator;
-use crate::bootstage;
-use crate::features;
-use crate::framebuffer;
-use crate::kernel;
-use crate::logger;
-use crate::phys_mmap::PhysMemMap;
-use crate::pic;
-use crate::topology;
-use crate::virt_mmap;
-use boot_protocol::BootInfo;
-use boot_protocol::MAX_MMAP_SIZE;
-use boot_protocol::OFFSET_MAPPING;
-use log::info;
-use uefi::Status;
-use uefi::boot;
-use uefi::boot::MemoryType;
-use uefi::entry;
-use uefi::mem::memory_map::MemoryMap as UefiMemoryMap;
-use uefi::system;
-use x64::mem::addr::Address;
-use x64::mem::PhysicalMemoryRegion;
-use x64::mem::MemorySize;
-use x64::mem::addr::PhysAddr;
-use x64::mem::addr::VirtAddr;
-use x64::mem::page::Page;
-use x64::msr::efer::Efer;
-use x64::msr::pat::standard_pat;
+use {
+    crate::{
+        acpi,
+        allocator::{ALLOCATOR_CAP, PostBootAllocator, PreBootAllocator},
+        bootstage, features, framebuffer, kernel, logger,
+        phys_mmap::PhysMemMap,
+        pic, topology, virt_mmap,
+    },
+    boot_protocol::{BootInfo, MAX_MMAP_SIZE, OFFSET_MAPPING},
+    log::info,
+    uefi::{
+        Status,
+        boot::{self, MemoryType},
+        entry,
+        mem::memory_map::MemoryMap as UefiMemoryMap,
+        system,
+    },
+    x64::{
+        mem::{
+            MemorySize, PhysicalMemoryRegion,
+            addr::{Address, PhysAddr, VirtAddr},
+            page::Page,
+        },
+        msr::{efer::Efer, pat::standard_pat},
+    },
+};
 
 #[entry]
 fn main() -> Status {
@@ -60,7 +55,7 @@ fn main() -> Status {
         // SAFETY: Only thing we used was the UEFI console logger, and allocator, they are now disabled
         boot::exit_boot_services(MemoryType::LOADER_DATA)
     };
-    
+
     pic::disable();
 
     let mut mmap = PhysMemMap::<ALLOCATOR_CAP>::new();

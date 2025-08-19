@@ -1,9 +1,9 @@
-use core::cell::UnsafeCell;
-use core::hint;
-use core::ops::Deref;
-use core::ops::DerefMut;
-use core::sync::atomic::AtomicBool;
-use core::sync::atomic::Ordering;
+use core::{
+    cell::UnsafeCell,
+    hint,
+    ops::{Deref, DerefMut},
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 pub struct Mutex<T: ?Sized> {
     lock: AtomicBool,

@@ -1,8 +1,7 @@
-use super::complain_corrupt_acpi;
-use super::madt;
-use acpi::table::AcpiTable;
-use acpi::table::Madt;
-use acpi::table::Xsdt;
+use {
+    super::{complain_corrupt_acpi, madt},
+    acpi::table::{AcpiTable, Madt, Xsdt},
+};
 
 pub fn parse(xsdt: &Xsdt) {
     if !xsdt.verify() {

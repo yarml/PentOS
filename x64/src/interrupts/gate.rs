@@ -1,9 +1,14 @@
-use super::stackframe::InterruptStackFrame;
-use crate::mem::addr::Address;
-use crate::mem::addr::VirtAddr;
-use crate::mem::segmentation::selector::SegmentSelector;
-use crate::prot::PrivilegeLevel;
-use core::num::NonZeroU8;
+use {
+    super::stackframe::InterruptStackFrame,
+    crate::{
+        mem::{
+            addr::{Address, VirtAddr},
+            segmentation::selector::SegmentSelector,
+        },
+        prot::PrivilegeLevel,
+    },
+    core::num::NonZeroU8,
+};
 
 // A bit (too much) plagiarism from x86_64 crate
 pub type InterruptHandlerFn = extern "x86-interrupt" fn(InterruptStackFrame);

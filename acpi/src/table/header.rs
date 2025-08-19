@@ -1,5 +1,4 @@
-use super::AcpiTable;
-use core::slice;
+use {super::AcpiTable, core::slice};
 
 #[repr(C, packed)]
 pub struct AcpiHeader {

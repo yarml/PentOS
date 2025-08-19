@@ -1,12 +1,11 @@
 mod madt;
 mod xsdt;
 
-use acpi::table::Madt;
-use acpi::table::MadtEntryHeader;
-use acpi::table::Rsdp;
-use spinlocks::once::Once;
-use uefi::system;
-use uefi::table;
+use {
+    acpi::table::{Madt, MadtEntryHeader, Rsdp},
+    spinlocks::once::Once,
+    uefi::{system, table},
+};
 
 pub fn init() {
     let rsdp: Once<Option<&Rsdp>> = Once::new();

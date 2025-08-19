@@ -1,12 +1,12 @@
-use crate::bootstage;
-use x64::mem::addr::Address;
-use x64::mem::addr::PhysAddr;
-use core::mem;
-use core::mem::MaybeUninit;
-use core::slice;
-use uefi::boot;
-use uefi::boot::AllocateType;
-use uefi::boot::MemoryType;
+use {
+    crate::bootstage,
+    core::{mem, mem::MaybeUninit, slice},
+    uefi::{
+        boot,
+        boot::{AllocateType, MemoryType},
+    },
+    x64::mem::addr::{Address, PhysAddr},
+};
 
 pub struct PreBootAllocator;
 

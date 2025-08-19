@@ -1,9 +1,7 @@
-use core::cell::UnsafeCell;
-use core::hint;
-use core::mem::MaybeUninit;
-use core::sync::atomic::Ordering;
-use status::AtomicStatus;
-use status::Status;
+use {
+    core::{cell::UnsafeCell, hint, mem::MaybeUninit, sync::atomic::Ordering},
+    status::{AtomicStatus, Status},
+};
 
 pub struct Once<T> {
     status: AtomicStatus,
@@ -119,9 +117,10 @@ impl<T> Default for Once<T> {
 }
 
 mod status {
-    use core::mem;
-    use core::sync::atomic::AtomicU8;
-    use core::sync::atomic::Ordering;
+    use core::{
+        mem,
+        sync::atomic::{AtomicU8, Ordering},
+    };
 
     #[repr(u8)]
     #[derive(Debug, PartialEq)]

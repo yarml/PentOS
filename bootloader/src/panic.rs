@@ -1,6 +1,7 @@
-use core::arch::asm;
-use core::panic::PanicInfo;
-use log::error;
+use {
+    core::{arch::asm, panic::PanicInfo},
+    log::error,
+};
 
 #[cfg(not(any(test, doc)))]
 #[panic_handler]

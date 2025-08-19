@@ -1,11 +1,12 @@
 // All written by deepseek
 
-use crate::mem::MemorySize;
-use crate::mem::PhysicalMemoryRegion;
-use crate::mem::addr::Address;
-use crate::mem::addr::PhysAddr;
-use alloc::format;
-use alloc::vec;
+use {
+    crate::mem::{
+        MemorySize, PhysicalMemoryRegion,
+        addr::{Address, PhysAddr},
+    },
+    alloc::{format, vec},
+};
 
 // Helper functions to create test objects
 fn addr(n: usize) -> PhysAddr {

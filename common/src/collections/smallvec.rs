@@ -1,14 +1,10 @@
-use core::fmt::Debug;
-use core::hash::Hash;
-use core::mem::MaybeUninit;
-use core::ops::Deref;
-use core::ops::DerefMut;
-use core::ops::DerefPure;
-use core::ops::Index;
-use core::ops::IndexMut;
-use core::slice::Iter;
-use core::slice::IterMut;
-use core::slice::SliceIndex;
+use core::{
+    fmt::Debug,
+    hash::Hash,
+    mem::MaybeUninit,
+    ops::{Deref, DerefMut, DerefPure, Index, IndexMut},
+    slice::{Iter, IterMut, SliceIndex},
+};
 
 #[repr(C)]
 pub struct SmallVec<T, const N: usize> {

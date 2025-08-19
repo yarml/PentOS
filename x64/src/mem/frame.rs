@@ -1,15 +1,18 @@
 pub mod size;
 
-use super::addr::Address;
-use super::page::Page;
-use super::page::size::PageSize;
-use crate::mem::MemorySize;
-use crate::mem::addr::PhysAddr;
-use core::fmt::Debug;
-use core::fmt::Display;
-use core::marker::PhantomData;
-use core::ops::Add;
-use size::FrameSize;
+use {
+    super::{
+        addr::Address,
+        page::{Page, size::PageSize},
+    },
+    crate::mem::{MemorySize, addr::PhysAddr},
+    core::{
+        fmt::{Debug, Display},
+        marker::PhantomData,
+        ops::Add,
+    },
+    size::FrameSize,
+};
 
 #[repr(transparent)]
 #[derive(Clone, Copy)]

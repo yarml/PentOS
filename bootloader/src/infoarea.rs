@@ -1,8 +1,6 @@
-use core::sync::atomic::AtomicUsize;
-use core::sync::atomic::Ordering;
+use core::sync::atomic::{AtomicUsize, Ordering};
 
-use x64::mem::addr::Address;
-use x64::mem::addr::VirtAddr;
+use x64::mem::addr::{Address, VirtAddr};
 
 static INFO_AREA: AtomicUsize = AtomicUsize::new(0xfffffff000000000);
 

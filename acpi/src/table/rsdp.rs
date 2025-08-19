@@ -1,6 +1,7 @@
-use super::Xsdt;
-use core::mem;
-use core::slice;
+use {
+    super::Xsdt,
+    core::{mem, slice},
+};
 
 #[repr(C, packed)]
 pub struct Rsdp {

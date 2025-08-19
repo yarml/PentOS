@@ -1,15 +1,15 @@
-use super::PagingReferenceEntry;
-use super::pat::ReferencePatIndex;
-use super::pcid::Pcid;
-use crate::mem::addr::Address;
-use crate::mem::addr::PhysAddr;
-use crate::mem::frame::Frame;
-use crate::mem::frame::size::Frame4KiB;
-use crate::mem::frame::size::FrameSize;
-use crate::mem::page::size::Page4KiB;
-use crate::mem::page::size::Page512GiB;
-use core::arch::asm;
-use core::ops::Deref;
+use {
+    super::{PagingReferenceEntry, pat::ReferencePatIndex, pcid::Pcid},
+    crate::mem::{
+        addr::{Address, PhysAddr},
+        frame::{
+            Frame,
+            size::{Frame4KiB, FrameSize},
+        },
+        page::size::{Page4KiB, Page512GiB},
+    },
+    core::{arch::asm, ops::Deref},
+};
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq)]

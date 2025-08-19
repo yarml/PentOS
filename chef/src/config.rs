@@ -1,5 +1,4 @@
-use serde::Deserialize;
-use serde_json::Value;
+use {serde::Deserialize, serde_json::Value};
 
 #[derive(Deserialize)]
 pub struct ChefConfig {

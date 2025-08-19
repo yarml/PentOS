@@ -4,17 +4,15 @@ mod test;
 mod phys;
 mod virt;
 
-use super::MemorySize;
-use core::fmt::Debug;
-use core::fmt::Display;
-use core::ops::Add;
-use core::ops::AddAssign;
-use core::ops::DerefMut;
-use core::ops::Sub;
-use core::ops::SubAssign;
+use {
+    super::MemorySize,
+    core::{
+        fmt::{Debug, Display},
+        ops::{Add, AddAssign, DerefMut, Sub, SubAssign},
+    },
+};
 
-pub use phys::PhysAddr;
-pub use virt::VirtAddr;
+pub use {phys::PhysAddr, virt::VirtAddr};
 
 #[const_trait]
 pub trait Address:
@@ -64,16 +62,13 @@ pub trait Address:
 #[macro_export]
 macro_rules! define_addr {
     ($name:ident, $make_canonical:expr) => {
-        use core::fmt::Debug;
-        use core::fmt::Display;
-        use core::ops::Add;
-        use core::ops::AddAssign;
-        use core::ops::Deref;
-        use core::ops::DerefMut;
-        use core::ops::Sub;
-        use core::ops::SubAssign;
-        use $crate::mem::MemorySize;
-        use $crate::mem::addr::Address;
+        use {
+            core::{
+                fmt::{Debug, Display},
+                ops::{Add, AddAssign, Deref, DerefMut, Sub, SubAssign},
+            },
+            $crate::mem::{MemorySize, addr::Address},
+        };
 
         #[repr(transparent)]
         #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

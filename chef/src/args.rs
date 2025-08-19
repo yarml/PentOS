@@ -1,5 +1,4 @@
-use clap::Parser;
-use clap::Subcommand;
+use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
 pub struct ChefArgs {

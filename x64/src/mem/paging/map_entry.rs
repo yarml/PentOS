@@ -1,14 +1,12 @@
-use super::PagingRawEntry;
-use super::absent_entry::PagingAbsentEntry;
-use super::pat::PatIndex;
-use super::pk::ProtectionKey;
-use crate::mem::addr::Address;
-use crate::mem::addr::PhysAddr;
-use crate::mem::frame::Frame;
-use crate::mem::frame::size::FrameSize;
-use crate::mem::page::size::PageSize;
-use core::marker::PhantomData;
-use core::ops::Deref;
+use {
+    super::{PagingRawEntry, absent_entry::PagingAbsentEntry, pat::PatIndex, pk::ProtectionKey},
+    crate::mem::{
+        addr::{Address, PhysAddr},
+        frame::{Frame, size::FrameSize},
+        page::size::PageSize,
+    },
+    core::{marker::PhantomData, ops::Deref},
+};
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq)]

@@ -1,6 +1,8 @@
-use crate::phys_mmap::PhysMemMap;
-use core::mem;
-use x64::mem::addr::{Address, PhysAddr};
+use {
+    crate::phys_mmap::PhysMemMap,
+    core::mem,
+    x64::mem::addr::{Address, PhysAddr},
+};
 
 pub const ALLOCATOR_CAP: usize = 256;
 

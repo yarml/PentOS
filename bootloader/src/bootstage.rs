@@ -1,5 +1,4 @@
-use core::sync::atomic::AtomicU8;
-use core::sync::atomic::Ordering;
+use core::sync::atomic::{AtomicU8, Ordering};
 
 static BOOT_STAGE: AtomicU8 = AtomicU8::new(BootStage::PreBoot as u8);
 

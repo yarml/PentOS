@@ -1,28 +1,25 @@
-use crate::allocator::ALLOCATOR_CAP;
-use crate::allocator::PostBootAllocator;
-use boot_protocol::BootInfo;
-use core::mem;
-use uefi::boot::MemoryType;
-use uefi::mem::memory_map::MemoryMap;
-use uefi::mem::memory_map::MemoryMapOwned;
-use x64::mem::MemorySize;
-use x64::mem::PhysicalMemoryRegion;
-use x64::mem::addr::Address;
-use x64::mem::addr::PhysAddr;
-use x64::mem::frame::Frame;
-use x64::mem::frame::size::Frame4KiB;
-use x64::mem::page::Page;
-use x64::mem::page::size::Page1GiB;
-use x64::mem::page::size::Page2MiB;
-use x64::mem::page::size::Page4KiB;
-use x64::mem::page::size::Page512GiB;
-use x64::mem::page::size::PageSize;
-use x64::mem::paging::PagingMapEntry;
-use x64::mem::paging::PagingRawEntry;
-use x64::mem::paging::PagingReferenceEntry;
-use x64::mem::paging::PagingRootEntry;
-use x64::msr::pat::MemoryType as PatMemoryType;
-use x64::msr::pat::pat_index;
+use {
+    crate::allocator::{ALLOCATOR_CAP, PostBootAllocator},
+    boot_protocol::BootInfo,
+    core::mem,
+    uefi::{
+        boot::MemoryType,
+        mem::memory_map::{MemoryMap, MemoryMapOwned},
+    },
+    x64::{
+        mem::{
+            MemorySize, PhysicalMemoryRegion,
+            addr::{Address, PhysAddr},
+            frame::{Frame, size::Frame4KiB},
+            page::{
+                Page,
+                size::{Page1GiB, Page2MiB, Page4KiB, Page512GiB, PageSize},
+            },
+            paging::{PagingMapEntry, PagingRawEntry, PagingReferenceEntry, PagingRootEntry},
+        },
+        msr::pat::{MemoryType as PatMemoryType, pat_index},
+    },
+};
 
 pub struct VirtMemMap {}
 

@@ -4,18 +4,16 @@ mod args;
 mod config;
 mod progress;
 
-use args::ChefArgs;
-use args::ChefCommand;
-use cargo_metadata::Metadata;
-use cargo_metadata::MetadataCommand;
-use clap::Parser;
-use config::ChefConfig;
-use serde_json::Value;
-use std::fs;
-use std::io::Read;
-use std::process::exit;
-use tar::Archive;
-use xz::read::XzDecoder;
+use {
+    args::{ChefArgs, ChefCommand},
+    cargo_metadata::{Metadata, MetadataCommand},
+    clap::Parser,
+    config::ChefConfig,
+    serde_json::Value,
+    std::{fs, io::Read, process::exit},
+    tar::Archive,
+    xz::read::XzDecoder,
+};
 
 fn packages(root: &Metadata) {
     for package in &root.workspace_members {

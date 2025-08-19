@@ -1,10 +1,10 @@
-use core::cell::UnsafeCell;
-use core::hint;
-use core::mem::ManuallyDrop;
-use core::ops::Deref;
-use core::ops::DerefMut;
-use core::sync::atomic::AtomicUsize;
-use core::sync::atomic::Ordering;
+use core::{
+    cell::UnsafeCell,
+    hint,
+    mem::ManuallyDrop,
+    ops::{Deref, DerefMut},
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 type AtomicWord = AtomicUsize;
 type Word = usize;

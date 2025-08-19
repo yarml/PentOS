@@ -1,17 +1,11 @@
 #[cfg(test)]
 mod test;
 
-use core::fmt::Debug;
-use core::fmt::Display;
-use core::iter::Sum;
-use core::ops::Add;
-use core::ops::AddAssign;
-use core::ops::Deref;
-use core::ops::DerefMut;
-use core::ops::Mul;
-use core::ops::MulAssign;
-use core::ops::Sub;
-use core::ops::SubAssign;
+use core::{
+    fmt::{Debug, Display},
+    iter::Sum,
+    ops::{Add, AddAssign, Deref, DerefMut, Mul, MulAssign, Sub, SubAssign},
+};
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

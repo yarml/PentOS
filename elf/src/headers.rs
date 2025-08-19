@@ -1,10 +1,7 @@
-use crate::types::Addr;
-use crate::types::Half;
-use crate::types::Offset;
-use crate::types::UChar;
-use crate::types::Word;
-use crate::types::XWord;
-use core::mem;
+use {
+    crate::types::{Addr, Half, Offset, UChar, Word, XWord},
+    core::mem,
+};
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]

@@ -1,10 +1,11 @@
-use uefi::Error;
-use uefi::Status;
-use uefi::boot::MemoryType;
-use uefi::proto::media::file::File;
-use uefi::proto::media::file::FileInfo;
-use uefi::proto::media::file::RegularFile;
-use crate::allocator::PreBootAllocator;
+use {
+    crate::allocator::PreBootAllocator,
+    uefi::{
+        Error, Status,
+        boot::MemoryType,
+        proto::media::file::{File, FileInfo, RegularFile},
+    },
+};
 
 pub fn get_file_size(file: &mut RegularFile, allocator: &PreBootAllocator) -> Option<usize> {
     let required_size = match file.get_info::<FileInfo>(&mut []).map_err(Error::split) {

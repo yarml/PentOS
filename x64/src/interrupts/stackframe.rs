@@ -1,5 +1,4 @@
-use crate::mem::addr::VirtAddr;
-use crate::mem::segmentation::selector::SegmentSelector;
+use crate::mem::{addr::VirtAddr, segmentation::selector::SegmentSelector};
 
 #[repr(C, packed)]
 pub struct InterruptStackFrame {

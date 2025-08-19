@@ -1,11 +1,9 @@
-use boot_protocol::topology::Hart;
-use boot_protocol::topology::InterruptController;
-use boot_protocol::topology::Topology;
-use config::topology::hart::MAX_HART_COUNT;
-use config::topology::hart::MAX_INTCTL_COUNT;
-use log::debug;
-use spinlocks::mutex::Mutex;
-use spinlocks::mutex::MutexGuard;
+use {
+    boot_protocol::topology::{Hart, InterruptController, Topology},
+    config::topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
+    log::debug,
+    spinlocks::mutex::{Mutex, MutexGuard},
+};
 
 static SYSTEM_TOPOLOGY: Mutex<Topology> = Mutex::new(Topology::new());
 

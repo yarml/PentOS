@@ -1,7 +1,8 @@
-use common::collections::smallvec::SmallVec;
-use config::topology::hart::MAX_HART_COUNT;
-use config::topology::hart::MAX_INTCTL_COUNT;
-use x64::mem::addr::PhysAddr;
+use {
+    common::collections::smallvec::SmallVec,
+    config::topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
+    x64::mem::addr::PhysAddr,
+};
 
 #[repr(C)]
 pub struct Topology {

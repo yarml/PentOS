@@ -4,16 +4,15 @@
 pub mod headers;
 pub mod types;
 
-use core::ops::Index;
-use headers::FileHeader;
-use headers::RawSegment;
-use types::Half;
-use types::Offset;
-use types::UChar;
-use types::Word;
-use x64::mem::addr::Address;
-use x64::mem::MemorySize;
-use x64::mem::addr::VirtAddr;
+use {
+    core::ops::Index,
+    headers::{FileHeader, RawSegment},
+    types::{Half, Offset, UChar, Word},
+    x64::mem::{
+        MemorySize,
+        addr::{Address, VirtAddr},
+    },
+};
 
 pub struct Elf<'a> {
     pub data: &'a [u8],

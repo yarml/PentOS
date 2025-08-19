@@ -1,8 +1,7 @@
-use super::AcpiHeader;
-use super::AcpiTable;
-use super::Signature;
-use super::XSDT_SIG;
-use core::mem;
+use {
+    super::{AcpiHeader, AcpiTable, Signature, XSDT_SIG},
+    core::mem,
+};
 
 #[repr(C, packed)]
 pub struct Xsdt {

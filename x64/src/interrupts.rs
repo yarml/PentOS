@@ -1,13 +1,11 @@
 pub mod gate;
 pub mod stackframe;
 
-use crate::mem::addr::Address;
-use crate::mem::addr::VirtAddr;
-use core::arch::asm;
-use core::mem;
-use gate::InterruptGate;
-use gate::InterruptGateEntry;
-use gate::InterruptHandler;
+use {
+    crate::mem::addr::{Address, VirtAddr},
+    core::{arch::asm, mem},
+    gate::{InterruptGate, InterruptGateEntry, InterruptHandler},
+};
 
 pub struct InterruptDescriptorTable {
     table: [InterruptGateEntry; 256],

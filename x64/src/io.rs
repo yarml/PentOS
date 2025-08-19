@@ -1,5 +1,4 @@
-use core::arch::asm;
-use core::marker::PhantomData;
+use core::{arch::asm, marker::PhantomData};
 
 pub struct Port<N> {
     port: u16,

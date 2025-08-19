@@ -1,9 +1,8 @@
-use boot_protocol::features::FeatureSet;
-use boot_protocol::features::Vendor;
-use core::arch::x86_64::__cpuid;
-use core::arch::x86_64::__cpuid_count;
-use core::arch::x86_64::CpuidResult;
-use spinlocks::once::Once;
+use {
+    boot_protocol::features::{FeatureSet, Vendor},
+    core::arch::x86_64::{__cpuid, __cpuid_count, CpuidResult},
+    spinlocks::once::Once,
+};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum FeatureDetect {

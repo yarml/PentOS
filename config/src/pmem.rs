@@ -6,10 +6,10 @@
 //! - [Middle memory](MIDMEM)
 //! - [High memory](HIGHMEM)
 
-use x64::mem::MemorySize;
-use x64::mem::PhysicalMemoryRegion;
-use x64::mem::addr::Address;
-use x64::mem::addr::PhysAddr;
+use x64::mem::{
+    MemorySize, PhysicalMemoryRegion,
+    addr::{Address, PhysAddr},
+};
 
 const M1: MemorySize = MemorySize::new(1024 * 1024);
 const M16: MemorySize = MemorySize::new(16 * M1.as_usize());

@@ -1,5 +1,4 @@
-use builder::Config;
-use builder::Target;
+use builder::{Config, Target};
 
 fn main() {
     builder::configure(Config {

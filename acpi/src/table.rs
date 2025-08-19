@@ -5,16 +5,13 @@ mod madt;
 mod rsdp;
 mod xsdt;
 
-pub use gas::GenericAddress;
-pub use header::AcpiHeader;
-pub use madt::IOApic;
-pub use madt::InterruptSourceOverride;
-pub use madt::LocalApic;
-pub use madt::Madt;
-pub use madt::MadtEntryHeader;
-pub use madt::MadtIterator;
-pub use rsdp::Rsdp;
-pub use xsdt::Xsdt;
+pub use {
+    gas::GenericAddress,
+    header::AcpiHeader,
+    madt::{IOApic, InterruptSourceOverride, LocalApic, Madt, MadtEntryHeader, MadtIterator},
+    rsdp::Rsdp,
+    xsdt::Xsdt,
+};
 
 use core::mem;
 

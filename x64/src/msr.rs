@@ -2,9 +2,10 @@ pub mod apic_base;
 pub mod efer;
 pub mod pat;
 
-use core::arch::asm;
-use core::ops::Deref;
-use core::ops::DerefMut;
+use core::{
+    arch::asm,
+    ops::{Deref, DerefMut},
+};
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq)]

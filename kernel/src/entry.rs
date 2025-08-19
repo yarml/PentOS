@@ -1,7 +1,8 @@
-use boot_protocol::kernel_meta::KernelMeta;
-use core::arch::asm;
-use x64::mem::addr::Address;
-use x64::mem::addr::VirtAddr;
+use {
+    boot_protocol::kernel_meta::KernelMeta,
+    core::arch::asm,
+    x64::mem::addr::{Address, VirtAddr},
+};
 
 #[unsafe(no_mangle)]
 extern "C" fn kernel_meta() -> KernelMeta {

@@ -1,8 +1,7 @@
-use crate::mem::addr::Address;
-use crate::mem::addr::VirtAddr;
-use core::arch::x86_64::__cpuid;
-use core::hint;
-use core::ptr;
+use {
+    crate::mem::addr::{Address, VirtAddr},
+    core::{arch::x86_64::__cpuid, hint, ptr},
+};
 
 pub fn id_cpuid() -> usize {
     (unsafe {

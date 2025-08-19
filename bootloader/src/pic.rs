@@ -1,5 +1,6 @@
-use x64::io::Port;
-use x64::io::{self};
+use x64::io::{
+    Port, self,
+};
 
 const MASTER_CMD: Port<u8> = Port::new(0x20);
 const MASTER_DATA: Port<u8> = Port::new(0x21);

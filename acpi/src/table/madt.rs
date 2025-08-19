@@ -1,9 +1,7 @@
-use super::AcpiHeader;
-use super::AcpiTable;
-use super::MADT_SIG;
-use super::Signature;
-use core::marker::PhantomData;
-use core::mem;
+use {
+    super::{AcpiHeader, AcpiTable, MADT_SIG, Signature},
+    core::{marker::PhantomData, mem},
+};
 
 #[repr(C, packed)]
 pub struct Madt {

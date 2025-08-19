@@ -1,11 +1,11 @@
-use super::PagingMapEntry;
-use super::PagingReferenceEntry;
-use super::absent_entry::PagingAbsentEntry;
-use crate::mem::frame::size::FrameSize;
-use crate::mem::page::size::PageSize;
-use core::marker::PhantomData;
-use core::ops::Deref;
-use core::ops::DerefMut;
+use {
+    super::{PagingMapEntry, PagingReferenceEntry, absent_entry::PagingAbsentEntry},
+    crate::mem::{frame::size::FrameSize, page::size::PageSize},
+    core::{
+        marker::PhantomData,
+        ops::{Deref, DerefMut},
+    },
+};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PagingRawEntry<PS: PageSize> {

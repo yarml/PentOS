@@ -17,13 +17,15 @@
 //! The last part also means that some Unicode characters might not be
 //! supported by the UEFI console. Don't expect emoji output support.
 
-use core::fmt;
-use core::fmt::Write;
-use core::ptr;
-use core::sync::atomic::AtomicPtr;
-use core::sync::atomic::Ordering;
-use uefi::proto::console::text::Output;
-use uefi::system;
+use {
+    core::{
+        fmt,
+        fmt::Write,
+        ptr,
+        sync::atomic::{AtomicPtr, Ordering},
+    },
+    uefi::{proto::console::text::Output, system},
+};
 
 /// Global logger object
 static LOGGER: Logger = Logger::new();

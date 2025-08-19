@@ -11,7 +11,7 @@ mod raw_entry;
 mod ref_entry;
 mod root_entry;
 
-pub use map_entry::PagingMapEntry;
-pub use raw_entry::PagingRawEntry;
-pub use ref_entry::PagingReferenceEntry;
-pub use root_entry::PagingRootEntry;
+pub use {
+    map_entry::PagingMapEntry, raw_entry::PagingRawEntry, ref_entry::PagingReferenceEntry,
+    root_entry::PagingRootEntry,
+};

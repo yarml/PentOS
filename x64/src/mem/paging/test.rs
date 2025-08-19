@@ -1,14 +1,12 @@
-use crate::mem::addr::Address;
-use crate::mem::addr::PhysAddr;
-use crate::mem::frame::Frame;
-use crate::mem::frame::size::Frame2MiB;
-use crate::mem::frame::size::Frame4KiB;
-use crate::mem::page::size::Page1GiB;
-use crate::mem::page::size::Page2MiB;
-use crate::mem::page::size::Page4KiB;
-use crate::mem::page::size::PageSize;
-use crate::mem::paging::PagingMapEntry;
-use crate::mem::paging::PagingReferenceEntry;
+use crate::mem::{
+    addr::{Address, PhysAddr},
+    frame::{
+        Frame,
+        size::{Frame2MiB, Frame4KiB},
+    },
+    page::size::{Page1GiB, Page2MiB, Page4KiB, PageSize},
+    paging::{PagingMapEntry, PagingReferenceEntry},
+};
 
 #[test]
 fn test_map_entry_pte() {

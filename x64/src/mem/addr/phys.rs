@@ -1,9 +1,9 @@
-use core::sync::atomic::AtomicUsize;
-use core::sync::atomic::Ordering;
+use core::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::define_addr;
-use crate::mem::frame::Frame;
-use crate::mem::frame::size::FrameSize;
+use crate::{
+    define_addr,
+    mem::frame::{Frame, size::FrameSize},
+};
 
 use super::virt::VirtAddr;
 

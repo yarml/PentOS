@@ -1,8 +1,4 @@
-use crate::mem::frame::size::Frame1GiB;
-use crate::mem::frame::size::Frame2MiB;
-use crate::mem::frame::size::Frame4KiB;
-use crate::mem::frame::size::FrameInvalidSize;
-use crate::mem::frame::size::FrameSize;
+use crate::mem::frame::size::{Frame1GiB, Frame2MiB, Frame4KiB, FrameInvalidSize, FrameSize};
 
 #[derive(Clone, Copy)]
 pub struct Page4KiB;

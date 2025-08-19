@@ -9,10 +9,10 @@
 // I'm dreaming, but maybe I should make a crate which shows this as graphs
 // Gonna look good for the capstone
 
-use x64::mem::MemorySize;
-use x64::mem::VirtualMemoryRegion;
-use x64::mem::addr::Address;
-use x64::mem::addr::VirtAddr;
+use x64::mem::{
+    MemorySize, VirtualMemoryRegion,
+    addr::{Address, VirtAddr},
+};
 
 const B0: MemorySize = MemorySize::zero();
 const G8: MemorySize = MemorySize::new(0x200000000);
