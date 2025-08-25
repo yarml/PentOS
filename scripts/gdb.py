@@ -14,4 +14,9 @@ class CommandThread(gdb.Thread):
 
 # CommandThread().start()
 
+def exit_handler(e):
+    gdb.execute("quit")
+
+gdb.events.exited.connect(exit_handler)
+
 print("Python script loaded")
