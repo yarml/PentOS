@@ -6,10 +6,20 @@ use core::{
     slice::{Iter, IterMut, SliceIndex},
 };
 
+/// A vector that contains all its element with its allocation unit
+/// The size of the SmallVec depends on its capacity which cannot be changed
+/// and has to be known at compile time
 #[repr(C)]
 pub struct SmallVec<T, const N: usize> {
     buffer: [MaybeUninit<T>; N],
     len: usize,
+}
+
+/// A mutable access to a SmallVec with runtime capacity tracking. Needs a SmallVec to contain the data.
+pub struct SmallVecMut<'a, T> {
+    buffer: &'a mut [MaybeUninit<T>],
+    len: &'a mut usize,
+    capacity: usize,
 }
 
 impl<T, const N: usize> SmallVec<T, N> {
@@ -22,40 +32,61 @@ impl<T, const N: usize> SmallVec<T, N> {
 }
 
 impl<T, const N: usize> SmallVec<T, N> {
+    pub const CAPACITY: usize = N;
+
     #[must_use = "check that value was added, otherwise it will just drop"]
     pub fn push(&mut self, value: T) -> Result<&T, T> {
-        if self.len == N {
-            return Err(value);
-        }
-        self.buffer[self.len] = MaybeUninit::new(value);
-        let r = unsafe {
-            // # Safety
-            // Just made the sucker
-            self.buffer[self.len].assume_init_ref()
-        };
-        self.len += 1;
-        Ok(r)
+        common_push(&mut self.buffer, &mut self.len, N, value)
+    }
+    pub fn pop(&mut self) -> Option<T> {
+        common_pop(&self.buffer, &mut self.len)
     }
 
-    pub fn pop(&mut self) -> Option<T> {
-        if self.len == 0 {
-            return None;
-        }
+    pub fn erase(&mut self, index: usize) -> Option<T> {
+        common_erase(&mut self.buffer, &mut self.len, index)
+    }
 
-        self.len -= 1;
-        Some(unsafe {
-            // # Safety
-            // Value previously added since len indicates so
-            // Move is fine since we promise not to give it again unless added back as next push
-            self.buffer[self.len].assume_init_read()
-        })
+    pub const fn len(&self) -> usize {
+        self.len
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
+    pub const fn capacity(&self) -> usize {
+        Self::CAPACITY
+    }
+
+    pub fn as_mut(&mut self) -> SmallVecMut<T> {
+        SmallVecMut {
+            buffer: &mut self.buffer,
+            len: &mut self.len,
+            capacity: N,
+        }
+    }
+}
+
+impl<'a, T> SmallVecMut<'a, T> {
+    #[must_use = "check that value was added, otherwise it will just drop"]
+    pub fn push(&mut self, value: T) -> Result<&T, T> {
+        common_push(self.buffer, self.len, self.capacity, value)
+    }
+    pub fn pop(&mut self) -> Option<T> {
+        common_pop(self.buffer, self.len)
     }
     pub fn erase(&mut self, index: usize) -> Option<T> {
-        if self.len <= index {
-            return None;
-        }
-        self.buffer[index..self.len].rotate_left(1);
-        self.pop()
+        common_erase(self.buffer, self.len, index)
+    }
+
+    pub fn len(&self) -> usize {
+        *self.len
+    }
+    pub fn is_empty(&self) -> bool {
+        *self.len == 0
+    }
+    pub fn capacity(&self) -> usize {
+        self.capacity
     }
 }
 
@@ -146,4 +177,45 @@ impl<T, const N: usize> Default for SmallVec<T, N> {
     fn default() -> Self {
         Self::new()
     }
+}
+
+fn common_push<'a, T>(
+    buffer: &'a mut [MaybeUninit<T>],
+    len: &'a mut usize,
+    cap: usize,
+    value: T,
+) -> Result<&'a T, T> {
+    if *len == cap {
+        return Err(value);
+    }
+    buffer[*len] = MaybeUninit::new(value);
+    let r = unsafe {
+        // # Safety
+        // Just made the sucker
+        buffer[*len].assume_init_ref()
+    };
+    *len += 1;
+    Ok(r)
+}
+
+fn common_pop<T>(buffer: &[MaybeUninit<T>], len: &mut usize) -> Option<T> {
+    if *len == 0 {
+        return None;
+    }
+
+    *len -= 1;
+    Some(unsafe {
+        // # Safety
+        // Value previously added since len indicates so
+        // Move is fine since we promise not to give it again unless added back as next push
+        buffer[*len].assume_init_read()
+    })
+}
+
+pub fn common_erase<T>(buffer: &mut [MaybeUninit<T>], len: &mut usize, index: usize) -> Option<T> {
+    if *len <= index {
+        return None;
+    }
+    buffer[index..*len].rotate_left(1);
+    common_pop(buffer, len)
 }
