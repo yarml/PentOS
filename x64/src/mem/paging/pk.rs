@@ -7,7 +7,7 @@ pub struct ProtectionKey {
 }
 
 impl ProtectionKey {
-    #[inline]
+    #[inline(always)]
     pub const fn new(value: u8) -> Self {
         assert!(value < 16);
         Self { value }
@@ -15,7 +15,7 @@ impl ProtectionKey {
 }
 
 impl ProtectionKey {
-    #[inline]
+    #[inline(always)]
     pub const fn pgentry_flags(self) -> u64 {
         (self.value as u64) << 59
     }

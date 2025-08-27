@@ -18,7 +18,7 @@ pub struct PagingRootEntry {
 }
 
 impl PagingRootEntry {
-    #[inline]
+    #[inline(always)]
     pub const fn new(target_frame: Frame<Frame4KiB>) -> Self {
         Self {
             value: target_frame.boundary().as_u64(),
@@ -27,20 +27,20 @@ impl PagingRootEntry {
 }
 
 impl PagingRootEntry {
-    #[inline]
+    #[inline(always)]
     pub const fn with_pat_index(self, index: ReferencePatIndex) -> Self {
         Self {
             value: self.value & !(0b11 << 2) | index.pgentry_flags(),
         }
     }
-    #[inline]
+    #[inline(always)]
     pub const fn with_target(self, target_frame: Frame<Frame4KiB>) -> Self {
         Self {
             value: (self.value & !(Frame4KiB::MASK & PhysAddr::MASK) as u64)
                 | target_frame.boundary().as_u64(),
         }
     }
-    #[inline]
+    #[inline(always)]
     pub const fn with_pcid(self, pcid: Pcid) -> Self {
         Self {
             value: self.value & !(0xFFF) | (pcid.unwrap() as u64 & 0xFFF),
@@ -49,11 +49,11 @@ impl PagingRootEntry {
 }
 
 impl PagingRootEntry {
-    #[inline]
+    #[inline(always)]
     pub const fn pat_index(&self) -> ReferencePatIndex {
         ReferencePatIndex::new(((self.value >> 3) & 0b11) as u8)
     }
-    #[inline]
+    #[inline(always)]
     pub const fn target_frame(&self) -> Frame<Frame4KiB> {
         Frame::containing(PhysAddr::new_panic(
             (self.value & (Frame4KiB::MASK & PhysAddr::MASK) as u64) as usize,
@@ -89,7 +89,7 @@ impl PagingRootEntry {
 }
 
 impl PagingRootEntry {
-    #[inline]
+    #[inline(always)]
     pub fn current() -> Self {
         let value: u64;
         unsafe {
@@ -100,7 +100,7 @@ impl PagingRootEntry {
         }
         Self { value }
     }
-    #[inline]
+    #[inline(always)]
     pub fn load(&self) {
         unsafe {
             asm!(

@@ -58,7 +58,7 @@ impl MidPageSize {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub const fn order(&self) -> usize {
         Self::ORDERS[self.index()]
     }

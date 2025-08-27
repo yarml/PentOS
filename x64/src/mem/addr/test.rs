@@ -2,7 +2,7 @@ use crate::define_addr;
 
 define_addr!(Addr, make_canonical);
 
-#[inline]
+#[inline(always)]
 const fn make_canonical(addr: usize) -> usize {
     addr & 0x00FF_FFFF_FFFF_FFFF
 }

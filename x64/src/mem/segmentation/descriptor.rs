@@ -39,7 +39,7 @@ impl SegmentDescriptor {
 }
 
 impl SegmentDescriptorEntry {
-    #[inline]
+    #[inline(always)]
     const fn null() -> Self {
         SegmentDescriptorEntry {
             limit_low: 0,
@@ -50,7 +50,7 @@ impl SegmentDescriptorEntry {
             base_high: 0,
         }
     }
-    #[inline]
+    #[inline(always)]
     const fn flat(exec: bool, dpl: PrivilegeLevel) -> Self {
         let execbit = if exec { 1 } else { 0 };
         let sizebit = if exec { 0 } else { 1 };

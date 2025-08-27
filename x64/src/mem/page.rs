@@ -19,14 +19,14 @@ pub struct Page<S: PageSize> {
 }
 
 impl<S: PageSize> Page<S> {
-    #[inline]
+    #[inline(always)]
     pub const fn containing(addr: VirtAddr) -> Self {
         Self {
             boundary: VirtAddr::new_panic(addr.as_usize() & S::MASK),
             _phantom: PhantomData,
         }
     }
-    #[inline]
+    #[inline(always)]
     pub const fn from_number(num: usize) -> Self {
         Self {
             boundary: VirtAddr::new_panic(num << S::SHIFT),
@@ -36,16 +36,16 @@ impl<S: PageSize> Page<S> {
 }
 
 impl<S: PageSize> Page<S> {
-    #[inline]
+    #[inline(always)]
     pub const fn boundary(&self) -> VirtAddr {
         self.boundary
     }
 
-    #[inline]
+    #[inline(always)]
     pub const fn number(&self) -> usize {
         self.boundary.as_usize() >> S::SHIFT
     }
-    #[inline]
+    #[inline(always)]
     pub const fn order_index<OtherSize: PageSize>(&self) -> usize {
         (self.boundary().as_usize() >> OtherSize::SHIFT) & 0x1FF
     }

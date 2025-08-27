@@ -22,14 +22,14 @@ pub struct Frame<S: FrameSize> {
 }
 
 impl<S: FrameSize> Frame<S> {
-    #[inline]
+    #[inline(always)]
     pub const fn containing(addr: PhysAddr) -> Self {
         Self {
             boundary: PhysAddr::new_panic(addr.as_usize() & S::MASK),
             _phantom: PhantomData,
         }
     }
-    #[inline]
+    #[inline(always)]
     pub const fn from_number(num: usize) -> Self {
         Self {
             boundary: PhysAddr::new_panic(num << S::SHIFT),
@@ -39,19 +39,19 @@ impl<S: FrameSize> Frame<S> {
 }
 
 impl<S: FrameSize> Frame<S> {
-    #[inline]
+    #[inline(always)]
     pub const fn boundary(&self) -> PhysAddr {
         self.boundary
     }
 
-    #[inline]
+    #[inline(always)]
     pub const fn number(&self) -> usize {
         self.boundary.as_usize() >> S::SHIFT
     }
 }
 
 impl<S: FrameSize> Frame<S> {
-    #[inline]
+    #[inline(always)]
     pub fn to_virt<VS: PageSize>(&self) -> Page<VS> {
         assert!(VS::SIZE == S::SIZE);
         Page::containing(self.boundary.to_virt())

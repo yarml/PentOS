@@ -13,7 +13,7 @@ pub struct PhysMemMap<const MAX: usize> {
 }
 
 impl<const MAX: usize> PhysMemMap<MAX> {
-    #[inline]
+    #[inline(always)]
     pub const fn new() -> Self {
         Self {
             regions: [PhysicalMemoryRegion::null(); MAX],
@@ -23,15 +23,15 @@ impl<const MAX: usize> PhysMemMap<MAX> {
 }
 
 impl<const MAX: usize> PhysMemMap<MAX> {
-    #[inline]
+    #[inline(always)]
     pub fn len(&self) -> usize {
         self.len
     }
-    #[inline]
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
-    #[inline]
+    #[inline(always)]
     pub fn capacity(&self) -> usize {
         MAX
     }

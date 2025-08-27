@@ -23,7 +23,7 @@ pub unsafe trait InterruptHandler: Clone + Copy {
 macro_rules! impl_interrupt_handler {
     ($f:ty) => {
         unsafe impl InterruptHandler for $f {
-            #[inline]
+            #[inline(always)]
             fn addr(self) -> VirtAddr {
                 VirtAddr::new_panic(self as usize)
             }

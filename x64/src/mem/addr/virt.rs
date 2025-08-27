@@ -6,12 +6,12 @@ use crate::{
 define_addr!(VirtAddr, make_canonical);
 
 impl VirtAddr {
-    #[inline]
+    #[inline(always)]
     pub const fn page<S: PageSize>(&self) -> Page<S> {
         Page::containing(*self)
     }
 
-    #[inline]
+    #[inline(always)]
     /// # Safety
     /// Must ensure that the memory location contains a valid instance of T
     /// and that the memory location is not mutably aliased
@@ -22,7 +22,7 @@ impl VirtAddr {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     /// # Safety
     /// Must ensure that the memory location contains a valid instance of T
     /// and that the memory location is not aliased
@@ -34,7 +34,7 @@ impl VirtAddr {
     }
 }
 
-#[inline]
+#[inline(always)]
 const fn make_canonical(addr: usize) -> usize {
     if addr & 0x0000800000000000 == 0 {
         addr & 0x0000FFFFFFFFFFFF

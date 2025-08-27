@@ -21,24 +21,24 @@ impl PhysAddr {
 }
 
 impl PhysAddr {
-    #[inline]
+    #[inline(always)]
     pub fn set_memory_offset(offset: usize) {
         PHYSICAL_MEMORY_OFFSET.store(offset, Ordering::Relaxed);
     }
 }
 
 impl PhysAddr {
-    #[inline]
+    #[inline(always)]
     pub const fn frame<S: FrameSize>(&self) -> Frame<S> {
         Frame::containing(*self)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn to_virt(&self) -> VirtAddr {
         VirtAddr::new_panic(self.inner + PHYSICAL_MEMORY_OFFSET.load(Ordering::Relaxed))
     }
 
-    #[inline]
+    #[inline(always)]
     /// # Safety
     /// Must ensure that physical memory offset is set and valid
     /// and that the memory location contains a valid instance of T
@@ -50,7 +50,7 @@ impl PhysAddr {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     /// # Safety
     /// Must ensure that physical memory offset is set and valid
     /// and that the memory location contains a valid instance of T
@@ -63,7 +63,7 @@ impl PhysAddr {
     }
 }
 
-#[inline]
+#[inline(always)]
 const fn make_canonical(addr: usize) -> usize {
     addr & PHYS_MASK
 }

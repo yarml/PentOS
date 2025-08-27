@@ -7,7 +7,7 @@ pub struct Pcid {
 }
 
 impl Pcid {
-    #[inline]
+    #[inline(always)]
     pub const fn new(value: u16) -> Self {
         assert!(value < 0x1000);
         Self { value }
@@ -15,7 +15,7 @@ impl Pcid {
 }
 
 impl Pcid {
-    #[inline]
+    #[inline(always)]
     pub const fn unwrap(&self) -> u16 {
         self.value
     }

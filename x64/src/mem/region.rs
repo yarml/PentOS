@@ -28,18 +28,18 @@ pub struct ChunkIter<S: const Address> {
 }
 
 impl<S: const Address> MemoryRegion<S> {
-    #[inline]
+    #[inline(always)]
     pub const fn null() -> Self {
         Self {
             start: S::null(),
             size: MemorySize::zero(),
         }
     }
-    #[inline]
+    #[inline(always)]
     pub const fn new(start: S, size: MemorySize) -> Self {
         Self { start, size }
     }
-    #[inline]
+    #[inline(always)]
     pub fn new_boundaries(start: S, end: S) -> Self {
         Self {
             start,
@@ -49,35 +49,35 @@ impl<S: const Address> MemoryRegion<S> {
 }
 
 impl<S: const Address> MemoryRegion<S> {
-    #[inline]
+    #[inline(always)]
     pub fn contains(&self, addr: S) -> bool {
         self.start() <= addr && addr < self.end()
     }
-    #[inline]
+    #[inline(always)]
     pub fn contains_start(&self, other: MemoryRegion<S>) -> bool {
         self.end() == other.start() || self.contains(other.start())
     }
-    #[inline]
+    #[inline(always)]
     pub fn contains_end(&self, other: MemoryRegion<S>) -> bool {
         self.end() == other.end() || self.contains(other.end())
     }
-    #[inline]
+    #[inline(always)]
     pub fn contains_region(&self, other: MemoryRegion<S>) -> bool {
         self.contains_start(other) && self.contains_end(other)
     }
-    #[inline]
+    #[inline(always)]
     pub const fn size(&self) -> MemorySize {
         self.size
     }
-    #[inline]
+    #[inline(always)]
     pub const fn start(&self) -> S {
         self.start
     }
-    #[inline]
+    #[inline(always)]
     pub fn end(&self) -> S {
         self.start().add_truncate(*self.size)
     }
-    #[inline]
+    #[inline(always)]
     pub fn is_null(&self) -> bool {
         *self.size == 0
     }
@@ -125,7 +125,7 @@ impl<S: const Address> MemoryRegion<S> {
 }
 
 impl<S: const Address> MemoryRegion<S> {
-    #[inline]
+    #[inline(always)]
     pub const fn chunks(&self, align: MemorySize, size: MemorySize) -> ChunkIter<S> {
         let start = S::new_panic(self.start.as_usize().next_multiple_of(align.as_usize()));
         ChunkIter {

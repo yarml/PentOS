@@ -10,7 +10,7 @@ pub struct PagingAbsentEntry<PS: PageSize> {
 }
 
 impl<PS: PageSize> PagingAbsentEntry<PS> {
-    #[inline]
+    #[inline(always)]
     pub const fn new() -> Self {
         Self {
             value: 0,

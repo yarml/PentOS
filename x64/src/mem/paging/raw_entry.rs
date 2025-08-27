@@ -14,7 +14,7 @@ pub struct PagingRawEntry<PS: PageSize> {
 }
 
 impl<PS: PageSize> PagingRawEntry<PS> {
-    #[inline]
+    #[inline(always)]
     pub const fn new(value: u64) -> Self {
         Self {
             value,
@@ -24,7 +24,7 @@ impl<PS: PageSize> PagingRawEntry<PS> {
 }
 
 impl<PS: PageSize> PagingRawEntry<PS> {
-    #[inline]
+    #[inline(always)]
     pub const fn as_absent(self) -> Option<PagingAbsentEntry<PS>> {
         if self.value & 1 == 0 {
             Some(PagingAbsentEntry::from_inner(self.value))
@@ -32,7 +32,7 @@ impl<PS: PageSize> PagingRawEntry<PS> {
             None
         }
     }
-    #[inline]
+    #[inline(always)]
     pub const fn as_map(self) -> Option<PagingMapEntry<PS>>
     where
         PS::PhysicalPageSize: FrameSize,
@@ -43,7 +43,7 @@ impl<PS: PageSize> PagingRawEntry<PS> {
             None
         }
     }
-    #[inline]
+    #[inline(always)]
     pub const fn as_reference(self) -> Option<PagingReferenceEntry<PS>>
     where
         PS::ReferenceTarget: PageSize,

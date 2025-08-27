@@ -27,18 +27,18 @@ pub enum MemoryUnit {
 impl MemorySize {
     pub const MAX: Self = Self::new(usize::MAX);
 
-    #[inline]
+    #[inline(always)]
     pub const fn new(size: usize) -> Self {
         Self { inner: size }
     }
-    #[inline]
+    #[inline(always)]
     pub const fn zero() -> Self {
         Self { inner: 0 }
     }
 }
 
 impl MemorySize {
-    #[inline]
+    #[inline(always)]
     pub const fn as_usize(&self) -> usize {
         self.inner
     }
@@ -59,7 +59,7 @@ impl MemoryUnit {
 }
 
 impl MemoryUnit {
-    #[inline]
+    #[inline(always)]
     pub const fn from_order(order: usize) -> Option<Self> {
         match order {
             0 => Some(Self::Byte),
@@ -75,7 +75,7 @@ impl MemoryUnit {
 }
 
 impl MemoryUnit {
-    #[inline]
+    #[inline(always)]
     pub const fn order(&self) -> usize {
         match self {
             MemoryUnit::Byte => 0,
@@ -87,15 +87,15 @@ impl MemoryUnit {
             MemoryUnit::ExbiByte => 6,
         }
     }
-    #[inline]
+    #[inline(always)]
     pub const fn suffix(&self) -> char {
         Self::MEMORY_UNITS[self.order()]
     }
-    #[inline]
+    #[inline(always)]
     pub const fn size(&self) -> usize {
         Self::MEMORY_SIZES[self.order()]
     }
-    #[inline]
+    #[inline(always)]
     pub const fn component(&self, size: usize) -> usize {
         (size / self.size()) % 1024
     }
