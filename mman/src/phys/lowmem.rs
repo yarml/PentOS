@@ -50,7 +50,10 @@ impl LowMemAllocator {
 
     pub fn free128k(&self, frame: Frame<Frame128KiB>) {
         let mut lock = self.free128k.lock();
-        lock.push(frame.number() as u8).unwrap();
+        unsafe {
+            // SAFETY: The vector is big enough to hold all 128K frames if they're all free at the same time
+            lock.push(frame.number() as u8).unwrap_unchecked();
+        }
     }
     pub fn free64k(&self, frame: Frame<Frame64KiB>) {
         // Look if this frame's buddy is also in the free list, if so, remove it and add a free128k
@@ -63,7 +66,10 @@ impl LowMemAllocator {
             .find(|(_, frame_index)| **frame_index / 2 == frame.number() as u8 / 2)
             .map(|(i, _)| i)
         else {
-            lock.push(frame.number() as u8).unwrap();
+            unsafe {
+                // SAFETY: The vector is big enough to hold all 64K frames if they're all free at the same time
+                lock.push(frame.number() as u8).unwrap_unchecked();
+            }
             return;
         };
         lock.erase(buddy_index);

@@ -57,7 +57,7 @@ pub fn init() -> PrimaryFramebufferInfo {
             }) {
                 Some(this_mode)
             } else {
-                Some(best_mode.unwrap())
+                best_mode
             }
         });
 

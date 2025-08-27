@@ -240,12 +240,15 @@ impl<'lock, T: ?Sized> RwLockDeferredGuard<'lock, T> {
 impl<'lock, T: ?Sized> RwLockWriteGuard<'lock, T> {
     pub fn read(self) -> RwLockReadGuard<'lock, T> {
         let mself = ManuallyDrop::new(self);
-        mself
-            .lock
-            .fetch_update(Ordering::Acquire, Ordering::Relaxed, |_| {
-                Some(make_lock(RwLockState::Open, 1))
-            })
-            .unwrap();
+        unsafe {
+            // SAFETY: We always return Some in the set function.
+            mself
+                .lock
+                .fetch_update(Ordering::Acquire, Ordering::Relaxed, |_| {
+                    Some(make_lock(RwLockState::Open, 1))
+                })
+                .unwrap_unchecked();
+        }
         let lock = mself.lock;
         let data = unsafe {
             // # Safety
@@ -341,34 +344,43 @@ impl<T: ?Sized> Deref for RwLockDeferredGuard<'_, T> {
 
 impl<T: ?Sized> Drop for RwLockReadGuard<'_, T> {
     fn drop(&mut self) {
-        self.lock
-            .fetch_update(Ordering::Release, Ordering::Relaxed, |lock| {
-                let state = state_from(lock);
-                let readers = reader_count_from(lock);
-                Some(make_lock(state, readers - 1))
-            })
-            .unwrap();
+        unsafe {
+            // SAFETY: Always retuning Some from the set function.
+            self.lock
+                .fetch_update(Ordering::Release, Ordering::Relaxed, |lock| {
+                    let state = state_from(lock);
+                    let readers = reader_count_from(lock);
+                    Some(make_lock(state, readers - 1))
+                })
+                .unwrap_unchecked();
+        }
     }
 }
 
 impl<T: ?Sized> Drop for RwLockWriteGuard<'_, T> {
     fn drop(&mut self) {
-        self.lock
-            .fetch_update(Ordering::Release, Ordering::Relaxed, |_| {
-                Some(make_lock(RwLockState::Open, 0))
-            })
-            .unwrap();
+        unsafe {
+            // SAFETY: Always retuning Some from the set function.
+            self.lock
+                .fetch_update(Ordering::Release, Ordering::Relaxed, |_| {
+                    Some(make_lock(RwLockState::Open, 0))
+                })
+                .unwrap_unchecked();
+        }
     }
 }
 
 impl<T: ?Sized> Drop for RwLockDeferredGuard<'_, T> {
     fn drop(&mut self) {
-        self.lock
-            .fetch_update(Ordering::Release, Ordering::Relaxed, |lock| {
-                let readers = reader_count_from(lock);
-                Some(make_lock(RwLockState::Open, readers - 1))
-            })
-            .unwrap();
+        unsafe {
+            // SAFETY: Always retuning Some from the set function.
+            self.lock
+                .fetch_update(Ordering::Release, Ordering::Relaxed, |lock| {
+                    let readers = reader_count_from(lock);
+                    Some(make_lock(RwLockState::Open, readers - 1))
+                })
+                .unwrap_unchecked();
+        }
     }
 }
 

@@ -25,7 +25,7 @@ pub struct SmallVecMut<'a, T> {
 impl<T, const N: usize> SmallVec<T, N> {
     pub const fn new() -> Self {
         Self {
-            buffer: [const { MaybeUninit::uninit() }; N],
+            buffer: [const { MaybeUninit::zeroed() }; N],
             len: 0,
         }
     }
