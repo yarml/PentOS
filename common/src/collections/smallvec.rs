@@ -1,8 +1,10 @@
 use core::{
+    borrow::{Borrow, BorrowMut},
     fmt::Debug,
     hash::Hash,
     mem::MaybeUninit,
-    ops::{Deref, DerefMut, DerefPure, Index, IndexMut},
+    ops::{Deref, DerefMut, Index, IndexMut},
+    ptr,
     slice::{Iter, IterMut, SliceIndex},
 };
 
@@ -11,15 +13,14 @@ use core::{
 /// and has to be known at compile time
 #[repr(C)]
 pub struct SmallVec<T, const N: usize> {
-    buffer: [MaybeUninit<T>; N],
     len: usize,
+    buffer: [MaybeUninit<T>; N],
 }
 
-/// A mutable access to a SmallVec with runtime capacity tracking. Needs a SmallVec to contain the data.
-pub struct SmallVecMut<'a, T> {
-    buffer: &'a mut [MaybeUninit<T>],
-    len: &'a mut usize,
-    capacity: usize,
+#[repr(C)]
+pub struct SmallVecBuf<T> {
+    len: usize,
+    buffer: [MaybeUninit<T>],
 }
 
 impl<T, const N: usize> SmallVec<T, N> {
@@ -57,36 +58,29 @@ impl<T, const N: usize> SmallVec<T, N> {
     pub const fn capacity(&self) -> usize {
         Self::CAPACITY
     }
-
-    pub fn as_mut(&mut self) -> SmallVecMut<T> {
-        SmallVecMut {
-            buffer: &mut self.buffer,
-            len: &mut self.len,
-            capacity: N,
-        }
-    }
 }
 
-impl<'a, T> SmallVecMut<'a, T> {
+impl<T> SmallVecBuf<T> {
     #[must_use = "check that value was added, otherwise it will just drop"]
     pub fn push(&mut self, value: T) -> Result<&T, T> {
-        common_push(self.buffer, self.len, self.capacity, value)
+        let cap = self.capacity();
+        common_push(&mut self.buffer, &mut self.len, cap, value)
     }
     pub fn pop(&mut self) -> Option<T> {
-        common_pop(self.buffer, self.len)
+        common_pop(&self.buffer, &mut self.len)
     }
     pub fn erase(&mut self, index: usize) -> Option<T> {
-        common_erase(self.buffer, self.len, index)
+        common_erase(&mut self.buffer, &mut self.len, index)
     }
 
-    pub fn len(&self) -> usize {
-        *self.len
+    pub const fn len(&self) -> usize {
+        self.len
     }
-    pub fn is_empty(&self) -> bool {
-        *self.len == 0
+    pub const fn is_empty(&self) -> bool {
+        self.len == 0
     }
-    pub fn capacity(&self) -> usize {
-        self.capacity
+    pub const fn capacity(&self) -> usize {
+        ptr::metadata(self)
     }
 }
 
@@ -120,6 +114,26 @@ impl<T, const N: usize> Drop for SmallVec<T, N> {
 }
 
 impl<T, const N: usize> Deref for SmallVec<T, N> {
+    type Target = SmallVecBuf<T>;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe {
+            // SAFETY: SmallVec and SmallVecBuf have the same layout
+            &*(ptr::from_raw_parts(self as *const _, N))
+        }
+    }
+}
+
+impl<T, const N: usize> DerefMut for SmallVec<T, N> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe {
+            // SAFETY: SmallVec and SmallVecBuf have the same layout
+            &mut *(ptr::from_raw_parts_mut(self as *mut _, N))
+        }
+    }
+}
+
+impl<T> Deref for SmallVecBuf<T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -131,7 +145,7 @@ impl<T, const N: usize> Deref for SmallVec<T, N> {
     }
 }
 
-impl<T, const N: usize> DerefMut for SmallVec<T, N> {
+impl<T> DerefMut for SmallVecBuf<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe {
             // # Safety
@@ -141,13 +155,30 @@ impl<T, const N: usize> DerefMut for SmallVec<T, N> {
     }
 }
 
-/// # Safety
-/// Since DerefPure is unstable this needs to be checked whenever the compiler is updated
-/// For now, consecutive calls to Deref and DerefMut will always give the same value if no mutation
-/// happens in between
-unsafe impl<T, const N: usize> DerefPure for SmallVec<T, N> {}
+// SmallVec's Hash, Eq, and Ord are aliases of SmallVecBuf's
+impl<T, const N: usize> Borrow<SmallVecBuf<T>> for SmallVec<T, N> {
+    fn borrow(&self) -> &SmallVecBuf<T> {
+        self
+    }
+}
+
+// SmallVec's Hash, Eq, and Ord are aliases of SmallVecBuf's
+impl<T, const N: usize> BorrowMut<SmallVecBuf<T>> for SmallVec<T, N> {
+    fn borrow_mut(&mut self) -> &mut SmallVecBuf<T> {
+        self
+    }
+}
 
 impl<T, const N: usize, I: SliceIndex<[T]>> Index<I> for SmallVec<T, N> {
+    type Output = I::Output;
+
+    fn index(&self, index: I) -> &Self::Output {
+        // Least ugly rust
+        &(**self)[index]
+    }
+}
+
+impl<T, I: SliceIndex<[T]>> Index<I> for SmallVecBuf<T> {
     type Output = I::Output;
 
     fn index(&self, index: I) -> &Self::Output {
@@ -157,13 +188,79 @@ impl<T, const N: usize, I: SliceIndex<[T]>> Index<I> for SmallVec<T, N> {
 
 impl<T, const N: usize, I: SliceIndex<[T]>> IndexMut<I> for SmallVec<T, N> {
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        &mut (**self)[index]
+    }
+}
+
+impl<T, I: SliceIndex<[T]>> IndexMut<I> for SmallVecBuf<T> {
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
         IndexMut::index_mut(&mut **self, index)
+    }
+}
+
+impl<T: Hash> Hash for SmallVecBuf<T> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self[..self.len].hash(state);
+    }
+}
+
+impl<T: PartialEq> PartialEq for SmallVecBuf<T> {
+    fn eq(&self, other: &Self) -> bool {
+        // I believe rust will by default check length first
+        unsafe {
+            // SAFETY: len says this is safe
+            self.buffer[..self.len].assume_init_ref() == other.buffer[..other.len].assume_init_ref()
+        }
+    }
+}
+
+impl<T: Eq> Eq for SmallVecBuf<T> {}
+
+impl<T: PartialOrd> PartialOrd for SmallVecBuf<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        unsafe {
+            // SAFETY: len says this is safe
+            self.buffer[..self.len]
+                .assume_init_ref()
+                .partial_cmp(other.buffer[..other.len].assume_init_ref())
+        }
+    }
+}
+
+impl<T: Ord> Ord for SmallVecBuf<T> {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        unsafe {
+            // SAFETY: len says this is safe
+            self.buffer[..self.len]
+                .assume_init_ref()
+                .cmp(other.buffer[..other.len].assume_init_ref())
+        }
     }
 }
 
 impl<T: Hash, const N: usize> Hash for SmallVec<T, N> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self[..self.len].hash(state);
+        (**self).hash(state)
+    }
+}
+
+impl<T: PartialEq, const N: usize> PartialEq for SmallVec<T, N> {
+    fn eq(&self, other: &Self) -> bool {
+        (**self).eq(other)
+    }
+}
+
+impl<T: Eq, const N: usize> Eq for SmallVec<T, N> {}
+
+impl<T: PartialOrd, const N: usize> PartialOrd for SmallVec<T, N> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        (**self).partial_cmp(other)
+    }
+}
+
+impl<T: Ord, const N: usize> Ord for SmallVec<T, N> {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        (**self).cmp(other)
     }
 }
 

@@ -1,6 +1,6 @@
 use {
     super::{MIDMEM_SIZE, size::MidPageSize},
-    common::collections::smallvec::{SmallVec, SmallVecMut},
+    common::collections::smallvec::{SmallVec, SmallVecBuf},
     x64::mem::frame::{
         Frame,
         size::{Frame4KiB, FrameSize},
@@ -32,13 +32,13 @@ impl Freelist {
 }
 
 impl Freelist {
-    fn getvec(&mut self, size: MidPageSize) -> SmallVecMut<u32> {
+    fn getvec(&mut self, size: MidPageSize) -> &mut SmallVecBuf<u32> {
         match size {
-            MidPageSize::K4 => self.k4.as_mut(),
-            MidPageSize::K64 => self.k64.as_mut(),
-            MidPageSize::K128 => self.k128.as_mut(),
-            MidPageSize::M2 => self.m2.as_mut(),
-            MidPageSize::M8 => self.m8.as_mut(),
+            MidPageSize::K4 => &mut self.k4,
+            MidPageSize::K64 => &mut self.k64,
+            MidPageSize::K128 => &mut self.k128,
+            MidPageSize::M2 => &mut self.m2,
+            MidPageSize::M8 => &mut self.m8,
         }
     }
 }
