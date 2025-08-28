@@ -1,6 +1,8 @@
 use core::{
+    borrow::BorrowMut,
     cell::UnsafeCell,
     hint,
+    mem::ManuallyDrop,
     ops::{Deref, DerefMut},
     sync::atomic::{AtomicBool, Ordering},
 };
@@ -84,13 +86,36 @@ impl<T: ?Sized> Mutex<T> {
     }
 }
 
+impl<'lock, T: ?Sized> MutexGuard<'lock, T> {
+    pub fn map_borrow<U>(self) -> MutexGuard<'lock, U>
+    where
+        T: BorrowMut<U>,
+    {
+        let mut mself = ManuallyDrop::new(self);
+        let mself = unsafe {
+            // SAFETY: ManullyDrop<T> is guarenteed to have the same layout as T
+            &mut *(&mut mself as *mut _ as *mut Self)
+        };
+
+        // SAFETY: The original guard is never going to be dropped, this is a convoluted move because
+        // rust has no syntax for this
+        let lock = unsafe { &*(mself.lock as *const _) };
+        let orig_data = unsafe { &mut *(mself.data as *mut _ as *mut U) };
+
+        MutexGuard {
+            lock,
+            data: orig_data.borrow_mut(),
+        }
+    }
+}
+
 impl<'lock, T: ?Sized> Drop for MutexGuard<'lock, T> {
     fn drop(&mut self) {
         self.lock.store(false, Ordering::Release);
     }
 }
 
-impl<'lock, T> Deref for MutexGuard<'lock, T> {
+impl<'lock, T: ?Sized> Deref for MutexGuard<'lock, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -98,7 +123,7 @@ impl<'lock, T> Deref for MutexGuard<'lock, T> {
     }
 }
 
-impl<'lock, T> DerefMut for MutexGuard<'lock, T> {
+impl<'lock, T: ?Sized> DerefMut for MutexGuard<'lock, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.data
     }
