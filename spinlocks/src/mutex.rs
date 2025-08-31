@@ -87,7 +87,7 @@ impl<T: ?Sized> Mutex<T> {
 }
 
 impl<'lock, T: ?Sized> MutexGuard<'lock, T> {
-    pub fn map_borrow<U>(self) -> MutexGuard<'lock, U>
+    pub fn map_borrow<U: ?Sized>(self) -> MutexGuard<'lock, U>
     where
         T: BorrowMut<U>,
     {
@@ -97,14 +97,13 @@ impl<'lock, T: ?Sized> MutexGuard<'lock, T> {
             &mut *(&mut mself as *mut _ as *mut Self)
         };
 
-        // SAFETY: The original guard is never going to be dropped, this is a convoluted move because
-        // rust has no syntax for this
-        let lock = unsafe { &*(mself.lock as *const _) };
-        let orig_data = unsafe { &mut *(mself.data as *mut _ as *mut U) };
+        let lock = mself.lock;
+        let orig_data: &mut T = mself.data;
+        let borrowed_data: &mut U = orig_data.borrow_mut();
 
         MutexGuard {
             lock,
-            data: orig_data.borrow_mut(),
+            data: borrowed_data,
         }
     }
 }
