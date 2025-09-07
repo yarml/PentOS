@@ -1,15 +1,12 @@
 use {
-    super::{MIDMEM_SIZE, size::MidPageSize},
+    super::{MIDMEM_SIZE, size::MidFrameSize},
     common::collections::smallvec::{SmallVec, SmallVecBuf},
-    x64::mem::frame::{
-        Frame,
-        size::{Frame4KiB, FrameSize},
-    },
+    x64::mem::frame::{Frame, FrameRange, size::Frame4KiB},
 };
 
 macro_rules! freelist_decl {
     ($size:ident) => {
-        SmallVec<u32, { MIDMEM_SIZE / MidPageSize::$size.size().as_usize() }>
+        SmallVec<u32, { MIDMEM_SIZE / MidFrameSize::$size.size() }>
     };
 }
 
@@ -25,20 +22,21 @@ pub struct Freelist {
 }
 
 impl Freelist {
-    pub fn alloc<S: FrameSize>(&mut self) -> Option<Frame<Frame4KiB>> {
-        let mut list = self.getvec(MidPageSize::from_size(S::SIZE).unwrap());
-        list.pop().map(|index| Frame::from_number(index as usize))
+    pub fn alloc(&mut self, size: MidFrameSize) -> Option<FrameRange<Frame4KiB>> {
+        let list = self.getvec(size);
+        list.pop()
+            .map(|index| FrameRange::new(Frame::from_number(index as usize), size.k4_count()))
     }
 }
 
 impl Freelist {
-    fn getvec(&mut self, size: MidPageSize) -> &mut SmallVecBuf<u32> {
+    fn getvec(&mut self, size: MidFrameSize) -> &mut SmallVecBuf<u32> {
         match size {
-            MidPageSize::K4 => &mut self.k4,
-            MidPageSize::K64 => &mut self.k64,
-            MidPageSize::K128 => &mut self.k128,
-            MidPageSize::M2 => &mut self.m2,
-            MidPageSize::M8 => &mut self.m8,
+            MidFrameSize::K4 => &mut self.k4,
+            MidFrameSize::K64 => &mut self.k64,
+            MidFrameSize::K128 => &mut self.k128,
+            MidFrameSize::M2 => &mut self.m2,
+            MidFrameSize::M8 => &mut self.m8,
         }
     }
 }
