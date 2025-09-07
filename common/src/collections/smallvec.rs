@@ -37,14 +37,21 @@ impl<T, const N: usize> SmallVec<T, N> {
 
     #[must_use = "check that value was added, otherwise it will just drop"]
     pub fn push(&mut self, value: T) -> Result<&T, T> {
-        common_push(&mut self.buffer, &mut self.len, N, value)
+        unsafe { common_push(&mut self.buffer, &mut self.len, N, value) }
     }
     pub fn pop(&mut self) -> Option<T> {
-        common_pop(&self.buffer, &mut self.len)
+        unsafe { common_pop(&self.buffer, &mut self.len) }
     }
 
     pub fn erase(&mut self, index: usize) -> Option<T> {
-        common_erase(&mut self.buffer, &mut self.len, index)
+        unsafe { common_erase(&mut self.buffer, &mut self.len, index) }
+    }
+    pub fn erase_value<U>(&mut self, val: U) -> Option<T>
+    where
+        T: PartialEq,
+        U: Borrow<T>,
+    {
+        unsafe { common_erase_value(&mut self.buffer, &mut self.len, val) }
     }
 
     pub const fn len(&self) -> usize {
@@ -64,13 +71,20 @@ impl<T> SmallVecBuf<T> {
     #[must_use = "check that value was added, otherwise it will just drop"]
     pub fn push(&mut self, value: T) -> Result<&T, T> {
         let cap = self.capacity();
-        common_push(&mut self.buffer, &mut self.len, cap, value)
+        unsafe { common_push(&mut self.buffer, &mut self.len, cap, value) }
     }
     pub fn pop(&mut self) -> Option<T> {
-        common_pop(&self.buffer, &mut self.len)
+        unsafe { common_pop(&self.buffer, &mut self.len) }
     }
     pub fn erase(&mut self, index: usize) -> Option<T> {
-        common_erase(&mut self.buffer, &mut self.len, index)
+        unsafe { common_erase(&mut self.buffer, &mut self.len, index) }
+    }
+    pub fn erase_value<U>(&mut self, val: U) -> Option<T>
+    where
+        T: PartialEq,
+        U: Borrow<T>,
+    {
+        unsafe { common_erase_value(&mut self.buffer, &mut self.len, val) }
     }
 
     pub const fn len(&self) -> usize {
@@ -276,7 +290,10 @@ impl<T, const N: usize> Default for SmallVec<T, N> {
     }
 }
 
-fn common_push<'a, T>(
+/// # Safety
+/// buffer[..*len] is assumed to be initialized
+#[inline(always)]
+unsafe fn common_push<'a, T>(
     buffer: &'a mut [MaybeUninit<T>],
     len: &'a mut usize,
     cap: usize,
@@ -295,7 +312,10 @@ fn common_push<'a, T>(
     Ok(r)
 }
 
-fn common_pop<T>(buffer: &[MaybeUninit<T>], len: &mut usize) -> Option<T> {
+/// # Safety
+/// buffer[..*len] is assumed to be initialized
+#[inline(always)]
+unsafe fn common_pop<T>(buffer: &[MaybeUninit<T>], len: &mut usize) -> Option<T> {
     if *len == 0 {
         return None;
     }
@@ -309,10 +329,33 @@ fn common_pop<T>(buffer: &[MaybeUninit<T>], len: &mut usize) -> Option<T> {
     })
 }
 
-pub fn common_erase<T>(buffer: &mut [MaybeUninit<T>], len: &mut usize, index: usize) -> Option<T> {
+/// # Safety
+/// buffer[..*len] is assumed to be initialized
+#[inline(always)]
+unsafe fn common_erase<T>(
+    buffer: &mut [MaybeUninit<T>],
+    len: &mut usize,
+    index: usize,
+) -> Option<T> {
     if *len <= index {
         return None;
     }
     buffer[index..*len].rotate_left(1);
-    common_pop(buffer, len)
+    unsafe { common_pop(buffer, len) }
+}
+
+/// # Safety
+/// buffer[..*len] is assumed to be initialized
+#[inline(always)]
+unsafe fn common_erase_value<T: PartialEq, U: Borrow<T>>(
+    buffer: &mut [MaybeUninit<T>],
+    len: &mut usize,
+    val: U,
+) -> Option<T> {
+    let ibuffer = unsafe {
+        // SAFETY: guarenteed by caller
+        buffer[..*len].assume_init_mut()
+    };
+    let index = ibuffer.iter().position(|v| v == val.borrow())?;
+    unsafe { common_erase(buffer, len, index) }
 }
