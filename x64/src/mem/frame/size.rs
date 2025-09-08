@@ -11,6 +11,9 @@ pub struct Frame1GiB;
 pub struct Frame512GiB;
 
 #[derive(Clone, Copy)]
+pub struct FrameDynSize<const SIZE: usize>;
+
+#[derive(Clone, Copy)]
 pub struct FrameInvalidSize;
 
 pub trait FrameSize: Clone + Copy {
@@ -33,4 +36,12 @@ impl FrameSize for Frame1GiB {
 
 impl FrameSize for Frame512GiB {
     const SHIFT: usize = 39;
+}
+
+impl<const SIZE: usize> FrameSize for FrameDynSize<SIZE> {
+    const SHIFT: usize = if SIZE.is_power_of_two() {
+        SIZE.trailing_zeros() as usize
+    } else {
+        panic!("Dynamic frame size must be a power of 2");
+    };
 }

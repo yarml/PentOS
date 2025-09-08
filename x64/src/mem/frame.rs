@@ -76,6 +76,15 @@ impl<S: FrameSize> Frame<S> {
         assert!(VS::SIZE == S::SIZE);
         Page::containing(self.boundary.to_virt())
     }
+
+    pub const fn into_range<SmallerSize: FrameSize>(&self) -> FrameRange<SmallerSize> {
+        assert!(SmallerSize::SIZE < S::SIZE);
+        let count = S::SIZE / SmallerSize::SIZE;
+        FrameRange {
+            start: Frame::containing(self.boundary),
+            count,
+        }
+    }
 }
 
 impl<S: FrameSize> Add<usize> for Frame<S> {
@@ -133,6 +142,12 @@ impl<S: FrameSize> FrameRange<S> {
     pub const fn into_extent<const N: usize>(&self) -> FrameExtent<S, N> {
         assert!(self.count == N);
         FrameExtent { start: self.start }
+    }
+    pub fn into_frame<LargerSize: FrameSize>(&self) -> Frame<LargerSize> {
+        assert!(
+            self.start.boundary == Frame::<LargerSize>::containing(self.start.boundary).boundary
+        );
+        Frame::containing(self.start.boundary)
     }
 }
 

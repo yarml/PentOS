@@ -1,10 +1,10 @@
 use x64::mem::frame::{
-    FrameExtent,
-    size::{Frame4KiB, FrameSize},
+    Frame,
+    size::{Frame4KiB, FrameDynSize, FrameSize},
 };
 
-pub type LowMemFrame64KiB = FrameExtent<Frame4KiB, { LowMemFrameSize::K64.k4_count() }>;
-pub type LowMemFrame128KiB = FrameExtent<Frame4KiB, { LowMemFrameSize::K128.k4_count() }>;
+pub type LowMemFrame64KiB = Frame<FrameDynSize<{ 64 * 1024 }>>;
+pub type LowMemFrame128KiB = Frame<FrameDynSize<{ 64 * 1024 }>>;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LowMemFrameSize {

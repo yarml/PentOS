@@ -2,8 +2,8 @@ pub mod size;
 
 use {
     crate::phys::lowmem::size::{LowMemFrame64KiB, LowMemFrame128KiB, LowMemFrameSize},
-    common::collections::smallvec::{SmallVec, SmallVecBuf},
-    x64::mem::frame::{Frame, FrameExtent, FrameRange, size::Frame4KiB},
+    common::collections::smallvec::SmallVec,
+    x64::mem::frame::{Frame, FrameRange, size::Frame4KiB},
 };
 
 #[derive(Default)]
@@ -30,27 +30,27 @@ impl LowMemAllocator {
     }
     pub fn free(&mut self, frames: FrameRange<Frame4KiB>, size: LowMemFrameSize) {
         match size {
-            LowMemFrameSize::K64 => self.free_64k(frames.into_extent()),
-            LowMemFrameSize::K128 => self.free_128k(frames.into_extent()),
+            LowMemFrameSize::K64 => self.free_64k(frames.into_frame()),
+            LowMemFrameSize::K128 => self.free_128k(frames.into_frame()),
         }
     }
 
     pub fn alloc_128k(&mut self) -> Option<LowMemFrame128KiB> {
         self.free128k
             .pop()
-            .map(|index| FrameExtent::new(Frame::from_number(index as usize)))
+            .map(|index| Frame::from_number(index as usize))
     }
     pub fn alloc_64k(&mut self) -> Option<LowMemFrame64KiB> {
         if let Some(frame) = self
             .free64k
             .pop()
-            .map(|index| FrameExtent::new(Frame::from_number(index as usize)))
+            .map(|index| Frame::from_number(index as usize))
         {
             return Some(frame);
         }
 
-        let k128frame_index = self.alloc_128k()?.start().number() as u8;
-        let alloc_result_index = k128frame_index as u8 * 2;
+        let k128frame_index = self.alloc_128k()?.number() as u8;
+        let alloc_result_index = k128frame_index * 2;
         let storeaway_index = alloc_result_index + 1;
 
         unsafe {
@@ -58,13 +58,11 @@ impl LowMemAllocator {
             self.free64k.push(storeaway_index).unwrap_unchecked()
         };
 
-        Some(FrameExtent::new(Frame::from_number(
-            alloc_result_index as usize,
-        )))
+        Some(Frame::from_number(alloc_result_index as usize))
     }
 
     pub fn free_128k(&mut self, frames: LowMemFrame128KiB) {
-        let index = frames.start().number() as u8;
+        let index = frames.number() as u8;
 
         if self.free128k.contains(&index) {
             panic!("LowMem: Double free");
@@ -76,7 +74,7 @@ impl LowMemAllocator {
         }
     }
     pub fn free_64k(&mut self, frames: LowMemFrame64KiB) {
-        let index = frames.start().number() as u8;
+        let index = frames.number() as u8;
         let buddy_index = index ^ 1;
         let parent_index = index / 2;
 
@@ -95,15 +93,6 @@ impl LowMemAllocator {
                 // SAFETY: free64k contains enough space for all 64k frames free
                 self.free128k.push(parent_index).unwrap_unchecked();
             }
-        }
-    }
-}
-
-impl LowMemAllocator {
-    fn getvec(&mut self, size: LowMemFrameSize) -> &mut SmallVecBuf<u8> {
-        match size {
-            LowMemFrameSize::K64 => &mut self.free64k,
-            LowMemFrameSize::K128 => &mut self.free128k,
         }
     }
 }
