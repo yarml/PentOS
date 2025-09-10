@@ -61,7 +61,9 @@ impl<T, const N: usize> SmallVec<T, N> {
     pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
-
+    pub const fn is_full(&self) -> bool {
+        self.len == self.capacity()
+    }
     pub const fn capacity(&self) -> usize {
         Self::CAPACITY
     }
@@ -92,6 +94,9 @@ impl<T> SmallVecBuf<T> {
     }
     pub const fn is_empty(&self) -> bool {
         self.len == 0
+    }
+    pub const fn is_full(&self) -> bool {
+        self.len == self.capacity()
     }
     pub const fn capacity(&self) -> usize {
         ptr::metadata(self)

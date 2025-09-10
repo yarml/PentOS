@@ -16,10 +16,13 @@ pub struct FrameDynSize<const SIZE: usize>;
 #[derive(Clone, Copy)]
 pub struct FrameInvalidSize;
 
+pub type FrameMaxSize = Frame512GiB;
+
 pub trait FrameSize: Clone + Copy {
     const SHIFT: usize;
     const SIZE: usize = 1 << Self::SHIFT;
     const MASK: usize = usize::MAX >> Self::SHIFT << Self::SHIFT;
+    const ORDER: usize = Self::SHIFT - 12;
 }
 
 impl FrameSize for Frame4KiB {
