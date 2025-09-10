@@ -1,4 +1,4 @@
-use x64::mem::frame::size::{Frame4KiB, FrameSize};
+use x64::mem::frame::size::{Frame2MiB, Frame4KiB, FrameDynSize, FrameSize};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MidFrameSize {
@@ -9,16 +9,22 @@ pub enum MidFrameSize {
     M8,
 }
 
+pub struct MidFrameSizeIterator {
+    next: Option<MidFrameSize>,
+}
+
 impl MidFrameSize {
-    pub const fn parent_level(&self) -> Option<Self> {
-        match self {
-            MidFrameSize::K4 => Some(Self::K64),
-            MidFrameSize::K64 => Some(Self::K128),
-            MidFrameSize::K128 => Some(Self::M2),
-            MidFrameSize::M2 => Some(Self::M8),
-            MidFrameSize::M8 => None,
+    pub fn from_size(size: usize) -> Self {
+        match size {
+            Frame4KiB::SIZE => MidFrameSize::K4,
+            FrameDynSize::<{ 64 * 1024 }>::SIZE => MidFrameSize::K64,
+            FrameDynSize::<{ 128 * 1024 }>::SIZE => MidFrameSize::K128,
+            Frame2MiB::SIZE => MidFrameSize::M2,
+            FrameDynSize::<{ 8 * 1024 * 1024 }>::SIZE => MidFrameSize::M8,
+            _ => unreachable!(""),
         }
     }
+
     pub const fn order(&self) -> usize {
         match self {
             MidFrameSize::K4 => 0,
@@ -28,13 +34,59 @@ impl MidFrameSize {
             MidFrameSize::M8 => 11,
         }
     }
-    pub const fn is_top_level(&self) -> bool {
-        self.parent_level().is_none()
-    }
     pub const fn k4_count(&self) -> usize {
         1 << self.order()
     }
     pub const fn size(&self) -> usize {
         self.k4_count() * Frame4KiB::SIZE
+    }
+    pub const fn alignment(&self) -> usize {
+        self.size()
+    }
+
+    pub const fn child_order(&self) -> Option<Self> {
+        match self {
+            MidFrameSize::K4 => None,
+            MidFrameSize::K64 => Some(MidFrameSize::K4),
+            MidFrameSize::K128 => Some(MidFrameSize::K64),
+            MidFrameSize::M2 => Some(MidFrameSize::K128),
+            MidFrameSize::M8 => Some(MidFrameSize::M2),
+        }
+    }
+    pub const fn parent_order(&self) -> Option<Self> {
+        match self {
+            MidFrameSize::K4 => Some(MidFrameSize::K64),
+            MidFrameSize::K64 => Some(MidFrameSize::K128),
+            MidFrameSize::K128 => Some(MidFrameSize::M2),
+            MidFrameSize::M2 => Some(MidFrameSize::M8),
+            MidFrameSize::M8 => None,
+        }
+    }
+}
+
+impl IntoIterator for MidFrameSize {
+    type Item = MidFrameSize;
+    type IntoIter = MidFrameSizeIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        MidFrameSizeIterator { next: Some(self) }
+    }
+}
+
+impl Iterator for MidFrameSizeIterator {
+    type Item = MidFrameSize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current = self.next?;
+        self.next = current.child_order();
+        Some(current)
+    }
+}
+
+impl DoubleEndedIterator for MidFrameSizeIterator {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let current = self.next?;
+        self.next = current.parent_order();
+        Some(current)
     }
 }
