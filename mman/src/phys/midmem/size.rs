@@ -1,6 +1,6 @@
 use x64::mem::frame::size::{Frame2MiB, Frame4KiB, FrameDynSize, FrameSize};
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum MidFrameSize {
     K4,
     K64,
@@ -33,6 +33,24 @@ impl MidFrameSize {
             MidFrameSize::M2 => 9,
             MidFrameSize::M8 => 11,
         }
+    }
+    pub const fn children_count(&self) -> Option<usize> {
+        // Somehow ? operator cannot be used in const functions, but if let can
+        let child = if let Some(child_order) = self.child_order() {
+            child_order
+        } else {
+            return None;
+        };
+        let order_diff = self.order() - child.order();
+        Some(1 << order_diff)
+    }
+    pub const fn children_mask(&self) -> Option<u64> {
+        let children_count = if let Some(children_count) = self.children_count() {
+            children_count
+        } else {
+            return None;
+        };
+        Some(u64::MAX >> (64 - children_count))
     }
     pub const fn k4_count(&self) -> usize {
         1 << self.order()

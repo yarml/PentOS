@@ -184,15 +184,26 @@ impl<S: FrameSize> FrameRange<S> {
     pub const fn split<SmallerSize: FrameSize>(&self, order: usize) -> FrameRangeIter<SmallerSize> {
         let size_per_range = (1 << order) * Frame4KiB::SIZE;
         assert!(size_per_range.is_multiple_of(SmallerSize::SIZE));
-        let total_frame_count = self.size().as_usize() / SmallerSize::SIZE;
+        let target_framerange_count = self.size().as_usize() / size_per_range;
         let frame_count_per_range = size_per_range / SmallerSize::SIZE;
         FrameRangeIter::<SmallerSize> {
             start: FrameRange::new(
                 Frame::containing(self.start.boundary),
                 frame_count_per_range,
             ),
-            count: total_frame_count,
+            count: target_framerange_count,
             current: 0,
+        }
+    }
+}
+
+impl<S: FrameSize> Add<usize> for FrameRange<S> {
+    type Output = FrameRange<S>;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        Self {
+            start: Frame::containing(self.start.boundary + self.size() * rhs),
+            count: self.count,
         }
     }
 }
@@ -271,7 +282,7 @@ impl<S: FrameSize, const N: usize> Debug for FrameExtent<S, N> {
             MemorySize::new(S::SIZE),
             self.start().number(),
             self.start().boundary(),
-            self.count()
+            self.size()
         )
     }
 }
@@ -283,7 +294,7 @@ impl<S: FrameSize> Debug for FrameRange<S> {
             MemorySize::new(S::SIZE),
             self.start().number(),
             self.start().boundary(),
-            self.count()
+            self.size()
         )
     }
 }

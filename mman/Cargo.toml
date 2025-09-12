@@ -10,3 +10,4 @@ x64.workspace = true
 common.workspace = true
 spinlocks.workspace = true
 config.workspace = true
+debug.workspace = true

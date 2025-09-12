@@ -12,6 +12,7 @@ members = [
     "common",
     "config",
     "mman",
+    "debug",
 ]
 resolver = "3"
 
@@ -30,6 +31,7 @@ acpi = { path = "acpi" }
 common = { path = "common" }
 config = { path = "config" }
 mman = { path = "mman" }
+debug = { path = "debug" }
 
 [workspace.metadata.chef]
 ovmf-source = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/edk2-stable202408.01-r1/edk2-stable202408.01-r1-bin.tar.xz"

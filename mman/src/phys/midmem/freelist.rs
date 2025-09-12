@@ -1,7 +1,11 @@
 use {
     super::{BLOCK_SIZE, size::MidFrameSize},
     common::collections::smallvec::{SmallVec, SmallVecBuf},
-    x64::mem::frame::{Frame, FrameRange, size::Frame4KiB},
+    debug::gdb_print,
+    x64::mem::{
+        addr::{Address, PhysAddr},
+        frame::{Frame, FrameRange, size::Frame4KiB},
+    },
 };
 
 macro_rules! freelist_decl {
@@ -21,14 +25,33 @@ pub struct Freelist {
 }
 
 impl Freelist {
+    pub const fn new() -> Self {
+        Self {
+            k4: SmallVec::new(),
+            k64: SmallVec::new(),
+            k128: SmallVec::new(),
+            m2: SmallVec::new(),
+            m8: SmallVec::new(),
+        }
+    }
+}
+
+impl Freelist {
     pub fn pop(&mut self, size: MidFrameSize) -> Option<FrameRange<Frame4KiB>> {
         let list = self.getlist(size);
-        list.pop()
-            .map(|index| FrameRange::new(Frame::from_number(index as usize), size.k4_count()))
+        let result = list.pop().map(|boundary| {
+            FrameRange::new(
+                Frame::containing(PhysAddr::new(boundary as usize).unwrap()),
+                size.k4_count(),
+            )
+        });
+        gdb_print!("Freelist::pop({size:?}) => {result:?}");
+        result
     }
 
     pub fn push(&mut self, frame: FrameRange<Frame4KiB>) {
         let size = MidFrameSize::from_size(*frame.size());
+        gdb_print!("Freelist::push({size:?}): {frame:?}");
         assert!(*frame.start().boundary() % size.alignment() == 0);
         let list = self.getlist(size);
         list.push(*frame.start().boundary() as u32).unwrap();
