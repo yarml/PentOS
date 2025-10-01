@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! gdb_print {
+macro_rules! test_print {
     ($($arg:tt)*) => {{
         #[cfg(test)]
         std::println!($($arg)*);

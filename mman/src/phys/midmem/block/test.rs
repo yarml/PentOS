@@ -1,10 +1,9 @@
 #![cfg(test)]
 
 use {
-    crate::phys::midmem::{BLOCK_SIZE, block::Block, freelist::Freelist, size::MidFrameSize},
+    crate::phys::midmem::{BLOCK_SIZE, block::Block, size::MidFrameSize},
     alloc::vec::Vec,
     core::ptr,
-    spinlocks::mutex::{Mutex, MutexGuard},
     std::boxed::Box,
     x64::mem::{
         addr::{Address, PhysAddr},
@@ -129,21 +128,6 @@ fn exhaustion_until_none() {
     assert!(block.alloc(MidFrameSize::M8).is_none());
 }
 
-fn overalloc(size: MidFrameSize) -> Box<Block> {
-    let alloc_count = BLOCK_SIZE / size.size();
-
-    let mut block = make_block();
-
-    for _ in 0..alloc_count {
-        let frame = block.alloc(size).unwrap();
-        assert_eq!(*frame.size(), size.size());
-    }
-
-    assert!(block.alloc(MidFrameSize::K4).is_none());
-
-    block
-}
-
 #[test]
 fn stress_word_boundaries() {
     let mut b = make_block();
@@ -175,6 +159,56 @@ fn stress_word_boundaries() {
         !allocations.is_empty(),
         "no allocations succeeded in stress test"
     );
+}
+
+#[test]
+fn coalesce() {
+    let mut block = make_block();
+    let mut allocations = Vec::new();
+
+    for _ in 0..16 {
+        let allocation = block.alloc(MidFrameSize::K4).unwrap();
+        allocations.push(allocation);
+    }
+
+    assert_eq!(allocations[0].start().boundary().as_usize(), 0);
+
+    for &allocation in &allocations {
+        block.dealloc(allocation);
+    }
+    allocations.clear();
+
+    // We should have 16 consecutive 4K frames in the freelist
+    assert_eq!(block.freelist.getlist(MidFrameSize::K4).len(), 16);
+    assert_eq!(block.freelist.getlist(MidFrameSize::K64).len(), 1);
+    assert_eq!(block.freelist.getlist(MidFrameSize::K128).len(), 15);
+    assert_eq!(block.freelist.getlist(MidFrameSize::M2).len(), 3);
+    assert_eq!(block.freelist.getlist(MidFrameSize::M8).len(), 0);
+    block.coalesce();
+    assert_eq!(block.freelist.getlist(MidFrameSize::K4).len(), 0);
+    assert_eq!(block.freelist.getlist(MidFrameSize::K64).len(), 0);
+    assert_eq!(block.freelist.getlist(MidFrameSize::K128).len(), 0);
+    assert_eq!(block.freelist.getlist(MidFrameSize::M2).len(), 0);
+    assert_eq!(block.freelist.getlist(MidFrameSize::M8).len(), 1); // M8 don't ever get put back into the bitmaps, stay in freelist forever
+
+    let allocation = block.alloc(MidFrameSize::K4).unwrap();
+    assert_eq!(allocation.start().boundary().as_usize(), 0);
+
+}
+
+fn overalloc(size: MidFrameSize) -> Box<Block> {
+    let alloc_count = BLOCK_SIZE / size.size();
+
+    let mut block = make_block();
+
+    for _ in 0..alloc_count {
+        let frame = block.alloc(size).unwrap();
+        assert_eq!(*frame.size(), size.size());
+    }
+
+    assert!(block.alloc(MidFrameSize::K4).is_none());
+
+    block
 }
 
 #[test]

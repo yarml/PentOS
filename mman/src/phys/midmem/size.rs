@@ -52,6 +52,15 @@ impl MidFrameSize {
         };
         Some(u64::MAX >> (64 - children_count))
     }
+
+    pub const fn buddy_count(&self) -> usize {
+        if let Some(parent_order) = self.parent_order() {
+            parent_order.children_count().unwrap()
+        } else {
+            1
+        }
+    }
+
     pub const fn k4_count(&self) -> usize {
         1 << self.order()
     }
@@ -60,6 +69,12 @@ impl MidFrameSize {
     }
     pub const fn alignment(&self) -> usize {
         self.size()
+    }
+    pub const fn shift(&self) -> usize {
+        self.order() + 12
+    }
+    pub const fn mask(&self) -> usize {
+        usize::MAX >> self.shift() << self.shift()
     }
 
     pub const fn child_order(&self) -> Option<Self> {

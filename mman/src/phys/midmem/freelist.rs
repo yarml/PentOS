@@ -1,7 +1,7 @@
 use {
     super::{BLOCK_SIZE, size::MidFrameSize},
     common::collections::smallvec::{SmallVec, SmallVecBuf},
-    debug::gdb_print,
+    debug::test_print,
     x64::mem::{
         addr::{Address, PhysAddr},
         frame::{Frame, FrameRange, size::Frame4KiB},
@@ -45,13 +45,13 @@ impl Freelist {
                 size.k4_count(),
             )
         });
-        gdb_print!("Freelist::pop({size:?}) => {result:?}");
+        test_print!("Freelist::pop({size:?}) => {result:?}");
         result
     }
 
     pub fn push(&mut self, frame: FrameRange<Frame4KiB>) {
         let size = MidFrameSize::from_size(*frame.size());
-        gdb_print!("Freelist::push({size:?}): {frame:?}");
+        test_print!("Freelist::push({size:?}): {frame:?}");
         assert!(*frame.start().boundary() % size.alignment() == 0);
         let list = self.getlist(size);
         list.push(*frame.start().boundary() as u32).unwrap();
@@ -59,7 +59,8 @@ impl Freelist {
 }
 
 impl Freelist {
-    fn getlist(&mut self, size: MidFrameSize) -> &mut SmallVecBuf<u32> {
+    #[inline(always)]
+    pub fn getlist(&mut self, size: MidFrameSize) -> &mut SmallVecBuf<u32> {
         match size {
             MidFrameSize::K4 => &mut self.k4,
             MidFrameSize::K64 => &mut self.k64,

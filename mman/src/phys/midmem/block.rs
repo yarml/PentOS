@@ -2,7 +2,8 @@ mod test;
 
 use {
     crate::phys::midmem::{BLOCK_SIZE, freelist::Freelist, size::MidFrameSize},
-    debug::gdb_print,
+    common::collections::smallvec::SmallVec,
+    debug::test_print,
     x64::mem::{
         addr::PhysAddr,
         frame::{
@@ -51,31 +52,38 @@ impl Block {
 
 impl Block {
     pub fn alloc(&mut self, size: MidFrameSize) -> Option<FrameRange<Frame4KiB>> {
-        gdb_print!("Bloc::alloc: begin");
+        self.alloc_inner(size, true)
+    }
+
+    fn alloc_inner(
+        &mut self,
+        size: MidFrameSize,
+        reentering: bool,
+    ) -> Option<FrameRange<Frame4KiB>> {
+        test_print!("Bloc::alloc: begin");
         for current in size.into_iter().rev() {
             if let Some(mut frame) = self.freelist.pop(current) {
                 let _freelist_frame_size = MidFrameSize::from_size(*frame.size());
-                gdb_print!("Block::alloc: freelist {_freelist_frame_size:?} => {size:?}");
-                for current in current.into_iter() {
+                test_print!("Block::alloc: freelist {_freelist_frame_size:?} => {size:?}");
+                for current in current {
                     // This is guarenteed to be true before the loop ends naturally
                     if current == size {
-                        gdb_print!("Bloc::alloc => freelist {frame:?}");
+                        test_print!("Bloc::alloc => freelist {frame:?}");
                         return Some(frame);
                     }
                     if let Some(child_order) = current.child_order() {
                         let bitmap = self.getbitmap(child_order);
-                        gdb_print!(
+                        test_print!(
                             "Block::alloc: freelist splitting: current: {current:?} child_order: {child_order:?} child_order#:{}",
                             child_order.order()
                         );
                         let mut buddies = frame.split::<Frame4KiB>(child_order.order());
                         frame = buddies.next().unwrap();
-                        let children_mask = current.children_mask().unwrap();
                         let (byte_location, primary_bitloc) = Self::bitlocation(frame);
                         // Mark all children as used, since they're now managed by the free list
                         // outside of the bitmap jurisdiction
                         // Remember 0 is used, 1 is free
-                        bitmap[byte_location] &= !(children_mask << primary_bitloc);
+                        bitmap[byte_location] &= !(1 << primary_bitloc);
                         for buddy in buddies {
                             self.freelist.push(buddy);
                         }
@@ -83,7 +91,7 @@ impl Block {
                 }
             }
         }
-        gdb_print!("Block::alloc: freelist empty");
+        test_print!("Block::alloc: freelist empty");
 
         // Freelist was useless
         let mut range = 0..64;
@@ -92,38 +100,33 @@ impl Block {
 
             // TODO: Check multiple bits at a time, that's why we're using a u64 not a u8
             // I'm just too tired now
-            let (byteloc, bitloc, index) = range.find_map(|i| {
+            let Some((byteloc, bitloc, index)) = range.find_map(|i| {
                 let byteloc = i / 64;
                 let bitloc = i % 64;
                 (bitmap[byteloc] & (1 << bitloc) != 0).then_some((byteloc, bitloc, i))
-            })?;
-
-            // The frame we find is necessarily the primary in its buddy set
-            // We will mark it alongside all its buddies as used, add its buddies to the freelist
-            // And either return the primary, or split it further depeding on the request
-            let (mask, buddy_count) = if let Some(parent) = current.parent_order() {
-                (
-                    parent.children_mask().unwrap(),
-                    parent.children_count().unwrap(),
-                )
-            } else {
-                (1, 1)
+            }) else {
+                break;
             };
 
-            bitmap[byteloc] &= !(mask << bitloc);
+            // The frame we find is necessarily the primary in its buddy set
+            // We will mark it as used, add its buddies to the freelist
+            // And either return the primary, or split it further depending on the request
+
+            bitmap[byteloc] &= !(1 << bitloc);
 
             let frame = FrameRange::new(
                 Frame::containing(self.base + current.size() * index),
                 current.k4_count(),
             );
 
+            let buddy_count = current.buddy_count();
             for buddy in (1..buddy_count).rev() {
                 let buddy_frame = frame + buddy;
                 self.freelist.push(buddy_frame);
             }
 
             if current == size {
-                gdb_print!("Block::aloc => bitmap {frame:?}");
+                test_print!("Block::alloc => bitmap {frame:?}");
                 return Some(frame);
             }
 
@@ -131,8 +134,80 @@ impl Block {
             range = (index * children_count)..((index + 1) * children_count);
         }
 
-        // Is this even reachable?
-        None
+        if reentering {
+            self.coalesce();
+            self.alloc_inner(size, false)
+        } else {
+            None
+        }
+    }
+
+    pub fn dealloc(&mut self, frame: FrameRange<Frame4KiB>) {
+        self.freelist.push(frame);
+        let (byteloc, bitloc) = Self::bitlocation(frame);
+        let size = MidFrameSize::from_size(*frame.size());
+        let bitmap = self.getbitmap(size);
+        bitmap[byteloc] |= 1 << bitloc;
+    }
+
+    // Expensive as fuck
+    fn coalesce(&mut self) {
+        // FIXME: this is actually not needed, I just can't figure out
+        // a way to get the parent freelist without creating a new function
+        // in Freelist, or without using unsafe keyword unnecessarily
+        let mut carry_over: SmallVec<u32, 64> = SmallVec::new();
+
+        for current in MidFrameSize::K4.into_iter().rev() {
+            let freelist = self.freelist.getlist(current);
+
+            for &e in &carry_over {
+                freelist.push(e).unwrap();
+            }
+            carry_over.clear();
+
+            if current == MidFrameSize::M8 {
+                break;
+            }
+
+            let parent_mask = current.parent_order().unwrap().mask();
+            let buddy_count = current.buddy_count();
+
+            freelist.sort_unstable();
+
+            loop {
+                let mut to_delete_cache: SmallVec<usize, 64> = SmallVec::new();
+                for chunk in
+                    freelist.chunk_by(|&a, &b| a as usize & parent_mask == b as usize & parent_mask)
+                {
+                    let start_idx =
+                        unsafe { chunk.as_ptr().offset_from(freelist.as_ptr()) as usize };
+                    test_print!(
+                        "Block::coalesce: chunk {start_idx:02} ({start:04x} // {group:04x}) has {count}/{buddy_count} {size:?} frames",
+                        count = chunk.len(),
+                        start = chunk[0],
+                        group = chunk[0] as usize & parent_mask,
+                        size = current,
+                    );
+                    if chunk.len() == buddy_count && to_delete_cache.push(start_idx).is_err() {
+                        break;
+                    }
+                }
+
+                
+                if to_delete_cache.is_empty() {
+                    break;
+                }
+
+                // Iterate in reverse so we don't invalidate indexes before we reach them
+                for &group in to_delete_cache.iter().rev() {
+                    let address = freelist[group];
+                    carry_over.push(address).unwrap();
+                    freelist.erase_range(group, buddy_count);
+                }
+
+                to_delete_cache.clear();
+            }
+        }
     }
 
     fn bitlocation(frame: FrameRange<Frame4KiB>) -> (usize, usize) {
