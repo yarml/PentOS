@@ -6,7 +6,7 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
-uefi = { version = "0.34.1" }
+uefi = { version = "0.35.0" }
 log.workspace = true
 boot-protocol.workspace = true
 x64.workspace = true

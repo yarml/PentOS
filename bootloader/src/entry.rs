@@ -53,7 +53,7 @@ fn main() -> Status {
     // TODO: AP wait_for_config
     let real_mmap = unsafe {
         // SAFETY: Only thing we used was the UEFI console logger, and allocator, they are now disabled
-        boot::exit_boot_services(MemoryType::LOADER_DATA)
+        boot::exit_boot_services(Some(MemoryType::LOADER_DATA))
     };
 
     pic::disable();
