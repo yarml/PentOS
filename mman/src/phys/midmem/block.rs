@@ -37,7 +37,7 @@ pub struct Block {
 }
 
 impl Block {
-    pub const fn new() -> Self {
+    pub const fn new(base: PhysAddr) -> Self {
         Self {
             k4: [u64::MAX; _],
             k64: [u64::MAX; _],
@@ -45,7 +45,7 @@ impl Block {
             m2: [u64::MAX; _],
             m8: [u64::MAX; _],
             freelist: Freelist::new(),
-            base: PhysAddr::MIN,
+            base,
         }
     }
 }
