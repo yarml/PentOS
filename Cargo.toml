@@ -11,8 +11,8 @@ members = [
     "acpi",
     "common",
     "config",
-    "mman",
     "debug",
+    "klib",
 ]
 resolver = "3"
 
@@ -30,7 +30,7 @@ spinlocks = { path = "spinlocks" }
 acpi = { path = "acpi" }
 common = { path = "common" }
 config = { path = "config" }
-mman = { path = "mman" }
+klib = { path = "klib" }
 debug = { path = "debug" }
 
 [workspace.metadata.chef]
