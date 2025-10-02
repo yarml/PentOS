@@ -193,7 +193,6 @@ impl Block {
                     }
                 }
 
-                
                 if to_delete_cache.is_empty() {
                     break;
                 }

@@ -4,7 +4,7 @@ use {
         infoarea::allocate_info_space,
         misc, virt_mmap,
     },
-    boot_protocol::{STACK_SIZE, kernel_meta::KernelMeta},
+    boot_protocol::{STACK_SIZE, kernel_init::KernelInitFn},
     core::{
         arch::asm,
         cmp::max,
@@ -151,16 +151,16 @@ pub fn alloc_stack(
 pub fn bsp_cede_control(kernel: &Elf<'static>, stack: VirtAddr) -> ! {
     let entry = kernel.entry;
     let entry = entry.as_usize();
-    let entry: extern "C" fn() -> KernelMeta = unsafe {
+    let kernel_init: KernelInitFn = unsafe {
         // SAFETY: sometimes rust sucks
         mem::transmute(entry)
     };
-    let meta = entry();
+    let entry_info = kernel_init();
 
-    let bsp_entry = meta.bsp_entry.as_usize();
+    let bsp_entry = entry_info.bsp_entry.as_usize();
 
     AP_CEDE.init(|| ApInfo {
-        ap_entry: meta.ap_entry,
+        ap_entry: entry_info.ap_entry,
         stack_base: stack,
     });
     while AP_REMAINING.load(Ordering::Relaxed) > 0 {

@@ -1,12 +1,12 @@
 use {
-    boot_protocol::kernel_meta::KernelMeta,
+    boot_protocol::kernel_init::KernelEntryInfo,
     core::arch::asm,
     x64::mem::addr::{Address, VirtAddr},
 };
 
 #[unsafe(no_mangle)]
-extern "C" fn kernel_meta() -> KernelMeta {
-    KernelMeta {
+extern "C" fn init() -> KernelEntryInfo {
+    KernelEntryInfo {
         bsp_entry: VirtAddr::new_panic(bsp_entry as usize),
         ap_entry: VirtAddr::new_panic(ap_entry as usize),
     }

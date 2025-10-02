@@ -2,7 +2,7 @@
 
 pub mod features;
 pub mod framebuffer;
-pub mod kernel_meta;
+pub mod kernel_init;
 pub mod topology;
 
 use {features::FeatureSet, framebuffer::FramebufferInfo, x64::mem::PhysicalMemoryRegion};

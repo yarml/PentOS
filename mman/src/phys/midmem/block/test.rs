@@ -133,7 +133,7 @@ fn stress_word_boundaries() {
     let mut b = make_block();
     let mut allocations = Vec::new();
 
-    for i in 0..50_000 {
+    for _ in 0..50_000 {
         if let Some(fr) = b.alloc(MidFrameSize::K4) {
             allocations.push(frame_range_bounds(&fr));
         } else {
