@@ -804,6 +804,7 @@ version = "0.1.0"
 dependencies = [
  "boot-protocol",
  "builder",
+ "klib",
  "x64",
 ]
 
@@ -811,8 +812,11 @@ dependencies = [
 name = "klib"
 version = "0.1.0"
 dependencies = [
+ "boot-protocol",
  "common",
+ "config",
  "debug",
+ "spinlocks",
  "x64",
 ]
 

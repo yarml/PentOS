@@ -9,3 +9,6 @@ authors.workspace = true
 x64.workspace = true
 debug.workspace = true
 common.workspace = true
+boot-protocol.workspace = true
+spinlocks.workspace = true
+config.workspace = true

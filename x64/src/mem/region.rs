@@ -122,6 +122,15 @@ impl<S: const Address> MemoryRegion<S> {
         }
         start
     }
+
+    pub fn take_end(&mut self, amount: usize) -> S {
+        let end = self.end();
+        self.size -= amount;
+        if *self.size == 0 {
+            *self = MemoryRegion::null();
+        }
+        end
+    }
 }
 
 impl<S: const Address> MemoryRegion<S> {

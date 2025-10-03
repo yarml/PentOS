@@ -37,13 +37,25 @@ pub struct Block {
 }
 
 impl Block {
-    pub const fn new(base: PhysAddr) -> Self {
+    pub const fn all_free(base: PhysAddr) -> Self {
         Self {
             k4: [u64::MAX; _],
             k64: [u64::MAX; _],
             k128: [u64::MAX; _],
             m2: [u64::MAX; _],
             m8: [u64::MAX; _],
+            freelist: Freelist::new(),
+            base,
+        }
+    }
+
+    pub const fn all_used(base: PhysAddr) -> Self {
+        Self {
+            k4: [0; _],
+            k64: [0; _],
+            k128: [0; _],
+            m2: [0; _],
+            m8: [0; _],
             freelist: Freelist::new(),
             base,
         }

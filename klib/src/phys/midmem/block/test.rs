@@ -11,7 +11,7 @@ use {
     },
 };
 
-static INIT_BLOCK: Block = Block::new(PhysAddr::MIN);
+static INIT_BLOCK: Block = Block::all_free(PhysAddr::MIN);
 
 fn make_block() -> Box<Block> {
     let mut uninit_block = Box::new_uninit();

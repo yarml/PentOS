@@ -1,18 +1,6 @@
-use {
-    boot_protocol::kernel_init::KernelEntryInfo,
-    core::arch::asm,
-    x64::mem::addr::{Address, VirtAddr},
-};
+use core::arch::asm;
 
-#[unsafe(no_mangle)]
-extern "C" fn init() -> KernelEntryInfo {
-    KernelEntryInfo {
-        bsp_entry: VirtAddr::new_panic(bsp_entry as usize),
-        ap_entry: VirtAddr::new_panic(ap_entry as usize),
-    }
-}
-
-extern "C" fn bsp_entry() {
+pub extern "C" fn bsp_entry() {
     loop {
         unsafe {
             asm!(
@@ -27,7 +15,7 @@ extern "C" fn bsp_entry() {
     }
 }
 
-extern "C" fn ap_entry() {
+pub extern "C" fn ap_entry() {
     loop {
         unsafe {
             asm!(

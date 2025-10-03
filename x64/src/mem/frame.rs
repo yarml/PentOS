@@ -49,6 +49,8 @@ pub struct FrameRangeIter<S: FrameSize> {
 }
 
 impl<S: FrameSize> Frame<S> {
+    pub const SIZE: usize = S::SIZE;
+
     #[inline(always)]
     pub const fn containing(addr: PhysAddr) -> Self {
         Self {

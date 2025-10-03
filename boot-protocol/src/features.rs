@@ -1,4 +1,5 @@
 #[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
 pub struct FeatureSet {
     pub vendor: Vendor,
     pub context_id: bool,
@@ -9,6 +10,7 @@ pub struct FeatureSet {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
 pub enum Vendor {
     GenuineIntel,
     AuthenticAMD,

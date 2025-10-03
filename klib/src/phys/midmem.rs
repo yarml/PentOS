@@ -22,6 +22,10 @@ pub struct MidMemAllocator {
     blocks: [UnsafeCell<Block>; 8],
 }
 
+/// # Safety
+/// We use an internal lock
+unsafe impl Sync for MidMemAllocator {}
+
 impl MidMemAllocator {
     #[allow(clippy::erasing_op)]
     #[allow(clippy::identity_op)]
@@ -30,14 +34,14 @@ impl MidMemAllocator {
         Self {
             lock: AtomicU8::new(0),
             blocks: [
-                UnsafeCell::new(Block::new(PhysAddr::new_panic(0 * BLOCK_SIZE))),
-                UnsafeCell::new(Block::new(PhysAddr::new_panic(1 * BLOCK_SIZE))),
-                UnsafeCell::new(Block::new(PhysAddr::new_panic(2 * BLOCK_SIZE))),
-                UnsafeCell::new(Block::new(PhysAddr::new_panic(3 * BLOCK_SIZE))),
-                UnsafeCell::new(Block::new(PhysAddr::new_panic(4 * BLOCK_SIZE))),
-                UnsafeCell::new(Block::new(PhysAddr::new_panic(5 * BLOCK_SIZE))),
-                UnsafeCell::new(Block::new(PhysAddr::new_panic(6 * BLOCK_SIZE))),
-                UnsafeCell::new(Block::new(PhysAddr::new_panic(7 * BLOCK_SIZE))),
+                UnsafeCell::new(Block::all_used(PhysAddr::new_panic(0 * BLOCK_SIZE))),
+                UnsafeCell::new(Block::all_used(PhysAddr::new_panic(1 * BLOCK_SIZE))),
+                UnsafeCell::new(Block::all_used(PhysAddr::new_panic(2 * BLOCK_SIZE))),
+                UnsafeCell::new(Block::all_used(PhysAddr::new_panic(3 * BLOCK_SIZE))),
+                UnsafeCell::new(Block::all_used(PhysAddr::new_panic(4 * BLOCK_SIZE))),
+                UnsafeCell::new(Block::all_used(PhysAddr::new_panic(5 * BLOCK_SIZE))),
+                UnsafeCell::new(Block::all_used(PhysAddr::new_panic(6 * BLOCK_SIZE))),
+                UnsafeCell::new(Block::all_used(PhysAddr::new_panic(7 * BLOCK_SIZE))),
             ],
         }
     }

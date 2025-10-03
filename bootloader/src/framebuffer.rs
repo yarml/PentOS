@@ -96,9 +96,13 @@ pub fn postboot_init(
         .alloc_raw(*primary.size, 0x1000)
         .expect("Out of memory");
     let buffer_frame_start = Frame::containing(buffer);
+
+    let bufferptr = buffer.as_mut_ptr();
+    let bufferlen = *primary.size / mem::size_of::<u32>();
+
     let buffer = unsafe {
         // SAFETY: trust in the process
-        slice::from_raw_parts_mut(buffer.as_mut_ptr(), *primary.size / mem::size_of::<u32>())
+        slice::from_raw_parts_mut(bufferptr, bufferlen)
     };
     buffer.fill(0);
 
@@ -128,16 +132,17 @@ pub fn postboot_init(
             MemoryType::WriteBack,
         );
     }
-    let fb = unsafe {
-        // SAFETY: trust in the process
-        slice::from_raw_parts_mut(fb.as_mut_ptr(), *primary.size / mem::size_of::<u32>())
-    };
+
+    let fbptr = fb.as_mut_ptr();
+    let fblen = *primary.size / mem::size_of::<u32>();
 
     FramebufferInfo {
-        fb,
+        fbptr,
+        fblen,
         width: primary.width,
         height: primary.height,
         stride: primary.stride,
-        buffer,
+        bufferptr,
+        bufferlen,
     }
 }
