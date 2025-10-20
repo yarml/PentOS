@@ -4,3 +4,4 @@ rustflags = ["-C", "link-args=--script=kernel/link.ld"]
 
 [unstable]
 build-std = ["core", "alloc", "compiler_builtins"]
+build-std-features = ["compiler-builtins-mem"]
