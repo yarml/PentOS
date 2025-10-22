@@ -32,10 +32,7 @@ fn main() -> Status {
         // If it fails, we don't really care.
         stdout.clear().ok();
     });
-    unsafe {
-        // SAFETY: We call logger::disable() before exiting UEFI boot services.
-        logger::init();
-    }
+    logger::init();
     info!("Booting PentOS...");
 
     let features = features::bsp_featureset();
@@ -48,7 +45,6 @@ fn main() -> Status {
     // Keep this last in PreBootStage
     let primary_framebuffer_info = framebuffer::init();
 
-    logger::disable();
     bootstage::set_postboot();
     // TODO: AP wait_for_config
     let real_mmap = unsafe {
