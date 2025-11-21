@@ -2,8 +2,6 @@
 #[repr(C)]
 pub struct FeatureSet {
     pub vendor: Vendor,
-    pub context_id: bool,
-    pub inv_context_id: bool,
     pub shadow_stack: bool,
     pub pk_user: bool,
     pub pk_super: bool,

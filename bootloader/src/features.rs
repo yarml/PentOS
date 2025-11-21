@@ -20,6 +20,8 @@ pub enum InsufficientReason {
     NoSyscall,
     NoPAT,
     NoExecDisable,
+    NoPCID,
+    NoInvPCID,
     NoLongMode, // Can we even get here???
 }
 
@@ -74,6 +76,7 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
 
     let cpuid1 = unsafe { __cpuid(1) };
     let cpuidext1 = unsafe { __cpuid(0x8000_0001) };
+    let cpuid7_0 = unsafe { __cpuid_count(7, 0) };
 
     let has_huge_pages = (cpuidext1.edx >> 26) & 1 == 1;
     let has_apic = (cpuid1.edx >> 9) & 1 == 1;
@@ -81,6 +84,17 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
     let has_pat = (cpuid1.edx >> 16) & 1 == 1;
     let has_noexec = (cpuidext1.edx >> 20) & 1 == 1;
     let has_long_mode = (cpuidext1.edx >> 29) & 1 == 1;
+
+    // I couldn't find in AMD manual where PCID functionality is
+    // However they do mention in APM Volume 2 Section 5.5.1 page 158 (March 2024)
+    // that it can be found with CPUID 01.ECX[PCID], without mentioning the bit
+    // However APM Volume 3 Appendix E pages 602-603 (March 2024) do not mention any PCID bit
+    // in ECX for CPUID 01. Assuming they are just like Intel where
+    // PCID is CPUID 01.ECX[bit 17], even though it is marked as reserved in the
+    // Aforementioned APM Volume 3
+    let has_context_id = (cpuid1.ecx >> 17) & 1 == 1;
+    // Yet strangely, AMD talks about INVPCID without ambiguity...
+    let has_inv_context_id = (cpuid7_0.ebx >> 10) & 1 == 1;
 
     if !has_huge_pages {
         return FeatureDetect::Insufficient(InsufficientReason::NoHugePages);
@@ -100,35 +114,22 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
     if !has_long_mode {
         return FeatureDetect::Insufficient(InsufficientReason::NoLongMode);
     }
+    if !has_context_id {
+        return FeatureDetect::Insufficient(InsufficientReason::NoPCID);
+    }
+    if !has_inv_context_id {
+        return FeatureDetect::Insufficient(InsufficientReason::NoInvPCID);
+    }
 
-    // I couldn't find in AMD manual where PCID functionality is
-    // However they do mention in APM Volume 2 Section 5.5.1 page 158 (March 2024)
-    // that it can be found with CPUID 01.ECX[PCID], without mentioning the bit
-    // However APM Volume 3 Appendix E pages 602-603 (March 2024) do not mention any PCID bit
-    // in ECX for CPUID 01. Assuming they are just like Intel where
-    // PCID is CPUID 01.ECX[bit 17], even though it is marked as reserved in the
-    // Aforementioned APM Volume 3
-    let context_id = (cpuid1.ecx >> 17) & 1 == 1;
-
-    // Yet strangely, AMD talks about INVPCID without ambiguity...
-    let (inv_context_id, shadow_stack, pk_user, pk_super) = if max_basic >= 7 {
-        let cpuid7_0 = unsafe { __cpuid_count(7, 0) };
-        let inv_context_id = (cpuid7_0.ebx >> 10) & 1 == 1;
-        let shadow_stack = (cpuid7_0.ecx >> 7) & 1 == 1;
-        let pk_user = (cpuid7_0.ecx >> 3) & 1 == 1;
-        let pk_super = match vendor {
-            Vendor::GenuineIntel => (cpuid7_0.ecx >> 31) & 1 == 1,
-            Vendor::AuthenticAMD => false, // I couldn't find any mention of PKS, and bit 31 is marked as reserved
-        };
-        (inv_context_id, shadow_stack, pk_user, pk_super)
-    } else {
-        (false, false, false, false)
+    let shadow_stack = (cpuid7_0.ecx >> 7) & 1 == 1;
+    let pk_user = (cpuid7_0.ecx >> 3) & 1 == 1;
+    let pk_super = match vendor {
+        Vendor::GenuineIntel => (cpuid7_0.ecx >> 31) & 1 == 1,
+        Vendor::AuthenticAMD => false, // I couldn't find any mention of PKS, and bit 31 is marked as reserved
     };
 
     FeatureDetect::Sufficient(FeatureSet {
         vendor,
-        context_id,
-        inv_context_id,
         shadow_stack,
         pk_user,
         pk_super,

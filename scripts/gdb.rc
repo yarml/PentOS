@@ -1,7 +1,10 @@
 set disassembly-flavor intel
-symbol-file run/esp/pentos.kernel
-
+set pagination off
 set script-extension strict
+
+add-symbol-file run/esp/pentos.kernel
+add-symbol-file run/esp/efi/boot/bootx64.efi
+
 source scripts/gdb.py
 
 target remote localhost:1234
