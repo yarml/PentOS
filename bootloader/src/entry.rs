@@ -2,7 +2,7 @@ use {
     crate::{
         acpi,
         allocator::{ALLOCATOR_CAP, PostBootAllocator, PreBootAllocator},
-        bootstage, features, framebuffer, kernel, logger,
+        bootstage, features, framebuffer, kernel, loader, logger,
         phys_mmap::PhysMemMap,
         pic, topology, virt_mmap,
     },
@@ -33,7 +33,11 @@ fn main() -> Status {
         stdout.clear().ok();
     });
     logger::init();
+    loader::init();
     info!("Booting PentOS...");
+
+    debug!("Bootloader base: {}", loader::base());
+    debug!("efi_main: {}", PhysAddr::new(main as usize).unwrap());
 
     let features = features::bsp_featureset();
     let allocator = PreBootAllocator;
@@ -66,6 +70,7 @@ fn main() -> Status {
             PhysAddr::new_panic(entry.phys_start as usize),
             MemorySize::new(entry.page_count as usize * 4096),
         );
+        debug!("{region} - {ty:?}", ty = entry.ty);
         if entry.phys_start >= 1024 * 1024 && (entry.ty == MemoryType::CONVENTIONAL) {
             mmap.add(region);
             real_mmap.add(region);
@@ -108,12 +113,13 @@ fn main() -> Status {
         &mut allocator,
     );
     let stack = kernel::alloc_stack(root_map, &mut allocator);
+    debug!("Done mapping");
     root_map.load();
 
     Efer::new().syscall(false).exec_disable(true).write();
     let mmap = allocator.fini(loader_mmap);
     bootinfo.mmap = mmap.regions;
     bootinfo.mmap_len = mmap.len;
-
+    debug!("Ceding control to kernel");
     kernel::bsp_cede_control(&kernel, stack);
 }

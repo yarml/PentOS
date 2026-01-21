@@ -8,18 +8,12 @@ use {
         cmp::min,
         hint, mem,
         sync::atomic::{AtomicUsize, Ordering},
-    },
-    elf::{Elf, ElfClass, ElfType, SegmentType},
-    spinlocks::once::Once,
-    uefi::{
-        CStr16, Identify,
-        boot::{self, SearchType},
-        proto::media::{
+    }, elf::{Elf, ElfClass, ElfType, SegmentType}, log::debug, spinlocks::once::Once, uefi::{
+        boot::{self, SearchType}, proto::media::{
             file::{File, FileAttribute, FileMode},
             fs::SimpleFileSystem,
-        },
-    },
-    x64::{
+        }, CStr16, Identify
+    }, x64::{
         lapic,
         mem::{
             addr::{Address, PhysAddr, VirtAddr},
@@ -88,8 +82,10 @@ pub fn map_kernel(
     root_map: PagingRootEntry,
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
 ) {
+    debug!("Mapping kernel");
     for segment in &kernel.program_header {
         if segment.ty == SegmentType::Load {
+            debug!("LOAD {vadr}", vadr = segment.vaddr);
             let pg_count = segment.mem_size.next_multiple_of(4096) / 4096;
             let mut copied = 0;
             for i in 0..pg_count {
