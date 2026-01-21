@@ -7,7 +7,7 @@ use {
     boot_protocol::{STACK_SIZE, kernel_init::KernelInitFn},
     core::{
         arch::asm,
-        cmp::max,
+        cmp::min,
         hint, mem,
         sync::atomic::{AtomicUsize, Ordering},
     },

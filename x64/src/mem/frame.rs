@@ -16,7 +16,7 @@ use {
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Frame<S: FrameSize> {
+pub struct Frame<S: FrameSize = Frame4KiB> {
     boundary: PhysAddr,
     _phantom: PhantomData<S>,
 }
@@ -62,6 +62,13 @@ impl<S: FrameSize> Frame<S> {
     pub const fn from_number(num: usize) -> Self {
         Self {
             boundary: PhysAddr::new_panic(num << S::SHIFT),
+            _phantom: PhantomData,
+        }
+    }
+
+    pub const fn resize<OtherSize: FrameSize>(self) -> Frame<OtherSize> {
+        Frame {
+            boundary: self.boundary,
             _phantom: PhantomData,
         }
     }

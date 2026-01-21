@@ -2,7 +2,7 @@ pub mod size;
 
 use {
     super::addr::Address,
-    crate::mem::{MemorySize, addr::VirtAddr},
+    crate::mem::{MemorySize, addr::VirtAddr, page::size::Page4KiB},
     core::{
         fmt::{Debug, Display},
         marker::PhantomData,
@@ -13,7 +13,7 @@ use {
 
 #[repr(transparent)]
 #[derive(Clone, Copy)]
-pub struct Page<S: PageSize> {
+pub struct Page<S: PageSize = Page4KiB> {
     boundary: VirtAddr,
     _phantom: PhantomData<S>,
 }

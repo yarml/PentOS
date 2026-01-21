@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 #[derive(Clone, Copy)]
 pub struct Frame4KiB;
 
@@ -47,4 +49,12 @@ impl<const SIZE: usize> FrameSize for FrameDynSize<SIZE> {
     } else {
         panic!("Dynamic frame size must be a power of 2");
     };
+}
+pub struct FrameSizeOps<FS1: FrameSize, FS2: FrameSize> {
+    phantom: PhantomData<(FS1, FS2)>,
+}
+
+impl<FS1: FrameSize, FS2: FrameSize> FrameSizeOps<FS1, FS2> {
+    pub const ORDER_DIFF: usize = FS1::ORDER - FS2::ORDER;
+    pub const FRAME_COUNT_DIFF: usize = 2usize.pow(Self::ORDER_DIFF as u32);
 }

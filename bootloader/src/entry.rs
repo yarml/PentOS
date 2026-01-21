@@ -7,7 +7,7 @@ use {
         pic, topology, virt_mmap,
     },
     boot_protocol::{BootInfo, MAX_MMAP_SIZE, OFFSET_MAPPING},
-    log::info,
+    log::{debug, info},
     uefi::{
         Status,
         boot::{self, MemoryType},

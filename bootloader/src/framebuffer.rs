@@ -16,8 +16,8 @@ use {
         mem::{
             MemorySize,
             addr::{Address, PhysAddr},
-            frame::Frame,
-            page::Page,
+            frame::{Frame, size::Frame4KiB},
+            page::{Page, size::Page4KiB},
             paging::PagingRootEntry,
         },
         msr::pat::MemoryType,
@@ -95,7 +95,7 @@ pub fn postboot_init(
     let buffer = allocator
         .alloc_raw(*primary.size, 0x1000)
         .expect("Out of memory");
-    let buffer_frame_start = Frame::containing(buffer);
+    let buffer_frame_start = Frame::<Frame4KiB>::containing(buffer);
 
     let bufferptr = buffer.as_mut_ptr();
     let bufferlen = *primary.size / mem::size_of::<u32>();
@@ -107,10 +107,10 @@ pub fn postboot_init(
     buffer.fill(0);
 
     let fb = allocate_info_space(*primary.size);
-    let buffer_page_start = Page::containing(allocate_info_space(*primary.size));
+    let buffer_page_start = Page::<Page4KiB>::containing(allocate_info_space(*primary.size));
     let pg_count = primary.size.next_multiple_of(0x1000) / 0x1000;
-    let fb_frame_start = Frame::containing(primary.base);
-    let fb_page_start = Page::containing(fb);
+    let fb_frame_start = Frame::<Frame4KiB>::containing(primary.base);
+    let fb_page_start = Page::<Page4KiB>::containing(fb);
 
     for i in 0..pg_count {
         map(

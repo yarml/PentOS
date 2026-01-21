@@ -74,12 +74,12 @@ impl<S: const Address> MemoryRegion<S> {
         self.start
     }
     #[inline(always)]
-    pub fn end(&self) -> S {
-        self.start().add_truncate(*self.size)
+    pub const fn end(&self) -> S {
+        self.start().add_truncate(self.size.as_usize())
     }
     #[inline(always)]
-    pub fn is_null(&self) -> bool {
-        *self.size == 0
+    pub const fn is_null(&self) -> bool {
+        self.size.as_usize() == 0
     }
 }
 
@@ -196,7 +196,7 @@ impl<S: const Address> Display for MemoryRegion<S> {
 
 impl<S: const Address> Debug for MemoryRegion<S> {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "MemoryRegion({} - {})", self.start(), self.end())
+        write!(f, "MemoryRegion({} - {}, {})", self.start(), self.end(), self.size)
     }
 }
 

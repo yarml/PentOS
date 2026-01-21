@@ -3,27 +3,19 @@ use {
     crate::mem::{
         addr::{Address, PhysAddr},
         frame::{Frame, size::FrameSize},
-        page::size::PageSize,
+        page::size::PageSizeMap,
     },
     core::{marker::PhantomData, ops::Deref},
 };
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct PagingMapEntry<PS>
-where
-    PS: PageSize,
-    PS::PhysicalPageSize: FrameSize,
-{
+pub struct PagingMapEntry<PS: PageSizeMap> {
     value: u64,
     _phantom: PhantomData<PS>,
 }
 
-impl<PS> PagingMapEntry<PS>
-where
-    PS: PageSize,
-    PS::PhysicalPageSize: FrameSize,
-{
+impl<PS: PageSizeMap> PagingMapEntry<PS> {
     #[inline(always)]
     /// Defaults to nowrite, nouser, noexec, noglobal, PAT = 0, PK = 0
     pub const fn new(target: Frame<PS::PhysicalPageSize>) -> Self {
@@ -43,11 +35,7 @@ where
     }
 }
 
-impl<PS> PagingMapEntry<PS>
-where
-    PS: PageSize,
-    PS::PhysicalPageSize: FrameSize,
-{
+impl<PS: PageSizeMap> PagingMapEntry<PS> {
     #[inline(always)]
     pub const fn nopresent(self) -> PagingAbsentEntry<PS> {
         PagingAbsentEntry::from_inner(self.value & !(1 << 0))
@@ -127,11 +115,7 @@ where
     }
 }
 
-impl<PS> PagingMapEntry<PS>
-where
-    PS: PageSize,
-    PS::PhysicalPageSize: FrameSize,
-{
+impl<PS: PageSizeMap> PagingMapEntry<PS> {
     #[inline(always)]
     pub const fn is_write(&self) -> bool {
         self.value & (1 << 1) != 0
@@ -170,22 +154,14 @@ where
     }
 }
 
-impl<PS> PagingMapEntry<PS>
-where
-    PS: PageSize,
-    PS::PhysicalPageSize: FrameSize,
-{
+impl<PS: PageSizeMap> PagingMapEntry<PS> {
     #[inline(always)]
     pub const fn to_raw(&self) -> PagingRawEntry<PS> {
         PagingRawEntry::new(self.value)
     }
 }
 
-impl<PS> Deref for PagingMapEntry<PS>
-where
-    PS: PageSize,
-    PS::PhysicalPageSize: FrameSize,
-{
+impl<PS: PageSizeMap> Deref for PagingMapEntry<PS> {
     type Target = u64;
 
     fn deref(&self) -> &Self::Target {

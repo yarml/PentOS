@@ -6,27 +6,19 @@ use {
             Frame,
             size::{Frame4KiB, FrameSize},
         },
-        page::size::{Page4KiB, PageSize},
+        page::size::{Page4KiB, PageSize, PageSizeReference},
     },
     core::{marker::PhantomData, ops::Deref},
 };
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct PagingReferenceEntry<PS>
-where
-    PS: PageSize,
-    PS::ReferenceTarget: PageSize,
-{
+pub struct PagingReferenceEntry<PS: PageSizeReference> {
     value: u64,
     _phantom: PhantomData<PS>,
 }
 
-impl<PS> PagingReferenceEntry<PS>
-where
-    PS: PageSize,
-    PS::ReferenceTarget: PageSize,
-{
+impl<PS: PageSizeReference> PagingReferenceEntry<PS> {
     /// Defaults to nowrite, nouser, noexec, PAT = 0
     #[inline(always)]
     pub const fn new(target_frame: Frame<Frame4KiB>) -> Self {
@@ -45,11 +37,7 @@ where
     }
 }
 
-impl<PS> PagingReferenceEntry<PS>
-where
-    PS: PageSize,
-    PS::ReferenceTarget: PageSize,
-{
+impl<PS: PageSizeReference> PagingReferenceEntry<PS> {
     #[inline(always)]
     pub const fn nopresent(self) -> PagingAbsentEntry<PS> {
         PagingAbsentEntry::from_inner(self.value & !(1 << 0))
@@ -115,11 +103,7 @@ where
     }
 }
 
-impl<PS> PagingReferenceEntry<PS>
-where
-    PS: PageSize,
-    PS::ReferenceTarget: PageSize,
-{
+impl<PS: PageSizeReference> PagingReferenceEntry<PS> {
     #[inline(always)]
     pub const fn is_write(&self) -> bool {
         self.value & (1 << 1) != 0
@@ -150,11 +134,7 @@ where
     }
 }
 
-impl<PS> PagingReferenceEntry<PS>
-where
-    PS: PageSize,
-    PS::ReferenceTarget: PageSize,
-{
+impl<PS: PageSizeReference> PagingReferenceEntry<PS> {
     #[inline(always)]
     pub const fn as_raw(&mut self) -> &mut PagingRawEntry<PS> {
         unsafe { &mut *(self as *mut Self as *mut PagingRawEntry<PS>) }
@@ -166,11 +146,7 @@ where
     }
 }
 
-impl<PS> PagingReferenceEntry<PS>
-where
-    PS: PageSize,
-    PS::ReferenceTarget: PageSize,
-{
+impl<PS: PageSizeReference> PagingReferenceEntry<PS> {
     /// # Safety
     /// Must ensure that this entry is pointing to a valid sub table
     /// and that the memory location is not mutably aliased
@@ -202,11 +178,7 @@ where
     }
 }
 
-impl<PS> Deref for PagingReferenceEntry<PS>
-where
-    PS: PageSize,
-    PS::ReferenceTarget: PageSize,
-{
+impl<PS: PageSizeReference> Deref for PagingReferenceEntry<PS> {
     type Target = u64;
 
     fn deref(&self) -> &Self::Target {

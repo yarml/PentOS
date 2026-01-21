@@ -33,6 +33,12 @@ pub trait PageSize: Clone + Copy {
     type ReferenceTarget;
 }
 
+pub trait PageSizeMap: PageSize {}
+pub trait PageSizeReference: PageSize {}
+
+impl<PS: PageSize> PageSizeMap for PS where PS::PhysicalPageSize: FrameSize {}
+impl<PS: PageSize> PageSizeReference for PS where PS::ReferenceTarget: PageSize {}
+
 impl PageSize for Page4KiB {
     type PhysicalPageSize = Frame4KiB;
 
