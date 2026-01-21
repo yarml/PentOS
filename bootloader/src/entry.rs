@@ -46,23 +46,29 @@ fn main() -> Status {
     let primary_framebuffer_info = framebuffer::init();
 
     bootstage::set_postboot();
-    // TODO: AP wait_for_config
-    let real_mmap = unsafe {
+    let uefi_mmap = unsafe {
         // SAFETY: Only thing we used was the UEFI console logger, and allocator, they are now disabled
         boot::exit_boot_services(Some(MemoryType::LOADER_DATA))
     };
 
     pic::disable();
 
+    debug!("PIC disabled");
+
+    // The difference between real_mmap and mmap is that mmap is moved to the allocator
+    // real_mmap is exclusively used to identity & offset map memory
+    let mut real_mmap = PhysMemMap::<MAX_MMAP_SIZE>::new();
     let mut mmap = PhysMemMap::<ALLOCATOR_CAP>::new();
+
     let mut loader_mmap = PhysMemMap::<64>::new();
-    for entry in real_mmap.entries() {
+    for entry in uefi_mmap.entries() {
         let region = PhysicalMemoryRegion::new(
             PhysAddr::new_panic(entry.phys_start as usize),
             MemorySize::new(entry.page_count as usize * 4096),
         );
         if entry.phys_start >= 1024 * 1024 && (entry.ty == MemoryType::CONVENTIONAL) {
             mmap.add(region);
+            real_mmap.add(region);
         }
         if entry.phys_start >= 1024 * 1024
             && (entry.ty == MemoryType::LOADER_CODE
@@ -71,6 +77,7 @@ fn main() -> Status {
                 || entry.ty == MemoryType::BOOT_SERVICES_DATA)
         {
             loader_mmap.add(region);
+            real_mmap.add(region);
         }
     }
 
@@ -79,7 +86,6 @@ fn main() -> Status {
         PostBootAllocator::init(mmap)
     };
 
-    Efer::new().syscall(false).exec_disable(true).write();
     standard_pat().write();
     let root_map =
         virt_mmap::identity_and_offset_mapping(&mut allocator, &real_mmap, OFFSET_MAPPING);
@@ -103,6 +109,8 @@ fn main() -> Status {
     );
     let stack = kernel::alloc_stack(root_map, &mut allocator);
     root_map.load();
+
+    Efer::new().syscall(false).exec_disable(true).write();
     let mmap = allocator.fini(loader_mmap);
     bootinfo.mmap = mmap.regions;
     bootinfo.mmap_len = mmap.len;
