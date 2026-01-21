@@ -6,7 +6,6 @@ use {
     log::debug,
     x64::{
         mem::{
-            MemorySize,
             addr::{Address, PhysAddr, VirtAddr},
             frame::{
                 Frame,
@@ -167,9 +166,21 @@ pub fn identity_and_offset_mapping<const ALLOCATOR_CAP: usize, const MMAP_CAP: u
             / FrameSizeOps::<Frame1GiB, Frame4KiB>::FRAME_COUNT_DIFF;
         debug!("G1C: {g1_count}");
 
-        map_many::<Page4KiB, ALLOCATOR_CAP>(root_map, allocator, leading_4k_count, k4_start, offset);
+        map_many::<Page4KiB, ALLOCATOR_CAP>(
+            root_map,
+            allocator,
+            leading_4k_count,
+            k4_start,
+            offset,
+        );
         map_many::<Page4KiB, ALLOCATOR_CAP>(root_map, allocator, trailing_4k_count, m2_end, offset);
-        map_many::<Page2MiB, ALLOCATOR_CAP>(root_map, allocator, leading_2m_count, m2_start, offset);
+        map_many::<Page2MiB, ALLOCATOR_CAP>(
+            root_map,
+            allocator,
+            leading_2m_count,
+            m2_start,
+            offset,
+        );
         map_many::<Page2MiB, ALLOCATOR_CAP>(root_map, allocator, trailing_2m_count, g1_end, offset);
         map_many::<Page1GiB, ALLOCATOR_CAP>(root_map, allocator, g1_count, g1_start, offset);
     }

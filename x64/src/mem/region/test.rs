@@ -106,7 +106,7 @@ fn test_display_debug() {
     assert_eq!(format!("{}", r), "0000000000001000 - 0000000000001500");
     assert_eq!(
         format!("{:?}", r),
-        "MemoryRegion(0000000000001000 - 0000000000001500)"
+        "MemoryRegion(0000000000001000 - 0000000000001500, 1K256B)"
     );
 }
 
