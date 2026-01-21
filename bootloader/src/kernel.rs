@@ -101,15 +101,16 @@ pub fn map_kernel(
                 if copied < segment.file_size {
                     let src = kernel.data.as_ptr() as u64 + segment.offset + copied as u64;
                     let dst = frame.boundary();
+                    let copy_amount = min(segment.file_size - copied, 4096);
                     unsafe {
                         // SAFETY: We are copying from a valid memory region to a valid memory region
                         core::ptr::copy_nonoverlapping(
                             src as *const u8,
                             dst.as_mut_ptr(),
-                            max(segment.file_size - copied, 4096),
+                            copy_amount,
                         );
                     }
-                    copied += max(segment.file_size - copied, 4096);
+                    copied += copy_amount;
                 }
                 let page = Page::containing(segment.vaddr + i * 4096);
                 virt_mmap::map(
