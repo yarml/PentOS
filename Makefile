@@ -41,6 +41,10 @@ image: $(ovmf_target) build-bootloader build-kernel
 
 .PHONY: run
 run: image
+	bash scripts/run.sh
+
+.PHONY: debug
+debug: image
 	bash scripts/debug.sh
 
 .PHONY: install

@@ -5,6 +5,6 @@ set script-extension strict
 add-symbol-file run/esp/pentos.kernel
 add-symbol-file run/esp/efi/boot/bootx64.efi
 
-source scripts/gdb.py
+source tools/pent_dbg/pent_dbg.py
 
 target remote localhost:1234
