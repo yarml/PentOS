@@ -36,3 +36,8 @@ pub const HIGHMEM: PhysicalMemoryRegion = PhysicalMemoryRegion::new(
     PhysAddr::new_panic(G4.as_usize()),
     MemorySize::new(G512.as_usize() - G4.as_usize()),
 );
+
+pub const IDENTITY_MAPPED_REGION: PhysicalMemoryRegion = PhysicalMemoryRegion::new(
+    SUPERLOWMEM.end(),
+    MemorySize::new(G512.as_usize() - SUPERLOWMEM.size().as_usize()),
+);

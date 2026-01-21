@@ -1,11 +1,9 @@
 use {
     crate::{
-        allocator::{ALLOCATOR_CAP, PostBootAllocator, PreBootAllocator},
+        allocator::{PostBootAllocator, PreBootAllocator, ALLOCATOR_CAP},
         infoarea::allocate_info_space,
         misc, virt_mmap,
-    },
-    boot_protocol::{STACK_SIZE, kernel_init::KernelInitFn},
-    core::{
+    }, boot_protocol::{kernel_init::KernelInitFn, STACK_SIZE}, core::{
         arch::asm,
         cmp::min,
         hint, mem,
@@ -26,11 +24,11 @@ use {
         mem::{
             addr::{Address, PhysAddr, VirtAddr},
             frame::Frame,
-            page::Page,
+            page::{size::Page4KiB, Page},
             paging::PagingRootEntry,
         },
         msr::pat::MemoryType,
-    },
+    }
 };
 
 struct ApInfo {
@@ -112,7 +110,7 @@ pub fn map_kernel(
                     }
                     copied += copy_amount;
                 }
-                let page = Page::containing(segment.vaddr + i * 4096);
+                let page = Page::<Page4KiB>::containing(segment.vaddr + i * 4096);
                 virt_mmap::map(
                     root_map,
                     allocator,
@@ -131,7 +129,7 @@ pub fn alloc_stack(
     root_map: PagingRootEntry,
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
 ) -> VirtAddr {
-    let stack = Page::containing(allocate_info_space(STACK_SIZE));
+    let stack = Page::<Page4KiB>::containing(allocate_info_space(STACK_SIZE));
     let pg_count = STACK_SIZE.next_multiple_of(4096) / 4096;
     for i in 0..pg_count {
         let frame = Frame::containing(allocator.alloc_raw(0x1000, 0x1000).expect("Out of memory"));
