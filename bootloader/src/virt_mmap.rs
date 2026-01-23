@@ -147,16 +147,16 @@ pub fn identity_and_offset_mapping<const ALLOCATOR_CAP: usize, const MMAP_CAP: u
         let g1_start = usize::min(k4_start.next_multiple_of(Frame1GiB::SIZE), k4_end);
         debug!("K4S: {k4_start:x},\nM2S: {m2_start:x},\nG1S: {g1_start:x}");
 
-        let m2_end = k4_end >> Frame2MiB::SHIFT << Frame2MiB::SHIFT;
-        let g1_end = k4_end >> Frame1GiB::SHIFT << Frame1GiB::SHIFT;
+        let m2_end = usize::max(k4_end >> Frame2MiB::SHIFT << Frame2MiB::SHIFT, m2_start);
+        let g1_end = usize::max(k4_end >> Frame1GiB::SHIFT << Frame1GiB::SHIFT, g1_start);
         debug!("K4E: {k4_end:x},\nM2E: {m2_end:x},\nG1E: {g1_end:x}");
 
         let leading_4k_count = (m2_start - k4_start) / Frame4KiB::SIZE;
         let leading_2m_count = (g1_start - m2_start) / Frame2MiB::SIZE;
         debug!("K4L: {leading_4k_count},\nM2L: {leading_2m_count}");
 
-        let trailing_2m_count = (k4_end - m2_end) / Frame2MiB::SIZE;
-        let trailing_4k_count = (k4_end - g1_end) / Frame1GiB::SIZE;
+        let trailing_2m_count = (m2_end - usize::min(g1_end, m2_end)) / Frame2MiB::SIZE;
+        let trailing_4k_count = (k4_end - m2_end) / Frame4KiB::SIZE;
         debug!("K4T: {trailing_4k_count},\nM2T: {trailing_2m_count}");
 
         let g1_count = (total_count
