@@ -21,7 +21,7 @@ package.license = " GPL-3.0-or-later"
 package.authors = ["Youssef Harmal"]
 
 [workspace.dependencies]
-log = "0.4.28"
+log = "0.4.29"
 boot-protocol = { path = "boot-protocol" }
 x64 = { path = "x64" }
 elf = { path = "elf" }
