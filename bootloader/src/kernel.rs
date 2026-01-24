@@ -1,28 +1,39 @@
 use {
     crate::{
-        allocator::{PostBootAllocator, PreBootAllocator, ALLOCATOR_CAP},
+        allocator::{ALLOCATOR_CAP, PostBootAllocator, PreBootAllocator},
         infoarea::allocate_info_space,
         misc, virt_mmap,
-    }, boot_protocol::{kernel_init::KernelInitFn, BootInfo, STACK_SIZE}, core::{
+    },
+    boot_protocol::{BootInfo, STACK_SIZE, kernel_init::KernelInitFn},
+    config::vmem::KBIN_REGION,
+    core::{
         arch::asm,
         cmp::min,
         hint, mem,
         sync::atomic::{AtomicUsize, Ordering},
-    }, elf::{Elf, ElfClass, ElfType, SegmentType}, log::debug, spinlocks::once::Once, uefi::{
-        boot::{self, SearchType}, proto::media::{
+    },
+    elf::{Elf, ElfClass, ElfType, SegmentType},
+    log::debug,
+    spinlocks::once::Once,
+    uefi::{
+        CStr16, Identify,
+        boot::{self, SearchType},
+        proto::media::{
             file::{File, FileAttribute, FileMode},
             fs::SimpleFileSystem,
-        }, CStr16, Identify
-    }, x64::{
+        },
+    },
+    x64::{
         lapic,
         mem::{
+            VirtualMemoryRegion,
             addr::{Address, PhysAddr, VirtAddr},
             frame::Frame,
-            page::{size::Page4KiB, Page},
+            page::{Page, size::Page4KiB},
             paging::PagingRootEntry,
         },
         msr::pat::MemoryType,
-    }
+    },
 };
 
 struct ApInfo {
@@ -89,9 +100,15 @@ pub fn map_kernel(
             let pg_count = segment.mem_size.next_multiple_of(4096) / 4096;
             let mut copied = 0;
             for i in 0..pg_count {
+                let segment_region = VirtualMemoryRegion::new(segment.vaddr, segment.mem_size);
+                if !KBIN_REGION.contains_region(segment_region) {
+                    panic!("Kernel binary has code/data outside required kernel region.");
+                }
+
                 let frame = Frame::containing(PhysAddr::new_panic(
                     allocator.alloc([0; 4096]).expect("Out of memory") as *const _ as usize,
                 ));
+
                 if copied < segment.file_size {
                     let src = kernel.data.as_ptr() as u64 + segment.offset + copied as u64;
                     let dst = frame.boundary();
@@ -107,6 +124,7 @@ pub fn map_kernel(
                     copied += copy_amount;
                 }
                 let page = Page::<Page4KiB>::containing(segment.vaddr + i * 4096);
+
                 virt_mmap::map(
                     root_map,
                     allocator,

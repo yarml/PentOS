@@ -45,6 +45,8 @@ pub const MAX_PHYS_SPACE: MemorySize = G512;
 
 /// Contains the kernel code, data, and rodata. Only the pages used are actually mapped.
 /// This memory is always mapped with WriteBack type.
+/// This needs to always be synchronized with the kernel's link.ld script
+/// otherwise the bootloader will refuse to load the kernel
 pub const KBIN_REGION: VirtualMemoryRegion = after(PHYSICAL_MAPPING_REGION, G16, B0, B0);
 
 /// Global kernel heap
