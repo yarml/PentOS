@@ -121,5 +121,5 @@ fn main() -> Status {
     bootinfo.mmap = mmap.regions;
     bootinfo.mmap_len = mmap.len;
     debug!("Ceding control to kernel");
-    kernel::bsp_cede_control(&kernel, stack);
+    kernel::bsp_cede_control(&kernel, stack, bootinfo);
 }

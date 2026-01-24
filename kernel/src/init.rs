@@ -4,8 +4,8 @@ use {
 };
 
 #[unsafe(no_mangle)]
-extern "C" fn init(bootinfo: BootInfo) -> KernelEntryInfo {
-    klib::init(&bootinfo);
+extern "sysv64" fn init(bootinfo: &BootInfo) -> KernelEntryInfo {
+    klib::init(bootinfo);
 
     KernelEntryInfo {
         bsp_entry: VirtAddr::new_panic(crate::entry::bsp_entry as usize),

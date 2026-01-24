@@ -1,6 +1,6 @@
 use core::arch::asm;
 
-pub extern "C" fn bsp_entry() {
+pub extern "sysv64" fn bsp_entry() {
     loop {
         unsafe {
             asm!(
@@ -15,7 +15,7 @@ pub extern "C" fn bsp_entry() {
     }
 }
 
-pub extern "C" fn ap_entry() {
+pub extern "sysv64" fn ap_entry() {
     loop {
         unsafe {
             asm!(

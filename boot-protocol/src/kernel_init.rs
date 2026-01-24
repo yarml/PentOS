@@ -1,6 +1,6 @@
-use x64::mem::addr::VirtAddr;
+use {crate::BootInfo, x64::mem::addr::VirtAddr};
 
-pub type KernelInitFn = extern "C" fn() -> KernelEntryInfo;
+pub type KernelInitFn = extern "sysv64" fn(&BootInfo) -> KernelEntryInfo;
 
 #[repr(C)]
 pub struct KernelEntryInfo {

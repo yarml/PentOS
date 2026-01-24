@@ -3,7 +3,7 @@ use {
         allocator::{PostBootAllocator, PreBootAllocator, ALLOCATOR_CAP},
         infoarea::allocate_info_space,
         misc, virt_mmap,
-    }, boot_protocol::{kernel_init::KernelInitFn, STACK_SIZE}, core::{
+    }, boot_protocol::{kernel_init::KernelInitFn, BootInfo, STACK_SIZE}, core::{
         arch::asm,
         cmp::min,
         hint, mem,
@@ -143,14 +143,14 @@ pub fn alloc_stack(
     stack.boundary() + STACK_SIZE
 }
 
-pub fn bsp_cede_control(kernel: &Elf<'static>, stack: VirtAddr) -> ! {
+pub fn bsp_cede_control(kernel: &Elf<'static>, stack: VirtAddr, bootinfo: &BootInfo) -> ! {
     let entry = kernel.entry;
     let entry = entry.as_usize();
     let kernel_init: KernelInitFn = unsafe {
         // SAFETY: sometimes rust sucks
         mem::transmute(entry)
     };
-    let entry_info = kernel_init();
+    let entry_info = kernel_init(bootinfo);
 
     let bsp_entry = entry_info.bsp_entry.as_usize();
 
@@ -184,9 +184,9 @@ pub fn ap_cede_control() {
 
 #[allow(unreachable_code, unused_variables)]
 fn do_jump(stack: usize, dest: usize) -> ! {
-    loop {
-        hint::spin_loop();
-    }
+    // loop {
+    //     hint::spin_loop();
+    // }
     unsafe {
         asm!(
             "mov rsp, {0}",
