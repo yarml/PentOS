@@ -32,9 +32,9 @@ impl FeatureDetect {
             ebx: vendor0,
             edx: vendor1,
             ecx: vendor2,
-        } = unsafe { __cpuid(0) };
+        } = __cpuid(0);
         let max_basic = max_basic as usize;
-        let max_extended = unsafe { __cpuid(0x8000_0000) }.eax as usize;
+        let max_extended = __cpuid(0x8000_0000).eax as usize;
 
         let vendor = match Vendor::try_from({
             let mut vendor = [0; 12];
@@ -74,9 +74,9 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
         ));
     }
 
-    let cpuid1 = unsafe { __cpuid(1) };
-    let cpuidext1 = unsafe { __cpuid(0x8000_0001) };
-    let cpuid7_0 = unsafe { __cpuid_count(7, 0) };
+    let cpuid1 = __cpuid(1);
+    let cpuidext1 = __cpuid(0x8000_0001);
+    let cpuid7_0 = __cpuid_count(7, 0);
 
     let has_huge_pages = (cpuidext1.edx >> 26) & 1 == 1;
     let has_apic = (cpuid1.edx >> 9) & 1 == 1;

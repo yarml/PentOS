@@ -37,7 +37,7 @@ fn main() -> Status {
     info!("Booting PentOS...");
 
     debug!("Bootloader base: {}", loader::base());
-    debug!("efi_main: {}", PhysAddr::new(main as usize).unwrap());
+    debug!("efi_main: {}", PhysAddr::new(main as *const () as usize).unwrap());
 
     let features = features::bsp_featureset();
     let allocator = PreBootAllocator;

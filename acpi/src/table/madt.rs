@@ -60,7 +60,7 @@ impl Madt {
 }
 
 impl Madt {
-    pub fn iter(&self) -> MadtIterator {
+    pub fn iter(&self) -> MadtIterator<'_> {
         MadtIterator {
             madt: self,
             cursor: mem::size_of::<Madt>(),

@@ -4,7 +4,7 @@ mod xsdt;
 use {
     acpi::table::{Madt, MadtEntryHeader, Rsdp},
     spinlocks::once::Once,
-    uefi::{system, table},
+    uefi::{system, table::cfg::ConfigTableEntry},
 };
 
 pub fn init() {
@@ -13,7 +13,7 @@ pub fn init() {
         rsdp.init(|| {
             table
                 .iter()
-                .find(|entry| entry.guid == table::cfg::ACPI2_GUID)
+                .find(|entry| entry.guid == ConfigTableEntry::ACPI2_GUID)
                 .map(|entry| unsafe { &*(entry.address as *const Rsdp) })
         });
     });

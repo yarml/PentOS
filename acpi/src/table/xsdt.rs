@@ -33,7 +33,7 @@ impl Xsdt {
         }
     }
 
-    pub const fn entries(&self) -> XsdtIter {
+    pub const fn entries(&self) -> XsdtIter<'_> {
         XsdtIter {
             xsdt: self,
             index: 0,

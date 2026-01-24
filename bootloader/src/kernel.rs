@@ -29,7 +29,7 @@ use {
             VirtualMemoryRegion,
             addr::{Address, PhysAddr, VirtAddr},
             frame::Frame,
-            page::{Page, size::Page4KiB},
+            page::{Page, size::{Page4KiB, PageSize}},
             paging::PagingRootEntry,
         },
         msr::pat::MemoryType,
@@ -144,7 +144,7 @@ pub fn alloc_stack(
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
 ) -> VirtAddr {
     let stack = Page::<Page4KiB>::containing(allocate_info_space(STACK_SIZE));
-    let pg_count = STACK_SIZE.next_multiple_of(4096) / 4096;
+    let pg_count = STACK_SIZE.div_ceil(Page4KiB::SIZE);
     for i in 0..pg_count {
         let frame = Frame::containing(allocator.alloc_raw(0x1000, 0x1000).expect("Out of memory"));
         let page = stack + i;

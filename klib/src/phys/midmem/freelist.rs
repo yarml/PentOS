@@ -52,7 +52,8 @@ impl Freelist {
     pub fn push(&mut self, frame: FrameRange<Frame4KiB>) {
         let size = MidFrameSize::from_size(*frame.size());
         test_print!("Freelist::push({size:?}): {frame:?}");
-        assert!(*frame.start().boundary() % size.alignment() == 0);
+
+        assert!(frame.start().boundary().is_multiple_of(size.alignment()));
         let list = self.getlist(size);
         list.push(*frame.start().boundary() as u32).unwrap();
     }

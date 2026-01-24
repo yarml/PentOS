@@ -4,11 +4,7 @@ use {
 };
 
 pub fn id_cpuid() -> usize {
-    (unsafe {
-        // SAFETY: nothing to worry about
-        __cpuid(1)
-    }
-    .ebx >> 24) as usize
+    (__cpuid(1).ebx >> 24) as usize
 }
 
 #[derive(Clone, Copy)]

@@ -235,7 +235,7 @@ pub fn map_bootinfo<const ALLOCATOR_CAP: usize>(
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
 ) {
     let bootinfo = Frame::containing(PhysAddr::new_panic(bootinfo as *const _ as usize));
-    let pg_count = mem::size_of::<BootInfo>().next_multiple_of(4096) / 4096;
+    let pg_count = mem::size_of::<BootInfo>().div_ceil(Page4KiB::SIZE);
     for i in 0..pg_count {
         let frame = bootinfo + i;
         let page = target + i;

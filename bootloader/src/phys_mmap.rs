@@ -85,7 +85,7 @@ impl<const MAX: usize> PhysMemMap<MAX> {
 }
 
 impl<const MAX: usize> PhysMemMap<MAX> {
-    pub fn iter(&self) -> slice::Iter<PhysicalMemoryRegion> {
+    pub fn iter(&self) -> slice::Iter<'_, PhysicalMemoryRegion> {
         self.regions[..self.len].iter()
     }
 }

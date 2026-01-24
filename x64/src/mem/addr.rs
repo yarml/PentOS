@@ -14,15 +14,12 @@ use {
 
 pub use {phys::PhysAddr, virt::VirtAddr};
 
-#[const_trait]
-pub trait Address:
+pub const trait Address:
     Clone
     + Copy
     + DerefMut<Target = usize>
     + From<usize>
     + From<u64>
-    + for<T> From<*const T>
-    + for<T> From<*mut T>
     + AddAssign<usize>
     + AddAssign<MemorySize>
     + SubAssign<usize>
