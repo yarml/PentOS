@@ -5,15 +5,12 @@ use {
         misc, virt_mmap,
     },
     boot_protocol::{BootInfo, STACK_SIZE, kernel_init::KernelInitFn},
-    config::vmem::KBIN_REGION,
     core::{
         arch::asm,
-        cmp::min,
         hint, mem,
         sync::atomic::{AtomicUsize, Ordering},
     },
-    elf::{Elf, ElfClass, ElfType, SegmentType},
-    log::debug,
+    elf::{Elf, ElfClass, ElfType},
     spinlocks::once::Once,
     uefi::{
         CStr16, Identify,
@@ -26,10 +23,12 @@ use {
     x64::{
         lapic,
         mem::{
-            VirtualMemoryRegion,
-            addr::{Address, PhysAddr, VirtAddr},
+            addr::{Address, VirtAddr},
             frame::Frame,
-            page::{Page, size::{Page4KiB, PageSize}},
+            page::{
+                Page,
+                size::{Page4KiB, PageSize},
+            },
             paging::PagingRootEntry,
         },
         msr::pat::MemoryType,
@@ -86,57 +85,6 @@ pub fn load_kernel(allocator: &PreBootAllocator) -> Elf<'static> {
     }
 
     elf
-}
-
-pub fn map_kernel(
-    kernel: &Elf<'static>,
-    root_map: PagingRootEntry,
-    allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
-) {
-    debug!("Mapping kernel");
-    for segment in &kernel.program_header {
-        if segment.ty == SegmentType::Load {
-            debug!("LOAD {vadr}", vadr = segment.vaddr);
-            let pg_count = segment.mem_size.next_multiple_of(4096) / 4096;
-            let mut copied = 0;
-            for i in 0..pg_count {
-                let segment_region = VirtualMemoryRegion::new(segment.vaddr, segment.mem_size);
-                if !KBIN_REGION.contains_region(segment_region) {
-                    panic!("Kernel binary has code/data outside required kernel region.");
-                }
-
-                let frame = Frame::containing(PhysAddr::new_panic(
-                    allocator.alloc([0; 4096]).expect("Out of memory") as *const _ as usize,
-                ));
-
-                if copied < segment.file_size {
-                    let src = kernel.data.as_ptr() as u64 + segment.offset + copied as u64;
-                    let dst = frame.boundary();
-                    let copy_amount = min(segment.file_size - copied, 4096);
-                    unsafe {
-                        // SAFETY: We are copying from a valid memory region to a valid memory region
-                        core::ptr::copy_nonoverlapping(
-                            src as *const u8,
-                            dst.as_mut_ptr(),
-                            copy_amount,
-                        );
-                    }
-                    copied += copy_amount;
-                }
-                let page = Page::<Page4KiB>::containing(segment.vaddr + i * 4096);
-
-                virt_mmap::map(
-                    root_map,
-                    allocator,
-                    frame,
-                    page,
-                    segment.flags.write,
-                    segment.flags.exec,
-                    MemoryType::WriteBack,
-                );
-            }
-        }
-    }
 }
 
 pub fn alloc_stack(

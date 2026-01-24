@@ -92,11 +92,15 @@ fn main() -> Status {
     };
 
     standard_pat().write();
-    let root_map =
-        virt_mmap::identity_and_offset_mapping(&mut allocator, &real_mmap, OFFSET_MAPPING);
-    kernel::map_kernel(&kernel, root_map, &mut allocator);
+
+    let map_root = virt_mmap::paging_root_new(&mut allocator);
+
+    virt_mmap::apply_id_and_off_mapping(map_root, &mut allocator, &real_mmap, OFFSET_MAPPING);
+    virt_mmap::apply_kbin_mapping(&kernel, map_root, &mut allocator);
+
     let framebuffer =
-        framebuffer::postboot_init(primary_framebuffer_info, root_map, &mut allocator);
+        framebuffer::postboot_init(primary_framebuffer_info, map_root, &mut allocator);
+
     let bootinfo = BootInfo {
         mmap: [PhysicalMemoryRegion::null(); MAX_MMAP_SIZE],
         mmap_len: 0,
@@ -106,17 +110,18 @@ fn main() -> Status {
     let bootinfo = allocator
         .alloc(bootinfo)
         .expect("Failed to allocate bootinfo");
-    virt_mmap::map_bootinfo(
+    virt_mmap::apply_bootinfo_mapping(
         bootinfo,
         Page::containing(VirtAddr::new_panic(OFFSET_MAPPING)),
-        root_map,
+        map_root,
         &mut allocator,
     );
-    let stack = kernel::alloc_stack(root_map, &mut allocator);
-    debug!("Done mapping");
-    root_map.load();
+    let stack = kernel::alloc_stack(map_root, &mut allocator);
+    map_root.load();
+    debug!("Initialized kernel memory map");
 
     Efer::new().syscall(false).exec_disable(true).write();
+
     let mmap = allocator.fini(loader_mmap);
     bootinfo.mmap = mmap.regions;
     bootinfo.mmap_len = mmap.len;

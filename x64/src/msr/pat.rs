@@ -1,6 +1,4 @@
-use crate::mem::paging::pat::PatIndex;
-
-use super::RawMsr;
+use {super::RawMsr, crate::mem::paging::pat::PatIndex};
 
 const MSR: u32 = 0x277;
 
