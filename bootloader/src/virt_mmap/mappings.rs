@@ -27,7 +27,9 @@ use {
     },
 };
 
-pub fn apply_id_and_off_mapping<const ALLOCATOR_CAP: usize, const MMAP_CAP: usize>(
+/// # Safety
+/// Should be called only once, and in the BSP
+pub unsafe fn apply_id_and_off_mapping<const ALLOCATOR_CAP: usize, const MMAP_CAP: usize>(
     map_root: PagingRootEntry,
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
     mmap: &PhysMemMap<MMAP_CAP>,
@@ -70,7 +72,9 @@ pub fn apply_id_and_off_mapping<const ALLOCATOR_CAP: usize, const MMAP_CAP: usiz
     }
 }
 
-pub fn apply_bootinfo_mapping<const ALLOCATOR_CAP: usize>(
+/// # Safety
+/// Should be called only once, and in the BSP
+pub unsafe fn apply_bootinfo_mapping<const ALLOCATOR_CAP: usize>(
     map_root: PagingRootEntry,
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
     bootinfo: &BootInfo,
@@ -90,7 +94,9 @@ pub fn apply_bootinfo_mapping<const ALLOCATOR_CAP: usize>(
     );
 }
 
-pub fn apply_kbin_mapping<const ALLOCATOR_CAP: usize>(
+/// # Safety
+/// Should be called only once, and in the BSP
+pub unsafe fn apply_kbin_mapping<const ALLOCATOR_CAP: usize>(
     map_root: PagingRootEntry,
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
     kernel: &Elf<'static>,

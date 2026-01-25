@@ -1,27 +1,30 @@
 use {
-    boot_protocol::{BootInfo, STACK_SIZE, kernel_init::KernelInitFn},
+    boot_protocol::{BootInfo, kernel_init::KernelInitFn},
+    common::collections::smallvec::SmallVec,
+    config::topology::hart::MAX_HART_COUNT,
     core::{
         arch::asm,
         hint, mem,
         sync::atomic::{AtomicUsize, Ordering},
     },
     elf::Elf,
-    spinlocks::once::Once,
-    x64::{
-        lapic,
-        mem::addr::{Address, VirtAddr},
-    },
+    spinlocks::mutex::Mutex,
+    x64::mem::addr::{Address, VirtAddr},
 };
 
 struct ApInfo {
     pub ap_entry: VirtAddr,
-    pub stack_base: VirtAddr,
+    pub stacks: SmallVec<VirtAddr, MAX_HART_COUNT>,
 }
 
-static AP_CEDE: Once<ApInfo> = Once::new();
+static AP_CEDE: Mutex<Option<ApInfo>> = Mutex::new(None);
 static AP_REMAINING: AtomicUsize = AtomicUsize::new(0);
 
-pub fn bsp_cede_control(kernel: &Elf<'static>, stack: VirtAddr, bootinfo: &BootInfo) -> ! {
+pub fn boot_kernel(
+    kernel: &Elf<'static>,
+    mut stacks: SmallVec<VirtAddr, MAX_HART_COUNT>,
+    bootinfo: &BootInfo,
+) -> ! {
     let entry = kernel.entry;
     let entry = entry.as_usize();
     let kernel_init: KernelInitFn = unsafe {
@@ -29,42 +32,41 @@ pub fn bsp_cede_control(kernel: &Elf<'static>, stack: VirtAddr, bootinfo: &BootI
         mem::transmute(entry)
     };
     let entry_info = kernel_init(bootinfo);
-
     let bsp_entry = entry_info.bsp_entry.as_usize();
 
-    AP_CEDE.init(|| ApInfo {
+    let bsp_stack = stacks.pop().expect("Did not find stack for BSP");
+
+    let mut ap_cede = AP_CEDE.lock();
+    *ap_cede = Some(ApInfo {
         ap_entry: entry_info.ap_entry,
-        stack_base: stack,
+        stacks,
     });
+
+    // TODO: set AP_REMAINING to hart count, make APs just to ap_boot_kernel
+
     while AP_REMAINING.load(Ordering::Relaxed) > 0 {
         hint::spin_loop();
     }
 
-    let stack = stack.as_usize();
-
-    do_jump(stack, bsp_entry);
+    do_jump(bsp_stack.as_usize(), bsp_entry);
 }
 
-fn ap_cede_control() {
+fn ap_boot_kernel() {
     AP_REMAINING.fetch_add(1, Ordering::Relaxed);
-    while AP_CEDE.get().is_none() {
-        hint::spin_loop();
-    }
+    let mut ap_info = AP_CEDE.lock();
+    let Some((ap_entry, stacks)) = ap_info.as_mut().map(|inf| (inf.ap_entry, &mut inf.stacks))
+    else {
+        panic!("AP_INFO is not initialized");
+    };
 
-    let ap_info = AP_CEDE.get().unwrap();
-
-    let ap_entry = ap_info.ap_entry.as_usize();
-    let stack = ap_info.stack_base.as_usize() + STACK_SIZE * lapic::id_cpuid();
+    let ap_entry = ap_entry.as_usize();
+    let ap_stack = stacks.pop().expect("Did not find stack for AP");
 
     AP_REMAINING.fetch_sub(1, Ordering::Relaxed);
-    do_jump(stack, ap_entry);
+    do_jump(ap_stack.as_usize(), ap_entry);
 }
 
-#[allow(unreachable_code, unused_variables)]
 fn do_jump(stack: usize, dest: usize) -> ! {
-    // loop {
-    //     hint::spin_loop();
-    // }
     unsafe {
         asm!(
             "mov rsp, {0}",

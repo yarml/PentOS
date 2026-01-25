@@ -109,15 +109,23 @@ fn main() -> Status {
         })
         .expect("Failed to allocate bootinfo");
 
-    virt_mmap::apply_id_and_off_mapping(
-        map_root,
-        &mut allocator,
-        &real_mmap,
-        PHYSICAL_MAPPING_REGION.start().as_usize(),
-    );
-    virt_mmap::apply_kbin_mapping(map_root, &mut allocator, &kernel);
-    virt_mmap::apply_bootinfo_mapping(map_root, &mut allocator, bootinfo);
-    let stack = kernel::alloc_stack(map_root, &mut allocator);
+    unsafe {
+        // SAFETY: Called from BSP once
+        virt_mmap::apply_id_and_off_mapping(
+            map_root,
+            &mut allocator,
+            &real_mmap,
+            PHYSICAL_MAPPING_REGION.start().as_usize(),
+        );
+        virt_mmap::apply_kbin_mapping(map_root, &mut allocator, &kernel);
+        virt_mmap::apply_bootinfo_mapping(map_root, &mut allocator, bootinfo);
+    }
+
+    let stacks = unsafe {
+        // SAFETY: Called from BSP once
+        kernel::alloc_and_map_stacks(map_root, &mut allocator)
+    };
+
     map_root.load();
     debug!("Initialized kernel memory map");
 
@@ -126,6 +134,7 @@ fn main() -> Status {
     let mmap = allocator.fini(loader_mmap);
     bootinfo.mmap = mmap.regions;
     bootinfo.mmap_len = mmap.len;
-    debug!("Ceding control to kernel");
-    kernel::bsp_cede_control(&kernel, stack, bootinfo);
+
+    debug!("Booting kernel");
+    kernel::boot_kernel(&kernel, stacks, bootinfo);
 }

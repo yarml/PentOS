@@ -22,7 +22,7 @@ use {
 };
 
 pub fn map<PS: PageSizeMap, const ALLOCATOR_CAP: usize>(
-    root: PagingRootEntry,
+    map_root: PagingRootEntry,
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
     frame: Frame<PS::PhysicalPageSize>,
     page: Page<PS>,
@@ -30,7 +30,7 @@ pub fn map<PS: PageSizeMap, const ALLOCATOR_CAP: usize>(
     exec: bool,
     mtype: PatMemoryType,
 ) {
-    let pml4t = unsafe { root.target_mut() };
+    let pml4t = unsafe { map_root.target_mut() };
     let pml4e = pml4t[page.order_index::<Page512GiB>()].as_raw();
 
     let pdpt = page_target_or_new(pml4e, allocator);
@@ -63,7 +63,7 @@ pub fn map<PS: PageSizeMap, const ALLOCATOR_CAP: usize>(
 
 #[allow(clippy::too_many_arguments)]
 pub fn map_many<PS: PageSize, const ALLOCATOR_CAP: usize>(
-    root: PagingRootEntry,
+    map_root: PagingRootEntry,
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
     phys_start: Frame<PS::PhysicalPageSize>,
     virt_start: Page<PS>,
@@ -76,7 +76,7 @@ pub fn map_many<PS: PageSize, const ALLOCATOR_CAP: usize>(
         let phys_start = phys_start + pi;
         let virt_start = virt_start + pi;
 
-        map::<PS, ALLOCATOR_CAP>(root, allocator, phys_start, virt_start, write, exec, mtype);
+        map::<PS, ALLOCATOR_CAP>(map_root, allocator, phys_start, virt_start, write, exec, mtype);
     }
 }
 
