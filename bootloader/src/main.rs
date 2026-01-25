@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![allow(dead_code)]
+#![feature(cold_path)]
 #![feature(const_trait_impl)]
 
 mod acpi;
@@ -9,6 +10,7 @@ mod bootstage;
 mod entry;
 mod features;
 mod framebuffer;
+mod hart;
 mod infoarea;
 mod kernel;
 mod loader;

@@ -2,7 +2,7 @@ use {
     crate::{
         acpi,
         allocator::{ALLOCATOR_CAP, PostBootAllocator, PreBootAllocator},
-        bootstage, features, framebuffer, kernel, loader, logger,
+        bootstage, features, framebuffer, hart, kernel, loader, logger,
         phys_mmap::PhysMemMap,
         pic, topology, virt_mmap,
     },
@@ -20,8 +20,13 @@ use {
         mem::{
             MemorySize, PhysicalMemoryRegion,
             addr::{Address, PhysAddr},
+            frame::Frame,
         },
-        msr::{efer::Efer, pat::standard_pat},
+        msr::{
+            apic_base::{ApicBase, STANDARD_PHYS_BASE},
+            efer::Efer,
+            pat::standard_pat,
+        },
     },
 };
 
@@ -59,21 +64,23 @@ fn main() -> Status {
     };
 
     pic::disable();
-
     debug!("PIC disabled");
 
     // The difference between real_mmap and mmap is that mmap is moved to the allocator
     // real_mmap is exclusively used to identity & offset map memory
     let mut real_mmap = PhysMemMap::<MAX_MMAP_SIZE>::new();
     let mut mmap = PhysMemMap::<ALLOCATOR_CAP>::new();
-
     let mut loader_mmap = PhysMemMap::<64>::new();
+    let mut legacy_mmap = PhysMemMap::<16>::new();
+
     for entry in uefi_mmap.entries() {
         let region = PhysicalMemoryRegion::new(
             PhysAddr::new_panic(entry.phys_start as usize),
             MemorySize::new(entry.page_count as usize * 4096),
         );
-        debug!("{region} - {ty:?}", ty = entry.ty);
+        if entry.phys_start < 1024 * 1024 && entry.ty == MemoryType::CONVENTIONAL {
+            legacy_mmap.add(region);
+        }
         if entry.phys_start >= 1024 * 1024 && (entry.ty == MemoryType::CONVENTIONAL) {
             mmap.add(region);
             real_mmap.add(region);
@@ -109,6 +116,12 @@ fn main() -> Status {
         })
         .expect("Failed to allocate bootinfo");
 
+    Efer::new().syscall(false).exec_disable(true).write();
+    ApicBase::read()
+        .with_enabled(true)
+        .with_phys_base(Frame::containing(STANDARD_PHYS_BASE))
+        .write();
+
     unsafe {
         // SAFETY: Called from BSP once
         virt_mmap::apply_id_and_off_mapping(
@@ -119,6 +132,8 @@ fn main() -> Status {
         );
         virt_mmap::apply_kbin_mapping(map_root, &mut allocator, &kernel);
         virt_mmap::apply_bootinfo_mapping(map_root, &mut allocator, bootinfo);
+        virt_mmap::apply_legacy_mem_mapping(map_root, &mut allocator, &legacy_mmap);
+        virt_mmap::apply_lapic_mapping(map_root, &mut allocator);
     }
 
     let stacks = unsafe {
@@ -129,11 +144,15 @@ fn main() -> Status {
     map_root.load();
     debug!("Initialized kernel memory map");
 
-    Efer::new().syscall(false).exec_disable(true).write();
-
     let mmap = allocator.fini(loader_mmap);
+
     bootinfo.mmap = mmap.regions;
     bootinfo.mmap_len = mmap.len;
+
+    unsafe {
+        // SAFETY: Local APIC registers mapped & legacy memory identity mapped
+        hart::init(legacy_mmap)
+    }
 
     debug!("Booting kernel");
     kernel::boot_kernel(&kernel, stacks, bootinfo);

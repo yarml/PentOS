@@ -76,6 +76,14 @@ pub enum LocalApicRegister {
 }
 
 impl LocalApicPointer {
+    /// # Safety
+    /// virt_addr should mapped up to 4KiB to the phyhsical
+    /// address in IA32_APIC_BASE with Strong Unchachable type
+    pub const unsafe fn from_virt_addr(virt_addr: VirtAddr) -> Self {
+        Self { pointer: virt_addr }
+    }
+}
+impl LocalApicPointer {
     pub fn read_reg32(&self, reg: LocalApicRegister) -> u32 {
         unsafe {
             // # Safety
@@ -127,7 +135,7 @@ impl LocalApicPointer {
         let destination_mode = ipi.destination_mode as u8;
         let destination_shorthand = ipi.destination.discriminant();
 
-        let upper_dword = (destination_field as u32) >> 24;
+        let upper_dword = (destination_field as u32) << 24;
         let lower_dword = (vector as u32)
             | (delivery_mode as u32) << 8
             | (destination_mode as u32) << 11
@@ -136,8 +144,9 @@ impl LocalApicPointer {
             | (destination_shorthand as u32) << 18;
 
         self.write_reg32(LocalApicRegister::ICRHigh, upper_dword);
-        self.write_reg32(LocalApicRegister::ICRHigh, lower_dword);
+        self.write_reg32(LocalApicRegister::ICRLow, lower_dword);
 
+        // Wait for delivery
         while self.read_reg32(LocalApicRegister::ICRLow) & (1 << 12) != 0 {
             hint::spin_loop();
         }

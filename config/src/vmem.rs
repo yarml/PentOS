@@ -104,7 +104,7 @@ const fn b(n: usize) -> MemorySize {
     MemorySize::new(n)
 }
 const fn k(n: usize) -> MemorySize {
-    const K1: usize = 0x1000;
+    const K1: usize = 0x400;
     MemorySize::new(n * K1)
 }
 const fn m(n: usize) -> MemorySize {

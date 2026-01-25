@@ -16,6 +16,9 @@ acpi.workspace = true
 config.workspace = true
 common.workspace = true
 
+[build-dependencies]
+builder.workspace = true
+
 [features]
 default = ["log-debugcon"]
 log-debugcon = []
