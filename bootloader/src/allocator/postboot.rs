@@ -1,6 +1,9 @@
 use {
     crate::phys_mmap::PhysMemMap,
-    core::mem,
+    core::{
+        mem::{self, MaybeUninit},
+        slice,
+    },
     x64::mem::addr::{Address, PhysAddr},
 };
 
@@ -62,5 +65,16 @@ impl<const MAX: usize> PostBootAllocator<MAX> {
             ptr.write(init);
             Some(&mut *ptr)
         }
+    }
+
+    pub fn alloc_slice<T>(&mut self, len: usize) -> Option<&'static mut [MaybeUninit<T>]> {
+        let size = mem::size_of::<T>().checked_mul(len)?;
+        let align = mem::align_of::<T>();
+        let start = self.alloc_raw(size, align)?;
+        let ptr = start.as_mut_ptr::<MaybeUninit<T>>();
+        Some(unsafe {
+            // SAFETY: Newly allocated area
+            slice::from_raw_parts_mut(ptr, len)
+        })
     }
 }

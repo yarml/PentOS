@@ -49,22 +49,18 @@ impl PreBootAllocator {
             &mut *ptr
         })
     }
-    pub fn alloc_slice<T: Copy>(
+    pub fn alloc_slice<T>(
         &self,
         len: usize,
-        init: T,
         mtype: MemoryType,
-    ) -> Option<&'static mut [T]> {
+    ) -> Option<&'static mut [MaybeUninit<T>]> {
         let size = mem::size_of::<T>().checked_mul(len)?;
         let align = mem::align_of::<T>();
         let start = self.alloc_raw(size, align, mtype)?;
-        let ptr = start.as_mut_ptr::<T>();
-        unsafe {
-            // SAFETY: `start` is (over)aligned, and is not null
-            for i in 0..len {
-                ptr.add(i).write(init);
-            }
-            Some(slice::from_raw_parts_mut(ptr, len))
-        }
+        let ptr = start.as_mut_ptr::<MaybeUninit<T>>();
+        Some(unsafe {
+            // SAFETY: Newly allocated area
+            slice::from_raw_parts_mut(ptr, len)
+        })
     }
 }

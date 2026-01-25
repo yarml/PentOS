@@ -6,7 +6,8 @@ use {
         phys_mmap::PhysMemMap,
         pic, topology, virt_mmap,
     },
-    boot_protocol::{BootInfo, MAX_MMAP_SIZE, OFFSET_MAPPING},
+    boot_protocol::{BootInfo, MAX_MMAP_SIZE},
+    config::vmem::PHYSICAL_MAPPING_REGION,
     log::{debug, info},
     uefi::{
         Status,
@@ -18,8 +19,7 @@ use {
     x64::{
         mem::{
             MemorySize, PhysicalMemoryRegion,
-            addr::{Address, PhysAddr, VirtAddr},
-            page::Page,
+            addr::{Address, PhysAddr},
         },
         msr::{efer::Efer, pat::standard_pat},
     },
@@ -37,9 +37,12 @@ fn main() -> Status {
     info!("Booting PentOS...");
 
     debug!("Bootloader base: {}", loader::base());
-    debug!("efi_main: {}", PhysAddr::new(main as *const () as usize).unwrap());
+    debug!(
+        "efi_main: {}",
+        PhysAddr::new(main as *const () as usize).unwrap()
+    );
 
-    let features = features::bsp_featureset();
+    let features = features::bsp_featureset_init();
     let allocator = PreBootAllocator;
     acpi::init();
     let kernel = kernel::load_kernel(&allocator);
@@ -95,27 +98,25 @@ fn main() -> Status {
 
     let map_root = virt_mmap::paging_root_new(&mut allocator);
 
-    virt_mmap::apply_id_and_off_mapping(map_root, &mut allocator, &real_mmap, OFFSET_MAPPING);
-    virt_mmap::apply_kbin_mapping(&kernel, map_root, &mut allocator);
-
     let framebuffer =
         framebuffer::postboot_init(primary_framebuffer_info, map_root, &mut allocator);
-
-    let bootinfo = BootInfo {
-        mmap: [PhysicalMemoryRegion::null(); MAX_MMAP_SIZE],
-        mmap_len: 0,
-        features,
-        framebuffer,
-    };
     let bootinfo = allocator
-        .alloc(bootinfo)
+        .alloc(BootInfo {
+            mmap: [PhysicalMemoryRegion::null(); MAX_MMAP_SIZE],
+            mmap_len: 0,
+            features,
+            framebuffer,
+        })
         .expect("Failed to allocate bootinfo");
-    virt_mmap::apply_bootinfo_mapping(
-        bootinfo,
-        Page::containing(VirtAddr::new_panic(OFFSET_MAPPING)),
+
+    virt_mmap::apply_id_and_off_mapping(
         map_root,
         &mut allocator,
+        &real_mmap,
+        PHYSICAL_MAPPING_REGION.start().as_usize(),
     );
+    virt_mmap::apply_kbin_mapping(map_root, &mut allocator, &kernel);
+    virt_mmap::apply_bootinfo_mapping(map_root, &mut allocator, bootinfo);
     let stack = kernel::alloc_stack(map_root, &mut allocator);
     map_root.load();
     debug!("Initialized kernel memory map");

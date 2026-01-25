@@ -2,6 +2,9 @@ set disassembly-flavor intel
 set pagination off
 set script-extension strict
 
+set logging file run/gdb.log
+set logging enabled on
+
 add-symbol-file run/esp/pentos.kernel
 add-symbol-file run/esp/efi/boot/bootx64.efi
 

@@ -138,7 +138,7 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
 
 static BSP_FEATURES: Once<FeatureSet> = Once::new();
 
-pub fn bsp_featureset() -> FeatureSet {
+pub fn bsp_featureset_init() -> FeatureSet {
     let features_detect = FeatureDetect::detect();
     let features = match features_detect {
         FeatureDetect::Sufficient(features) => features,

@@ -40,7 +40,7 @@ pub const BOOTINFO_REGION: VirtualMemoryRegion = firstof(KERNEL_SHARED_REGION, m
 /// Only maps as much as actually exists, the rest is left unmapped.
 /// This memory is always mapped with WriteBack type.
 pub const PHYSICAL_MAPPING_REGION: VirtualMemoryRegion =
-    after(BOOTINFO_REGION, MAX_PHYS_SPACE, b(0), m(1));
+    firstof(KERNEL_SHARED_REGION, MAX_PHYS_SPACE, b(0));
 
 /// Contains the kernel code, data, and rodata. Only the pages used are actually mapped.
 /// This memory is always mapped with WriteBack type.
@@ -64,6 +64,7 @@ pub const SYSTAB_REGION: VirtualMemoryRegion = after(KRESERVED_REGION, g(512), b
 /// The memory type of any page is determined by the driver in question, and the allocator responsible
 /// for this region allows specifying any memory type.
 pub const GLOBAL_MMIO_REGION: VirtualMemoryRegion = after(SYSTAB_REGION, t(1), b(0), b(0));
+
 /// Local APIC
 pub const LOCAL_APIC_REGION: VirtualMemoryRegion = after(GLOBAL_MMIO_REGION, k(4), b(0), b(0));
 
