@@ -135,8 +135,7 @@ impl<T, const N: usize> Drop for SmallVec<T, N> {
     fn drop(&mut self) {
         for i in 0..self.len {
             unsafe {
-                // # Safety
-                // Value previously added since len indicates so
+                // SAFETY: Value previously added since len indicates so
                 self.buffer[i].assume_init_drop()
             };
         }
@@ -168,8 +167,7 @@ impl<T> Deref for SmallVecBuf<T> {
 
     fn deref(&self) -> &Self::Target {
         unsafe {
-            // # Safety
-            // Values previously added since len indicates so
+            // SAFETY: Values previously added since len indicates so
             self.buffer[..self.len].assume_init_ref()
         }
     }
@@ -178,8 +176,7 @@ impl<T> Deref for SmallVecBuf<T> {
 impl<T> DerefMut for SmallVecBuf<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe {
-            // # Safety
-            // Values previously added since len indicates so
+            // SAFETY: Values previously added since len indicates so
             self.buffer[..self.len].assume_init_mut()
         }
     }
@@ -320,8 +317,7 @@ unsafe fn common_push<'a, T>(
     }
     buffer[*len] = MaybeUninit::new(value);
     let r = unsafe {
-        // # Safety
-        // Just made the sucker
+        // SAFETY: Just made the sucker
         buffer[*len].assume_init_ref()
     };
     *len += 1;
@@ -338,8 +334,7 @@ unsafe fn common_pop<T>(buffer: &[MaybeUninit<T>], len: &mut usize) -> Option<T>
 
     *len -= 1;
     Some(unsafe {
-        // # Safety
-        // Value previously added since len indicates so
+        // SAFETY: Value previously added since len indicates so
         // Move is fine since we promise not to give it again unless added back as next push
         buffer[*len].assume_init_read()
     })

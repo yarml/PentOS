@@ -15,16 +15,14 @@ pub fn sleep_us(t: usize) {
 
     // Start timer
     unsafe {
-        // # Safety
-        // No side effect
+        // SAFETY: No side effect on memory
         CH0_DATA.write(0xFF);
         CH0_DATA.write(0xFF);
     }
     let mut last_time = 0xFFFF;
     loop {
         let current_time = unsafe {
-            // # Safet
-            // No side effect
+            // SAFETY: No side effect on memory
             CMD.write(0);
             let lo = CH0_DATA.read();
             let hi = CH0_DATA.read();

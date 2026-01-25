@@ -99,8 +99,7 @@ pub fn wait() {
     // https://wiki.osdev.org/Inline_Assembly/Examples#IO_WAIT
     let tmp = Port::<u8>::new(0x80);
     unsafe {
-        // # Safety
-        // This should be an unused port?
+        // SAFETY: This should be an unused port?
         tmp.write(0)
     };
 }

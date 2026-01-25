@@ -19,8 +19,7 @@ impl AcpiHeader {
     }
     pub fn verify_checksum(&self) -> bool {
         let bytes = unsafe {
-            // # Safety
-            // Trust in the system vendor
+            // SAFETY: Trust in the system vendor
             slice::from_raw_parts(self as *const _ as *const u8, self.len as usize)
         };
         let mut sum = 0u8;
@@ -33,8 +32,7 @@ impl AcpiHeader {
     pub fn getas<T: AcpiTable>(&self) -> Option<&T> {
         if &self.sig == T::SIG && self.verify_checksum() {
             unsafe {
-                // # Safety
-                // If signature checks out, and checksum checks out,
+                // SAFETY: If signature checks out, and checksum checks out,
                 // then it's system vendor's fault if this is still unsafe, not mine
                 Some(&*(self as *const _ as *const T))
             }

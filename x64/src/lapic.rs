@@ -86,15 +86,13 @@ impl LocalApicPointer {
 impl LocalApicPointer {
     pub fn read_reg32(&self, reg: LocalApicRegister) -> u32 {
         unsafe {
-            // # Safety
-            // This should be safe since each hart can only access their own Local APIC.
+            // SAFETY: This should be safe since each hart can only access their own Local APIC.
             ptr::read_volatile((self.pointer + reg as usize).as_ptr())
         }
     }
     pub fn write_reg32(&self, reg: LocalApicRegister, value: u32) {
         unsafe {
-            // # Safety
-            // This should be safe since each hart can only access thei own Local APIC.
+            // SAFETY: This should be safe since each hart can only access thei own Local APIC.
             ptr::write_volatile((self.pointer + reg as usize).as_mut_ptr(), value);
         };
     }
@@ -156,8 +154,7 @@ impl LocalApicPointer {
 impl IPIDeliveryMode {
     pub fn discriminant(&self) -> u8 {
         unsafe {
-            // # Safety
-            // Safe as per: https://doc.rust-lang.org/reference/items/enumerations.html#r-items.enum.discriminant.access-memory
+            // SAFETY: Safe as per: https://doc.rust-lang.org/reference/items/enumerations.html#r-items.enum.discriminant.access-memory
             *(self as *const _ as *const u8)
         }
     }
@@ -166,8 +163,7 @@ impl IPIDeliveryMode {
 impl IPIDestination {
     pub fn discriminant(&self) -> u8 {
         unsafe {
-            // # Safety
-            // Safe as per: https://doc.rust-lang.org/reference/items/enumerations.html#r-items.enum.discriminant.access-memory
+            // SAFETY: Safe as per: https://doc.rust-lang.org/reference/items/enumerations.html#r-items.enum.discriminant.access-memory
             *(self as *const _ as *const u8)
         }
     }

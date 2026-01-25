@@ -121,8 +121,7 @@ impl MadtEntryHeader {
     pub fn getas<T: MadtEntry>(&self) -> Option<&T> {
         if self.ty == T::TYPE {
             Some(unsafe {
-                // # Safety
-                // If type checks out, and this is still unsafe,
+                // SAFETY: If type checks out, and this is still unsafe,
                 // it is the vendor's problem, not mine
                 &*(self as *const _ as *const T)
             })

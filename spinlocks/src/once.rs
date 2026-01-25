@@ -37,8 +37,7 @@ impl<T> Once<T> {
         {
             let data = data_fn();
             *unsafe {
-                // # Safety:
-                // UnsafeCell pointer guarentees most "Pointer to reference conversion"
+                // SAFETY: UnsafeCell pointer guarentees most "Pointer to reference conversion"
                 // self.status() == Runnin ensures we are the only current reference
                 &mut *self.data.get()
             } = MaybeUninit::new(data);
@@ -54,8 +53,7 @@ impl<T> Once<T> {
     pub fn get(&self) -> Option<&T> {
         if self.status() == Status::Init {
             Some(unsafe {
-                // # Safety
-                // self.status() == Status::Init
+                // SAFETY: self.status() == Status::Init
                 self.force_get()
             })
         } else {
@@ -97,14 +95,12 @@ impl<T> Once<T> {
     unsafe fn force_get(&self) -> &T {
         debug_assert_eq!(self.status(), Status::Init);
         let data = unsafe {
-            // # Safety
-            // Pointer from UnsafeCell guarentees most "convertible to a reference" conditions
+            // SAFETY: Pointer from UnsafeCell guarentees most "convertible to a reference" conditions
             // self.status() == Status::Init ensures no aliasing &mut exists
             &*self.data.get()
         };
         unsafe {
-            // # Safety
-            // self.status() == Status::Init ensures the value is initialized
+            // SAFETY: self.status() == Status::Init ensures the value is initialized
             data.assume_init_ref()
         }
     }

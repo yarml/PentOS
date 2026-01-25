@@ -67,8 +67,7 @@ impl<T: ?Sized> Mutex<T> {
             .is_ok()
         {
             let data = unsafe {
-                // # Safety
-                // We host the data, so we know it is in a valid memory location
+                // SAFETY: We host the data, so we know it is in a valid memory location
                 // The lock also guarentees exclusivity of the unique reference
                 self.data.get().as_mut_unchecked()
             };

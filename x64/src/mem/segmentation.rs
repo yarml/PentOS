@@ -59,8 +59,7 @@ impl<const N: usize> GlobalDescriptorTable<N> {
         };
         let gdtrp = &gdtr as *const _;
         unsafe {
-            // # Safety
-            // Guarenteed by caller
+            // SAFETY: Guarenteed by caller
             asm! {
                 "lgdt [{gdtrp}]",
                 gdtrp = in(reg) gdtrp,
@@ -73,8 +72,7 @@ impl<const N: usize> GlobalDescriptorTable<N> {
     /// Caller must ensure that selectors come from current loaded selectors
     pub unsafe fn load_selectors(code_selector: SegmentSelector, data_selector: SegmentSelector) {
         unsafe {
-            // # Safety
-            // Guarenteed by caller
+            // SAFETY: Guarenteed by caller
             asm! {
                 "mov ss, {ds:x}",
                 "mov ds, {ds:x}",

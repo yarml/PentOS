@@ -11,8 +11,7 @@ const SLAVE_DATA: Port<u8> = Port::new(0xA1);
 // Intact code from HeliumOS
 pub fn disable() {
     unsafe {
-        // # Safety
-        // None of these have any side effect on memory
+        // SAFETY: None of these have any side effect on memory
 
         // Config mode
         MASTER_CMD.write(0x11);

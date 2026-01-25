@@ -101,8 +101,7 @@ impl<T: ?Sized> RwLock<T> {
             .is_ok()
         {
             let data = unsafe {
-                // # Safety
-                // Pointer is valid since we host the data
+                // SAFETY: Pointer is valid since we host the data
                 // Aliasing rules are checked on runtime
                 &*self.data.get()
             };
@@ -129,8 +128,7 @@ impl<T: ?Sized> RwLock<T> {
             .is_ok()
         {
             let data = unsafe {
-                // # Safety
-                // Pointer is valid since we host the data
+                // SAFETY: Pointer is valid since we host the data
                 // Aliasing rules are checked on runtime
                 &mut *self.data.get()
             };
@@ -251,8 +249,7 @@ impl<'lock, T: ?Sized> RwLockWriteGuard<'lock, T> {
         }
         let lock = mself.lock;
         let data = unsafe {
-            // # Safety
-            // No write guard can race a mutable access to T since we already set the reader count to 1
+            // SAFETY: No write guard can race a mutable access to T since we already set the reader count to 1
             &*(mself.data as *const T)
         };
         RwLockReadGuard { lock, data }
@@ -269,8 +266,7 @@ impl<'lock, T: ?Sized> RwLockReadGuard<'lock, T> {
         let mself = ManuallyDrop::new(self);
         let lock = mself.lock;
         let data = unsafe {
-            // # Safety
-            // Guarenteed if T and Q have the same size and are bit compatible
+            // SAFETY: Guarenteed if T and Q have the same size and are bit compatible
             core::mem::transmute_copy(&mself.data)
         };
         RwLockReadGuard { lock, data }
@@ -284,8 +280,7 @@ impl<'lock, T: ?Sized> RwLockWriteGuard<'lock, T> {
         let mself = ManuallyDrop::new(self);
         let lock = mself.lock;
         let data = unsafe {
-            // # Safety
-            // Guarenteed if T and Q have the same size and are bit compatible
+            // SAFETY: Guarenteed if T and Q have the same size and are bit compatible
             core::mem::transmute_copy(&mself.data)
         };
         RwLockWriteGuard { lock, data }
@@ -299,8 +294,7 @@ impl<'lock, T: ?Sized> RwLockDeferredGuard<'lock, T> {
         let mself = ManuallyDrop::new(self);
         let lock = mself.lock;
         let data = unsafe {
-            // # Safety
-            // Guarenteed if T and Q have the same size and are bit compatible
+            // SAFETY: Guarenteed if T and Q have the same size and are bit compatible
             core::mem::transmute_copy(&mself.data)
         };
         RwLockDeferredGuard { lock, data }
@@ -334,8 +328,7 @@ impl<T: ?Sized> Deref for RwLockDeferredGuard<'_, T> {
 
     fn deref(&self) -> &Self::Target {
         unsafe {
-            // # Safety
-            // Data is hosted within a RwLock, so pointer is valid
+            // SAFETY: Data is hosted within a RwLock, so pointer is valid
             // Aliasing rules are runtime guarenteed with said lock
             &*self.data
         }

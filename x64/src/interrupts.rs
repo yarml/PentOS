@@ -41,8 +41,7 @@ impl InterruptDescriptorTable {
         };
         let idtrp = &idtr as *const _;
         unsafe {
-            // # Safety
-            // Guarenteed by caller
+            // SAFETY: Guarenteed by caller
             asm! {
                 "lidt [{idtrp}]",
                 idtrp = in(reg) idtrp,

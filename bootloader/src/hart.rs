@@ -128,27 +128,20 @@ fn wakeup_hart(lapic: LocalApicPointer, apic_id: u8, chunk: PhysicalMemoryRegion
     };
 
     let alive_flag = unsafe {
-        // # Safety
-        // We own chunk memory
+        // SAFETY: We own chunk memory
         (chunk.start() + AP_ALIVE_FLAG_OFFSET).to_ref::<AtomicU64>()
     };
     alive_flag.store(0, Ordering::Relaxed);
     lapic.send_ipi(init_ipi);
-    debug!("Sent INIT IPI");
-    // pit::sleep_us(15 * 1000);
     // Linux does not put any delay here for post ~2000 processors, neither do I
     lapic.send_ipi(init_deassert_ipi);
-    debug!("Sent INIT DEASSERT IPI");
 
     let success = 'success: {
         for attempt in 0..MAX_AP_RETRIES {
             lapic.send_ipi(startup_ipi);
-            debug!("SENT SIPI");
-
             // Linux does only 10us, me just follow, but me want to be creative, so me make it exponential
             // but cap it at 50ms
             pit::sleep_us(usize::min(10 * (100 * attempt + 1), 50 * 1000));
-            // pit::sleep_us(300);
 
             if alive_flag.load(Ordering::Relaxed) != 0 {
                 break 'success true;
