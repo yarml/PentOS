@@ -18,7 +18,7 @@ impl Efer {
 
     pub fn read() -> Self {
         let mut raw = RawMsr::read(MSR);
-        *raw |= 0x50; // Set LME and LMA bits
+        *raw |= 0x500; // Set LME and LMA bits
         Self { raw }
     }
 
@@ -53,6 +53,12 @@ impl Efer {
     }
     pub fn is_exec_disable(&self) -> bool {
         *self.raw & (1 << 11) != 0
+    }
+}
+
+impl Efer {
+    pub const fn rawval(&self) -> u64 {
+        self.raw.rawval()
     }
 }
 
