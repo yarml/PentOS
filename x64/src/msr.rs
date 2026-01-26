@@ -51,6 +51,12 @@ impl RawMsr {
     }
 }
 
+impl RawMsr {
+    pub const fn rawval(&self) -> u64 {
+        self.value
+    }
+}
+
 impl Deref for RawMsr {
     type Target = u64;
 

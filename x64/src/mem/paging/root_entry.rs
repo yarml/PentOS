@@ -109,6 +109,10 @@ impl PagingRootEntry {
             );
         }
     }
+    #[inline(always)]
+    pub const fn rawval(&self) -> u64 {
+        self.value
+    }
 }
 
 impl Deref for PagingRootEntry {

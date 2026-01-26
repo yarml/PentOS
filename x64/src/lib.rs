@@ -16,3 +16,4 @@ pub mod lapic;
 pub mod mem;
 pub mod msr;
 pub mod prot;
+pub mod control;
