@@ -3,8 +3,9 @@ use {
     config::{topology::hart::MAX_AP_RETRIES, vmem::LOCAL_APIC_REGION},
     core::{
         hint, slice,
-        sync::atomic::{AtomicU8, AtomicU32, Ordering},
+        sync::atomic::{AtomicU8, AtomicU32, AtomicU64, Ordering},
     },
+    log::debug,
     x64::{
         lapic::{
             self, IPIDeliveryMode, IPIDestination, IPIDestinationMode, IPILevel, IPITriggerMode,
@@ -14,6 +15,7 @@ use {
             MemorySize, PhysicalMemoryRegion,
             addr::Address,
             frame::size::{Frame4KiB, FrameSize},
+            paging::PagingRootEntry,
         },
     },
 };
@@ -26,19 +28,22 @@ const _: () = assert!(
     "AP init code too large"
 );
 
-// Sync with bootloader/src/hart/ap_init.asm
+// sync with bootloader/src/hart/ap_init.asm
 const BASE_OFFSET: usize = 1028;
 const STATUS_FLAG_OFFSET: usize = 1024;
+const CR3_OFFSET: usize = 1032;
+const ENTRYPOINT_OFFSET: usize = 1040;
 
 const STATUS_WAIT: u8 = 0;
 const STATUS_ALIVE: u8 = 1;
 const STATUS_DONE: u8 = 2;
 const STATUS_ERROR: u8 = 3;
+// end sync
 
 /// # Safety
 /// Must guarentee that IA32_APIC_BASE is mapped up to 4KiB to config/vmem:LOCAL_APIC_REGION
 /// And that legacy memory is memory mapped
-pub unsafe fn init(legacy_mmap: PhysMemMap<16>) {
+pub unsafe fn init(legacy_mmap: PhysMemMap<16>, map_root: PagingRootEntry) {
     // find a scratch 64k segment that will be used to bootstrap processors
     let Some(chunk) = legacy_mmap
         .iter()
@@ -64,11 +69,16 @@ pub unsafe fn init(legacy_mmap: PhysMemMap<16>) {
 
     let topology = topology::topology();
     for hart in topology.harts.iter().filter(|hart| hart.apic_id != bspid) {
-        wakeup_hart(lapic, hart.apic_id as u8, chunk);
+        wakeup_hart(lapic, hart.apic_id as u8, chunk, map_root);
     }
 }
 
-fn wakeup_hart(lapic: LocalApicPointer, apic_id: u8, chunk: PhysicalMemoryRegion) {
+fn wakeup_hart(
+    lapic: LocalApicPointer,
+    apic_id: u8,
+    chunk: PhysicalMemoryRegion,
+    map_root: PagingRootEntry,
+) {
     let init_ipi = InterProcessorInterrupt {
         delivery_mode: IPIDeliveryMode::Init {
             level: IPILevel::Assert,
@@ -107,8 +117,19 @@ fn wakeup_hart(lapic: LocalApicPointer, apic_id: u8, chunk: PhysicalMemoryRegion
         // SAFETY: We own chunk memory
         (chunk.start() + BASE_OFFSET).to_ref::<AtomicU32>()
     };
+    let cr3val = unsafe {
+        // SAFETY: We own chunk memory
+        (chunk.start() + CR3_OFFSET).to_ref::<AtomicU32>()
+    };
+    let entrypoint = unsafe {
+        // SAFETY: We own chunk memory
+        (chunk.start() + ENTRYPOINT_OFFSET).to_ref::<AtomicU64>()
+    };
+
     status_flag.store(STATUS_WAIT, Ordering::Relaxed);
     base.store(chunk.start().as_usize() as u32, Ordering::Relaxed);
+    cr3val.store(map_root.rawval() as u32, Ordering::Relaxed);
+    entrypoint.store(ap_entrypoint as *const () as u64, Ordering::Relaxed);
 
     lapic.send_ipi(init_ipi);
     // Linux does not put any delay here for post ~2000 processors, neither do I
@@ -139,4 +160,18 @@ fn wakeup_hart(lapic: LocalApicPointer, apic_id: u8, chunk: PhysicalMemoryRegion
     if status_flag.load(Ordering::Relaxed) != STATUS_DONE {
         panic!("AP failed initializing: {apic_id}");
     }
+}
+
+extern "sysv64" fn ap_entrypoint(base: usize) {
+    // APs arrive one at a time here
+    // Here we can finally take a breathe and use nice APIs
+    // to continue the setup into a deterministic state
+    // We are using the same page table entries as the BSP at this point
+    // Both identity mapping and offset mapping are active
+
+    debug!("AP core UP!");
+    loop {
+        hint::spin_loop();
+    }
+    // TODO
 }

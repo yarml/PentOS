@@ -170,8 +170,8 @@ pub unsafe fn apply_legacy_mem_mapping<const ALLOCATOR_CAP: usize, const LEGACY_
             phys_start,
             virt_start,
             pg_count,
-            true,
-            true,
+            true, // WRITE
+            true, // EXEC
             PatMemoryType::WriteBack,
         );
     }
