@@ -136,7 +136,7 @@ fn main() -> Status {
         virt_mmap::apply_lapic_mapping(map_root, &mut allocator);
     }
 
-    let stacks = unsafe {
+    let mut stacks = unsafe {
         // SAFETY: Called from BSP once
         kernel::alloc_and_map_stacks(map_root, &mut allocator)
     };
@@ -151,9 +151,12 @@ fn main() -> Status {
 
     unsafe {
         // SAFETY: Local APIC registers mapped & legacy memory identity mapped
-        hart::init(legacy_mmap, map_root)
+        hart::init(legacy_mmap, map_root, &mut stacks)
     }
 
     debug!("Booting kernel");
-    kernel::boot_kernel(&kernel, stacks, bootinfo);
+    unsafe {
+        // SAFETY: hart::init called
+        kernel::boot_kernel(&kernel, &mut stacks, bootinfo);
+    }
 }

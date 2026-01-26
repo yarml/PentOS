@@ -151,3 +151,7 @@ pub fn bsp_featureset_init() -> FeatureSet {
 
     features
 }
+
+pub fn bsp_features() -> FeatureSet {
+    *BSP_FEATURES.get().expect("BSP features not initialized")
+}

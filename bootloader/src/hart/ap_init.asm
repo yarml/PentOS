@@ -5,6 +5,7 @@
 %define BASE_OFFSET 1028
 %define CR3_OFFSET 1032
 %define ENTRYPOINT_OFFSET 1040
+%define STACK_OFFSET 1048
 
 %define STATUS_WAIT 0
 %define STATUS_ALIVE 1
@@ -95,6 +96,8 @@ ALIGN 4
 ALIGN 8
 .start_64:
     mov rdi, rbx
+    mov rsi, QWORD [ebx + STACK_OFFSET]
+    mov rsp, rsi
     mov rax, QWORD [ebx + ENTRYPOINT_OFFSET]
     jmp rax ; goto rust
 .halt_64:

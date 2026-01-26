@@ -1,11 +1,18 @@
 use {
-    crate::{phys_mmap::PhysMemMap, pit, topology},
+    crate::{
+        features::{self, FeatureDetect},
+        kernel,
+        phys_mmap::PhysMemMap,
+        pit, topology,
+    },
+    common::collections::smallvec::SmallVecBuf,
     config::{topology::hart::MAX_AP_RETRIES, vmem::LOCAL_APIC_REGION},
     core::{
         hint, slice,
-        sync::atomic::{AtomicU8, AtomicU32, AtomicU64, Ordering},
+        sync::atomic::{AtomicU8, AtomicU32, AtomicU64, AtomicUsize, Ordering},
     },
-    log::debug,
+    log::{debug, error},
+    spinlocks::once::Once,
     x64::{
         lapic::{
             self, IPIDeliveryMode, IPIDestination, IPIDestinationMode, IPILevel, IPITriggerMode,
@@ -13,26 +20,26 @@ use {
         },
         mem::{
             MemorySize, PhysicalMemoryRegion,
-            addr::Address,
+            addr::{Address, PhysAddr, VirtAddr},
             frame::size::{Frame4KiB, FrameSize},
             paging::PagingRootEntry,
         },
     },
 };
-
-const MAX_AP_CODE_SIZE: usize = 1024;
-
 static AP_INIT_CODE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ap_init.bin"));
 const _: () = assert!(
     AP_INIT_CODE.len() <= MAX_AP_CODE_SIZE,
     "AP init code too large"
 );
 
+const MAX_AP_CODE_SIZE: usize = 1024;
+
 // sync with bootloader/src/hart/ap_init.asm
 const BASE_OFFSET: usize = 1028;
 const STATUS_FLAG_OFFSET: usize = 1024;
 const CR3_OFFSET: usize = 1032;
 const ENTRYPOINT_OFFSET: usize = 1040;
+const STACK_OFFSET: usize = 1048;
 
 const STATUS_WAIT: u8 = 0;
 const STATUS_ALIVE: u8 = 1;
@@ -40,10 +47,20 @@ const STATUS_DONE: u8 = 2;
 const STATUS_ERROR: u8 = 3;
 // end sync
 
+/// Counts actually working and initialized harts.
+static HART_ACTIVE: AtomicUsize = AtomicUsize::new(1); // BSP already in
+
+static AP_BOOT_ENTRYPOINT: Once<VirtAddr> = Once::new();
+
 /// # Safety
 /// Must guarentee that IA32_APIC_BASE is mapped up to 4KiB to config/vmem:LOCAL_APIC_REGION
 /// And that legacy memory is memory mapped
-pub unsafe fn init(legacy_mmap: PhysMemMap<16>, map_root: PagingRootEntry) {
+/// And that kernel stacks are mapped
+pub unsafe fn init(
+    legacy_mmap: PhysMemMap<16>,
+    map_root: PagingRootEntry,
+    stacks: &mut SmallVecBuf<VirtAddr>,
+) {
     // find a scratch 64k segment that will be used to bootstrap processors
     let Some(chunk) = legacy_mmap
         .iter()
@@ -69,7 +86,8 @@ pub unsafe fn init(legacy_mmap: PhysMemMap<16>, map_root: PagingRootEntry) {
 
     let topology = topology::topology();
     for hart in topology.harts.iter().filter(|hart| hart.apic_id != bspid) {
-        wakeup_hart(lapic, hart.apic_id as u8, chunk, map_root);
+        let stack = stacks.pop().expect("Did not find stack for AP");
+        wakeup_hart(lapic, hart.apic_id as u8, chunk, map_root, stack);
     }
 }
 
@@ -78,6 +96,7 @@ fn wakeup_hart(
     apic_id: u8,
     chunk: PhysicalMemoryRegion,
     map_root: PagingRootEntry,
+    ap_stack: VirtAddr,
 ) {
     let init_ipi = InterProcessorInterrupt {
         delivery_mode: IPIDeliveryMode::Init {
@@ -125,11 +144,16 @@ fn wakeup_hart(
         // SAFETY: We own chunk memory
         (chunk.start() + ENTRYPOINT_OFFSET).to_ref::<AtomicU64>()
     };
+    let stack = unsafe {
+        // SAFETY: We own chunk memory
+        (chunk.start() + STACK_OFFSET).to_ref::<AtomicU64>()
+    };
 
     status_flag.store(STATUS_WAIT, Ordering::Relaxed);
     base.store(chunk.start().as_usize() as u32, Ordering::Relaxed);
     cr3val.store(map_root.rawval() as u32, Ordering::Relaxed);
     entrypoint.store(ap_entrypoint as *const () as u64, Ordering::Relaxed);
+    stack.store(ap_stack.as_u64(), Ordering::Relaxed);
 
     lapic.send_ipi(init_ipi);
     // Linux does not put any delay here for post ~2000 processors, neither do I
@@ -150,7 +174,7 @@ fn wakeup_hart(
     };
 
     if !success {
-        panic!("Could not start processor after {MAX_AP_RETRIES} attempts: {apic_id}");
+        error!("Could not start processor after {MAX_AP_RETRIES} attempts: {apic_id}");
     }
 
     while status_flag.load(Ordering::Relaxed) == STATUS_ALIVE {
@@ -158,20 +182,48 @@ fn wakeup_hart(
     }
 
     if status_flag.load(Ordering::Relaxed) != STATUS_DONE {
-        panic!("AP failed initializing: {apic_id}");
+        error!("AP failed initializing: {apic_id}");
     }
 }
 
-extern "sysv64" fn ap_entrypoint(base: usize) {
+/// # Safety
+/// Needs to be called after all harts have booted, or failed to boot
+pub unsafe fn active_harts() -> usize {
+    HART_ACTIVE.load(Ordering::Relaxed)
+}
+
+pub fn ap_boot(entrypoint: VirtAddr) {
+    AP_BOOT_ENTRYPOINT.init(|| entrypoint);
+}
+
+extern "sysv64" fn ap_entrypoint(base: usize, stack: usize) {
     // APs arrive one at a time here
     // Here we can finally take a breathe and use nice APIs
     // to continue the setup into a deterministic state
     // We are using the same page table entries as the BSP at this point
     // Both identity mapping and offset mapping are active
 
-    debug!("AP core UP!");
-    loop {
-        hint::spin_loop();
+    let status_flag = unsafe {
+        // SAFETY: We own chunk memory
+        PhysAddr::new_panic(base + STATUS_FLAG_OFFSET).to_ref::<AtomicU8>()
+    };
+
+    let FeatureDetect::Sufficient(features) = FeatureDetect::detect() else {
+        status_flag.store(STATUS_ERROR, Ordering::Relaxed);
+        panic!("AP insufficient features");
+    };
+
+    if features::bsp_features() != features {
+        status_flag.store(STATUS_ERROR, Ordering::Relaxed);
+        panic!("Assymetric AP");
     }
-    // TODO
+    status_flag.store(STATUS_DONE, Ordering::Relaxed);
+    HART_ACTIVE.fetch_add(1, Ordering::Relaxed);
+
+    debug!("AP core UP!");
+
+    // TODO: put CPU control registers in deterministic state
+
+    let ap_entry = *AP_BOOT_ENTRYPOINT.wait();
+    kernel::ap_boot_kernel(stack, ap_entry);
 }
