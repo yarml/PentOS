@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::{env, path::PathBuf, process::Command, sync::Mutex};
 
 static CONFIG: Mutex<Config> = Mutex::new(Config {
     target: Target::Elf64,
@@ -24,6 +24,21 @@ pub fn add_nasm_lib(libname: &str, assemblies: &[&str]) {
     nasm_rs::compile_library_args(&full_lib_name, assemblies, &cfg.nasm_flags())
         .expect("Could not compile NASM library");
     println!("cargo::rustc-link-lib={libname}");
+}
+
+pub fn build_nasm_flat(src: &str, bin: &str) {
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let out_file = out_dir.join(bin);
+
+    let status = Command::new("nasm")
+        .args(["-f", "bin", "-o", out_file.to_str().unwrap(), src])
+        .status()
+        .expect("failed to run nasm");
+
+    if !status.success() {
+        panic!("NASM failed to assemble flat binary");
+    }
+    println!("cargo:rerun-if-changed={src}");
 }
 
 pub fn configure(config: Config) {

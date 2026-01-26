@@ -2,10 +2,9 @@ use {
     crate::{phys_mmap::PhysMemMap, pit, topology},
     config::{topology::hart::MAX_AP_RETRIES, vmem::LOCAL_APIC_REGION},
     core::{
-        ffi, hint, slice,
-        sync::atomic::{AtomicU64, Ordering},
+        hint, slice,
+        sync::atomic::{AtomicU8, AtomicU32, Ordering},
     },
-    log::debug,
     x64::{
         lapic::{
             self, IPIDeliveryMode, IPIDestination, IPIDestinationMode, IPILevel, IPITriggerMode,
@@ -13,33 +12,33 @@ use {
         },
         mem::{
             MemorySize, PhysicalMemoryRegion,
-            addr::{Address, PhysAddr},
+            addr::Address,
             frame::size::{Frame4KiB, FrameSize},
         },
     },
 };
 
-unsafe extern "sysv64" {
-    static ap_bootstrap_begin: ffi::c_void;
-    static ap_bootstrap_end: ffi::c_void;
-}
-
 const MAX_AP_CODE_SIZE: usize = 1024;
-const AP_ALIVE_FLAG_OFFSET: usize = 1024;
+
+static AP_INIT_CODE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ap_init.bin"));
+const _: () = assert!(
+    AP_INIT_CODE.len() <= MAX_AP_CODE_SIZE,
+    "AP init code too large"
+);
+
+// Sync with bootloader/src/hart/ap_init.asm
+const BASE_OFFSET: usize = 1028;
+const STATUS_FLAG_OFFSET: usize = 1024;
+
+const STATUS_WAIT: u8 = 0;
+const STATUS_ALIVE: u8 = 1;
+const STATUS_DONE: u8 = 2;
+const STATUS_ERROR: u8 = 3;
 
 /// # Safety
 /// Must guarentee that IA32_APIC_BASE is mapped up to 4KiB to config/vmem:LOCAL_APIC_REGION
 /// And that legacy memory is memory mapped
 pub unsafe fn init(legacy_mmap: PhysMemMap<16>) {
-    // Fist sanity check, is 0 a valid address
-    // This is needed because this is where IVT is normally placed?
-    if !legacy_mmap
-        .iter()
-        .any(|entry| entry.contains(PhysAddr::null()))
-    {
-        panic!("Frame 0 is invalid");
-    }
-
     // find a scratch 64k segment that will be used to bootstrap processors
     let Some(chunk) = legacy_mmap
         .iter()
@@ -50,39 +49,12 @@ pub unsafe fn init(legacy_mmap: PhysMemMap<16>) {
         panic!("Could not find chunk to load AP cores");
     };
 
-    // Load ap bootsrap code into the chosen chunk
-    let ap_bootstrap_begin_loc = unsafe {
-        // SAFETY: label in hart/ap_init.asm
-        &ap_bootstrap_begin
-    } as *const _ as usize;
-    let ap_bootstrap_end_loc = unsafe {
-        // SAFETY: label in hart/ap_init.asm
-        &ap_bootstrap_end
-    } as *const _ as usize;
-    let ap_bootstrap_size = ap_bootstrap_end_loc - ap_bootstrap_begin_loc;
-
-    if ap_bootstrap_size > MAX_AP_CODE_SIZE {
-        hint::cold_path();
-        panic!("AP bootstrap code too large");
-    }
-
-    let ap_bootstrap_code = unsafe {
-        // SAFETY: machine code in hart/ap_init.asm
-        slice::from_raw_parts(ap_bootstrap_begin_loc as *const u8, ap_bootstrap_size)
-    };
     let ap_bootstrap_destination = unsafe {
         // SAFETY: We own legacy memory which chunk is part of
-        slice::from_raw_parts_mut(chunk.start().as_mut_ptr::<u8>(), ap_bootstrap_size)
+        slice::from_raw_parts_mut(chunk.start().as_mut_ptr::<u8>(), AP_INIT_CODE.len())
     };
 
-    ap_bootstrap_destination.copy_from_slice(ap_bootstrap_code);
-
-    // // Load IVT of interrupt 0x20 with the chosen chunk
-    // let ivt_entry = unsafe {
-    //     // SAFETY: We own legacy memory range in the bootloader phase
-    //     &mut *((0x20 * 4) as *mut u32)
-    // };
-    // *ivt_entry = chunk.start().as_u64() as u32;
+    ap_bootstrap_destination.copy_from_slice(AP_INIT_CODE);
 
     let bspid = lapic::id_cpuid();
     let lapic = unsafe {
@@ -127,11 +99,17 @@ fn wakeup_hart(lapic: LocalApicPointer, apic_id: u8, chunk: PhysicalMemoryRegion
         destination_mode: IPIDestinationMode::Physical,
     };
 
-    let alive_flag = unsafe {
+    let status_flag = unsafe {
         // SAFETY: We own chunk memory
-        (chunk.start() + AP_ALIVE_FLAG_OFFSET).to_ref::<AtomicU64>()
+        (chunk.start() + STATUS_FLAG_OFFSET).to_ref::<AtomicU8>()
     };
-    alive_flag.store(0, Ordering::Relaxed);
+    let base = unsafe {
+        // SAFETY: We own chunk memory
+        (chunk.start() + BASE_OFFSET).to_ref::<AtomicU32>()
+    };
+    status_flag.store(STATUS_WAIT, Ordering::Relaxed);
+    base.store(chunk.start().as_usize() as u32, Ordering::Relaxed);
+
     lapic.send_ipi(init_ipi);
     // Linux does not put any delay here for post ~2000 processors, neither do I
     lapic.send_ipi(init_deassert_ipi);
@@ -143,7 +121,7 @@ fn wakeup_hart(lapic: LocalApicPointer, apic_id: u8, chunk: PhysicalMemoryRegion
             // but cap it at 50ms
             pit::sleep_us(usize::min(10 * (100 * attempt + 1), 50 * 1000));
 
-            if alive_flag.load(Ordering::Relaxed) != 0 {
+            if status_flag.load(Ordering::Relaxed) != STATUS_WAIT {
                 break 'success true;
             }
         }
@@ -152,5 +130,13 @@ fn wakeup_hart(lapic: LocalApicPointer, apic_id: u8, chunk: PhysicalMemoryRegion
 
     if !success {
         panic!("Could not start processor after {MAX_AP_RETRIES} attempts: {apic_id}");
+    }
+
+    while status_flag.load(Ordering::Relaxed) == STATUS_ALIVE {
+        hint::spin_loop();
+    }
+
+    if status_flag.load(Ordering::Relaxed) != STATUS_DONE {
+        panic!("AP failed initializing: {apic_id}");
     }
 }

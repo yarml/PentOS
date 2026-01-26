@@ -1,9 +1,8 @@
-use builder::Config;
-use builder::Target;
+use builder::{Config, Target};
 
 fn main() {
     builder::configure(Config {
         target: Target::PE32P,
     });
-    builder::add_nasm_lib("hart", &["src/hart/ap_init.asm"]);
+    builder::build_nasm_flat("src/hart/ap_init.asm", "ap_init.bin");
 }
