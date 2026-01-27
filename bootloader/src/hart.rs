@@ -5,6 +5,7 @@ use {
         phys_mmap::PhysMemMap,
         pit, topology,
     },
+    boot_protocol::kernel_init::KernelInitFn,
     common::collections::smallvec::SmallVecBuf,
     config::{topology::hart::MAX_AP_RETRIES, vmem::LOCAL_APIC_REGION},
     core::{
@@ -50,7 +51,7 @@ const STATUS_ERROR: u8 = 3;
 /// Counts actually working and initialized harts.
 static HART_ACTIVE: AtomicUsize = AtomicUsize::new(1); // BSP already in
 
-static AP_BOOT_ENTRYPOINT: Once<VirtAddr> = Once::new();
+static AP_BOOT_ENTRYPOINT: Once<KernelInitFn> = Once::new();
 
 /// # Safety
 /// Must guarentee that IA32_APIC_BASE is mapped up to 4KiB to config/vmem:LOCAL_APIC_REGION
@@ -192,7 +193,7 @@ pub unsafe fn active_harts() -> usize {
     HART_ACTIVE.load(Ordering::Relaxed)
 }
 
-pub fn ap_boot(entrypoint: VirtAddr) {
+pub fn ap_boot(entrypoint: KernelInitFn) {
     AP_BOOT_ENTRYPOINT.init(|| entrypoint);
 }
 

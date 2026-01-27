@@ -157,6 +157,6 @@ fn main() -> Status {
     debug!("Booting kernel");
     unsafe {
         // SAFETY: hart::init called
-        kernel::boot_kernel(&kernel, &mut stacks, bootinfo);
+        kernel::boot_kernel(&kernel, &mut stacks);
     }
 }
