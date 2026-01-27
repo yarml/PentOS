@@ -44,21 +44,22 @@ pub unsafe fn boot_kernel(
         hint::spin_loop();
     }
 
-    do_jump(bsp_stack.as_usize(), bsp_entry);
+    do_jump(bsp_stack.as_usize(), bsp_entry, true);
 }
 
 pub fn ap_boot_kernel(stack: usize, ap_entry: VirtAddr) {
     AP_REMAINING.fetch_sub(1, Ordering::Relaxed);
-    do_jump(stack, ap_entry.as_usize());
+    do_jump(stack, ap_entry.as_usize(), false);
 }
 
-fn do_jump(stack: usize, dest: usize) -> ! {
+fn do_jump(stack: usize, dest: usize, is_bsp: bool) -> ! {
     unsafe {
         asm!(
             "mov rsp, {stack}",
             "jmp {entry}",
             stack = in(reg) stack,
             entry = in(reg) dest,
+            in("rdi") is_bsp as u64,
             options(noreturn)
         );
     }

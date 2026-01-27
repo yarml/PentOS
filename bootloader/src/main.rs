@@ -11,7 +11,6 @@ mod entry;
 mod features;
 mod framebuffer;
 mod hart;
-mod infoarea;
 mod kernel;
 mod loader;
 mod logger;

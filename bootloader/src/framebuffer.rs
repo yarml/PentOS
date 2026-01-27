@@ -1,10 +1,10 @@
 use {
     crate::{
         allocator::{ALLOCATOR_CAP, PostBootAllocator},
-        infoarea::allocate_info_space,
         virt_mmap::map,
     },
     boot_protocol::framebuffer::FramebufferInfo,
+    config::vmem::{FRAME_DOUBLEBUFFER_REGION, FRAMEBUFFER_REGION},
     core::{mem, slice},
     uefi::{
         Identify,
@@ -106,8 +106,9 @@ pub fn postboot_init(
     };
     buffer.fill(0);
 
-    let fb = allocate_info_space(*primary.size);
-    let buffer_page_start = Page::<Page4KiB>::containing(allocate_info_space(*primary.size));
+    let fb = FRAMEBUFFER_REGION.start();
+    let buffer_page_start = Page::<Page4KiB>::containing(FRAME_DOUBLEBUFFER_REGION.start());
+
     let pg_count = primary.size.next_multiple_of(0x1000) / 0x1000;
     let fb_frame_start = Frame::<Frame4KiB>::containing(primary.base);
     let fb_page_start = Page::<Page4KiB>::containing(fb);

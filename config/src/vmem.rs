@@ -55,18 +55,20 @@ pub const KSTACK_REGION: VirtualMemoryRegion = after(KBIN_REGION, g(8), b(0), b(
 /// Reserved for future expansions to kernel execution requirements (e.g. hart local memory).
 pub const KRESERVED_REGION: VirtualMemoryRegion = after(KSTACK_REGION, g(488), b(0), b(0));
 
-/// Contains global tables that can be accessed by all harts, this includes the GDT,
-/// a copy of the common paging entries here as a source of truth so that harts will copy
-/// them into their paging structure whenever they synchronize.
-pub const SYSTAB_REGION: VirtualMemoryRegion = after(KRESERVED_REGION, g(512), b(0), b(0));
-
 /// Used by drivers which provide global MMIO devices. The framebuffer is mapped here.
 /// The memory type of any page is determined by the driver in question, and the allocator responsible
 /// for this region allows specifying any memory type.
-pub const GLOBAL_MMIO_REGION: VirtualMemoryRegion = after(SYSTAB_REGION, t(1), b(0), b(0));
+pub const GLOBAL_MMIO_REGION: VirtualMemoryRegion = after(KRESERVED_REGION, t(1), b(0), b(0));
 
 /// Local APIC
-pub const LOCAL_APIC_REGION: VirtualMemoryRegion = after(GLOBAL_MMIO_REGION, k(4), b(0), b(0));
+pub const LOCAL_APIC_REGION: VirtualMemoryRegion = after(GLOBAL_MMIO_REGION, g(1), b(0), b(0));
+
+/// Framebuffer as setup by the bootloader. Uses WriteCombining memory type.
+pub const FRAMEBUFFER_REGION: VirtualMemoryRegion = after(LOCAL_APIC_REGION, g(1), b(0), b(0));
+
+/// Framebuffer double buffer in memory, uses WriteBack memory type.
+pub const FRAME_DOUBLEBUFFER_REGION: VirtualMemoryRegion =
+    after(FRAMEBUFFER_REGION, g(1), b(0), b(0));
 
 /// Like global kernel space, this is also divded into parts.
 pub const KERNEL_LOCAL_REGION: VirtualMemoryRegion = after(KERNEL_SHARED_REGION, t(64), b(0), b(0));
