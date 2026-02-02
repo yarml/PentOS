@@ -20,13 +20,8 @@ use {
         mem::{
             MemorySize, PhysicalMemoryRegion,
             addr::{Address, PhysAddr},
-            frame::Frame,
         },
-        msr::{
-            apic_base::{ApicBase, STANDARD_PHYS_BASE},
-            efer::Efer,
-            pat::standard_pat,
-        },
+        msr::pat::standard_pat,
     },
 };
 
@@ -116,11 +111,7 @@ fn main() -> Status {
         })
         .expect("Failed to allocate bootinfo");
 
-    Efer::new().syscall(false).exec_disable(true).write();
-    ApicBase::read()
-        .with_enabled(true)
-        .with_phys_base(Frame::containing(STANDARD_PHYS_BASE))
-        .write();
+    hart::known_state();
 
     unsafe {
         // SAFETY: Called from BSP once

@@ -12,7 +12,7 @@ impl Efer {
     /// LME, and LMA always set
     pub fn new() -> Self {
         Self {
-            raw: RawMsr::new(0x50),
+            raw: RawMsr::new(0x500), // LME and LMA always set
         }
     }
 
@@ -22,7 +22,10 @@ impl Efer {
         Self { raw }
     }
 
-    pub fn write(&self) {
+    /// # Safety
+    /// Must guarentee that the new configuration will not cause an undefined behaviour
+    /// in rust
+    pub unsafe fn write(&self) {
         self.raw.write(MSR);
     }
 }

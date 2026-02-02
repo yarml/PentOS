@@ -30,7 +30,10 @@ impl ApicBase {
         }
     }
 
-    pub fn write(self) {
+    /// # Safety
+    /// Must guarentee that the new configuration will not cause an undefined behaviour
+    /// in rust
+    pub unsafe fn write(self) {
         self.raw.write(MSR);
     }
 }

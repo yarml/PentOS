@@ -15,6 +15,7 @@ use {
     log::{debug, error},
     spinlocks::once::Once,
     x64::{
+        control::{CR0, CR4},
         lapic::{
             self, IPIDeliveryMode, IPIDestination, IPIDestinationMode, IPILevel, IPITriggerMode,
             InterProcessorInterrupt, LocalApicPointer,
@@ -22,8 +23,15 @@ use {
         mem::{
             MemorySize, PhysicalMemoryRegion,
             addr::{Address, PhysAddr, VirtAddr},
-            frame::size::{Frame4KiB, FrameSize},
+            frame::{
+                Frame,
+                size::{Frame4KiB, FrameSize},
+            },
             paging::PagingRootEntry,
+        },
+        msr::{
+            apic_base::{ApicBase, STANDARD_PHYS_BASE},
+            efer::Efer,
         },
     },
 };
@@ -223,8 +231,22 @@ extern "sysv64" fn ap_entrypoint(base: usize, stack: usize) {
 
     debug!("AP core UP!");
 
-    // TODO: put CPU control registers in deterministic state
+    known_state();
 
     let ap_entry = *AP_BOOT_ENTRYPOINT.wait();
     kernel::ap_boot_kernel(stack, ap_entry);
+}
+
+/// Put CPU in a known state
+pub fn known_state() {
+    unsafe {
+        // SAFETY: These are normally safe states
+        Efer::new().exec_disable(true).syscall(true).write();
+        ApicBase::read()
+            .with_enabled(true)
+            .with_phys_base(Frame::containing(STANDARD_PHYS_BASE))
+            .write();
+        CR0::new().numeric_error(true).write_protect(true).write();
+        CR4::new().global_pages(true).debug_extensions(true).write();
+    }
 }
