@@ -2,7 +2,7 @@ use {
     crate::{
         acpi,
         allocator::{ALLOCATOR_CAP, PostBootAllocator, PreBootAllocator},
-        bootstage, features, framebuffer, hart, kernel, loader, logger,
+        bootstage, features, framebuffer, hart, kernel, loader,
         phys_mmap::PhysMemMap,
         pic, topology, virt_mmap,
     },
@@ -32,7 +32,7 @@ fn main() -> Status {
         // If it fails, we don't really care.
         stdout.clear().ok();
     });
-    logger::init();
+    log_debugcon::init();
     loader::init();
     info!("Booting PentOS...");
 

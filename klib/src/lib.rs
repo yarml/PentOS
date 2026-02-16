@@ -9,7 +9,7 @@ extern crate alloc;
 #[cfg(test)]
 extern crate std;
 
-pub mod phys;
+use log::info;
 
 pub type KMainFn = unsafe fn() -> !;
 
@@ -21,13 +21,8 @@ pub unsafe fn init(is_bsp: bool, kmain: KMainFn) -> ! {
             hint::spin_loop();
         }
     }
-
-    let bootinfo = unsafe {
-        // SAFETY: Guarenteed by caller
-        &*BOOTINFO_REGION.start().as_ptr::<BootInfo>()
-    };
-
-    phys::init(&bootinfo.mmap[..bootinfo.mmap_len]);
+    log_debugcon::init();
+    info!("Kernel library initialization");
 
     unsafe {
         // SAFETY: klib initialized

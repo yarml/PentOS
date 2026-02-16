@@ -12,3 +12,5 @@ common.workspace = true
 boot-protocol.workspace = true
 spinlocks.workspace = true
 config.workspace = true
+log.workspace = true
+log-debugcon.workspace = true

@@ -1,3 +1,5 @@
+#![no_std]
+
 use {
     core::{
         arch::asm,
@@ -27,15 +29,12 @@ struct LogEntry<'w, W: Write> {
     in_transaction: bool,
 }
 
-#[cfg(feature = "log-debugcon")]
 struct DebugConWriter;
 
-#[cfg(feature = "log-debugcon")]
 impl DebugConWriter {
     const IO_PORT: u16 = 0xE9;
 }
 
-#[cfg(feature = "log-debugcon")]
 impl Write for DebugConWriter {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         for &byte in s.as_bytes() {
@@ -57,7 +56,11 @@ impl Write for DebugConWriter {
 impl<W: Write> Write for LogEntry<'_, W> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         if !self.in_transaction {
-            write!(self.writer, "\x08\x08\x08\x08\x08\x08\x08\x08[{:>5}] ", self.level)?;
+            write!(
+                self.writer,
+                "\x08\x08\x08\x08\x08\x08\x08\x08[{:>5}] ",
+                self.level
+            )?;
             self.in_transaction = true;
         }
 
@@ -75,8 +78,6 @@ impl<W: Write> Write for LogEntry<'_, W> {
 
         Ok(())
     }
-
-    
 }
 
 impl Log for Logger {
@@ -93,16 +94,13 @@ impl Log for Logger {
             hint::spin_loop();
         }
 
-        #[cfg(feature = "log-debugcon")]
-        {
-            let mut entry = LogEntry {
-                writer: &mut DebugConWriter,
-                level: record.level(),
-                in_transaction: false,
-            };
+        let mut entry = LogEntry {
+            writer: &mut DebugConWriter,
+            level: record.level(),
+            in_transaction: false,
+        };
 
-            let _ = writeln!(entry, "{}", *record.args());
-        }
+        let _ = writeln!(entry, "{}", *record.args());
 
         self.lock.store(false, Ordering::Release);
     }

@@ -13,7 +13,6 @@ mod framebuffer;
 mod hart;
 mod kernel;
 mod loader;
-mod logger;
 mod misc;
 mod panic;
 mod phys_mmap;
