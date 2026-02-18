@@ -33,12 +33,19 @@ jobs:
           key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
       - name: Setup Build System
         run: make
-      - name: Build Bootloader
-        run: make build-bootloader
-      - name: Upload Bootloader
+      - name: Build Bootloader (Release)
+        run: make build-release-bootloader
+      - name: Upload Bootloader (Release)
         uses: actions/upload-artifact@v4
         with:
-          name: bootloader
+          name: bootloader-release
+          path: target/uefi/release/bootloader.efi
+      - name: Build Bootloader (Debug)
+        run: make build-debug-bootloader
+      - name: Upload Bootloader (Debug)
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootloader-debug
           path: target/uefi/debug/bootloader.efi
   build-kernel:
     runs-on: ubuntu-latest
@@ -63,12 +70,19 @@ jobs:
           key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
       - name: Setup Build System
         run: make
-      - name: Build Kernel
-        run: make build-kernel
-      - name: Upload Kernel
+      - name: Build Kernel (Release)
+        run: make build-release-kernel
+      - name: Upload Kernel (Release)
         uses: actions/upload-artifact@v4
         with:
-          name: kernel
+          name: kernel-release
+          path: target/kernel/release/kernel
+      - name: Build Kernel (Debug)
+        run: make build-debug-kernel
+      - name: Upload Kernel (Debug)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-debug
           path: target/kernel/debug/kernel
   lint:
     runs-on: ubuntu-latest
