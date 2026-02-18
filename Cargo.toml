@@ -34,7 +34,7 @@ klib = { path = "klib" }
 log-debugcon = { path = "log-debugcon" }
 
 [workspace.metadata.chef]
-ovmf-version = "edk2-stable202408.01-r1"
+ovmf-version = "edk2-stable202511-r1"
 ovmf-source-template = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/$$/$$-bin.tar.xz"
 ovmf-varsfd-path-template = "$$-bin/x64/vars.fd"
 ovmf-codefd-path-template = "$$-bin/x64/code.fd"

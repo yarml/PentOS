@@ -7,8 +7,8 @@ set breakpoint auto-hw on
 set logging file run/gdb.log
 set logging enabled on
 
-add-symbol-file run/esp/pentos.kernel
-add-symbol-file run/esp/efi/boot/bootx64.efi
+add-symbol-file run/debug/esp/pentos.kernel
+add-symbol-file run/debug/esp/efi/boot/bootx64.efi
 
 source tools/pent_dbg/pent_dbg.py
 
