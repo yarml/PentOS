@@ -47,6 +47,19 @@ impl Block {
             base: PhysAddr::null(),
         }
     }
+
+    #[cfg(test)]
+    pub const fn all_free() -> Self {
+        Self {
+            k4: [u64::MAX; _],
+            k64: [u64::MAX; _],
+            k128: [u64::MAX; _],
+            m2: [u64::MAX; _],
+            m8: [u64::MAX; _],
+            freelist: Freelist::new(),
+            base: PhysAddr::null(),
+        }
+    }
 }
 
 impl Block {

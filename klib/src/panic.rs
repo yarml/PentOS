@@ -1,3 +1,5 @@
+#![cfg(not(test))]
+
 use {
     core::{arch::asm, panic::PanicInfo},
     log::error,

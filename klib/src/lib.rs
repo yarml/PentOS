@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 #![feature(unsafe_cell_access)]
 #![feature(const_trait_impl)]
 #![feature(allocator_api)]
@@ -6,8 +6,6 @@
 #![feature(ptr_metadata)]
 
 extern crate alloc;
-#[cfg(test)]
-extern crate std;
 
 pub mod bootinfo;
 pub mod kalloc;

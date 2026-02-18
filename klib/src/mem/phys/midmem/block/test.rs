@@ -1,17 +1,16 @@
 #![cfg(test)]
 
 use {
-    crate::phys::midmem::{BLOCK_SIZE, block::Block, size::MidFrameSize},
-    alloc::vec::Vec,
+    crate::mem::phys::midmem::{BLOCK_SIZE, block::Block, size::MidFrameSize},
+    alloc::{boxed::Box, vec::Vec},
     core::ptr,
-    std::boxed::Box,
     x64::mem::{
-        addr::{Address, PhysAddr},
+        addr::Address,
         frame::{FrameRange, size::Frame4KiB},
     },
 };
 
-static INIT_BLOCK: Block = Block::all_free(PhysAddr::MIN);
+static INIT_BLOCK: Block = Block::all_free();
 
 fn make_block() -> Box<Block> {
     let mut uninit_block = Box::new_uninit();
@@ -193,7 +192,6 @@ fn coalesce() {
 
     let allocation = block.alloc(MidFrameSize::K4).unwrap();
     assert_eq!(allocation.start().boundary().as_usize(), 0);
-
 }
 
 fn overalloc(size: MidFrameSize) -> Box<Block> {

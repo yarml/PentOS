@@ -12,7 +12,27 @@ use {alloc::boxed::Box, core::hint, log::debug};
 /// Assumes klib is fully functioning
 unsafe fn kmain() -> ! {
     let a = Box::new(10);
-    debug!("a: {a}");
+    let b = Box::new(20);
+
+    {
+        let c = Box::new(30);
+        debug!("a: {a}, b: {b}, c: {c}");
+        debug!(
+            "&a: {ra:?}, &b: {rb:?}, &c: {rc:?}",
+            ra = a.as_ref() as *const i32,
+            rb = b.as_ref() as *const i32,
+            rc = c.as_ref() as *const i32,
+        );
+    }
+
+    let c = Box::new(30);
+    debug!("a: {a}, b: {b}, c: {c}");
+    debug!(
+        "&a: {ra:?}, &b: {rb:?}, &c: {rc:?}",
+        ra = a.as_ref() as *const i32,
+        rb = b.as_ref() as *const i32,
+        rc = c.as_ref() as *const i32,
+    );
 
     loop {
         hint::spin_loop();

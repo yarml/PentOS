@@ -1,15 +1,12 @@
+
+
 use {
     crate::mem::phys::{MIDMEM_ALLOCATOR, midmem::MidFrameSize},
-    common::collections::smallvec::SmallVec,
-    config::{
-        kalloc::MIDMEM_KALLOC_FREELIST_CAP,
-        vmem::{KERNELSPACE, PHYSICAL_MAPPING_REGION},
-    },
+    config::vmem::PHYSICAL_MAPPING_REGION,
     core::{
         alloc::{AllocError, Allocator, Layout},
         ptr::{self, NonNull},
     },
-    spinlocks::mutex::Mutex,
     x64::mem::{
         addr::{Address, PhysAddr},
         frame::{

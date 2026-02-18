@@ -9,7 +9,6 @@ use {
         hint,
         sync::atomic::{AtomicU8, Ordering},
     },
-    log::debug,
     x64::mem::{
         addr::{Address, PhysAddr},
         frame::{FrameRange, size::Frame4KiB},
