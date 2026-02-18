@@ -12,7 +12,7 @@ bootloader_destination = $(shell cargo chef config install-bootloader)
 
 ovmf_target = run/ovmf/vars.fd run/ovmf/code.fd
 
-.PHONY: check-all clippy doc
+.PHONY: check-all clippy
 define package_build_recipe =
 .PHONY: build-release-$(1) build-debug-$(1) check-$(1) clippy-$(1) doc-$(1)
 build-debug-$(1):
@@ -25,7 +25,6 @@ check-$(1):
 clippy: clippy-$(1)
 clippy-$(1):
 	cd $(1) && cargo clippy --no-deps --all-features --keep-going -p $(1)
-doc: doc-$(1)
 doc-$(1):
 	cd $(1) && cargo doc --no-deps --all-features -p $(1)
 endef
@@ -62,3 +61,8 @@ install: build-release-bootloader build-release-kernel
 .PHONY: test
 test:
 	cargo test --workspace --no-fail-fast --exclude kernel --exclude bootloader
+
+.PHONY: doc
+doc:
+	cargo doc --workspace --release --no-deps
+	echo '<meta http-equiv="refresh" content="0; url=pentos/">' > target/doc/index.html

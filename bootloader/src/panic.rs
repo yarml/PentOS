@@ -1,3 +1,5 @@
+#![cfg(not(doc))]
+
 use {
     core::{arch::asm, panic::PanicInfo},
     log::error,
