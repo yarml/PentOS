@@ -1,2 +1,2 @@
 source scripts/qemu.sh
-$QEMU_CMD
+$(qemu_cmd run/release)

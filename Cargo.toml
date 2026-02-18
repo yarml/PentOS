@@ -31,11 +31,13 @@ acpi = { path = "acpi" }
 common = { path = "common" }
 config = { path = "config" }
 klib = { path = "klib" }
-debug = { path = "debug" }
 log-debugcon = { path = "log-debugcon" }
 
 [workspace.metadata.chef]
-ovmf-source = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/edk2-stable202408.01-r1/edk2-stable202408.01-r1-bin.tar.xz"
+ovmf-version = "edk2-stable202408.01-r1"
+ovmf-source-template = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/$$/$$-bin.tar.xz"
+ovmf-varsfd-path-template = "$$-bin/x64/vars.fd"
+ovmf-codefd-path-template = "$$-bin/x64/code.fd"
 
 install-bootloader = "/boot/efi/pentos.efi"
 install-kernel = "/boot/efi/pentos.kernel"

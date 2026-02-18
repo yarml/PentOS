@@ -5,8 +5,7 @@ QMS=$DIR/qms
 
 source scripts/qemu.sh
 
-QEMU_CMD=$(echo $QEMU_CMD \
-    -debugcon stdio \
+QEMU_CMD=$(echo $(qemu_cmd run/debug) \
     -monitor unix:$QMS,server \
     -d unimp,guest_errors \
     -s -S \

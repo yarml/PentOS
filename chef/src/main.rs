@@ -24,14 +24,19 @@ fn packages(root: &Metadata) {
 }
 
 fn ovmf(config: &ChefConfig) {
+    let source = config
+        .ovmf_source_template
+        .replace("$$", &config.ovmf_version);
+    let archive_varsfd_path = config
+        .ovmf_varsfd_path_template
+        .replace("$$", &config.ovmf_version);
+    let archive_codefd_path = config
+        .ovmf_codefd_path_template
+        .replace("$$", &config.ovmf_version);
+
     print_action!(0, "Setting up", "OVMF",);
-    print_action!(
-        1,
-        "Downloading",
-        "OVMF ({source})",
-        source = config.ovmf_source
-    );
-    let ovmf_tarball = reqwest::blocking::get(&config.ovmf_source)
+    print_action!(1, "Downloading", "OVMF ({source})",);
+    let ovmf_tarball = reqwest::blocking::get(&source)
         .expect("Couldn't download OVMF tarball")
         .bytes()
         .expect("Couldn't read OVMF tarball");
@@ -42,18 +47,23 @@ fn ovmf(config: &ChefConfig) {
         .read_to_end(&mut decompressed)
         .expect("Couldn't decompress OVMF tarball");
     let mut archive = Archive::new(decompressed.as_slice());
-    fs::create_dir_all("run/ovmf").unwrap();
+
+    let root_path = "run/ovmf";
+    let varsfd_path = format!("{root_path}/vars.fd");
+    let codefd_path = format!("{root_path}/code.fd");
+
+    fs::create_dir_all(root_path).unwrap();
     for entry in archive.entries().expect("Couldn't read OVMF tarball") {
         let mut entry = entry.unwrap();
         let path = entry.path().unwrap().to_str().unwrap().to_string();
-        if path == "edk2-stable202408.01-r1-bin/x64/vars.fd" {
-            print_action!(1, "Installing", "OVMF_VARS (run/ovmf/vars.fd)");
-            let mut file = fs::File::create("run/ovmf/vars.fd").unwrap();
+        if path == archive_varsfd_path {
+            print_action!(1, "Installing", "OVMF_VARS ({varsfd_path})");
+            let mut file = fs::File::create(&varsfd_path).unwrap();
             std::io::copy(&mut entry, &mut file).unwrap();
         }
-        if path == "edk2-stable202408.01-r1-bin/x64/code.fd" {
-            print_action!(1, "Installing", "OVMF_CODE (run/ovmf/code.fd)");
-            let mut file = fs::File::create("run/ovmf/code.fd").unwrap();
+        if path == archive_codefd_path {
+            print_action!(1, "Installing", "OVMF_CODE ({codefd_path})");
+            let mut file = fs::File::create(&codefd_path).unwrap();
             std::io::copy(&mut entry, &mut file).unwrap();
         }
     }
