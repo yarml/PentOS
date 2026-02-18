@@ -1,5 +1,5 @@
 QEMU_CMD=$(echo qemu-system-x86_64 \
-    -smp 2 \
+    -smp 1 \
     -m 8G \
     -cpu qemu64-v1,pdpe1gb,pcid,invpcid \
     -drive if=pflash,format=raw,readonly=on,file=run/ovmf/code.fd \

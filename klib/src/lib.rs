@@ -1,16 +1,24 @@
 #![no_std]
 #![feature(unsafe_cell_access)]
 #![feature(const_trait_impl)]
+#![feature(allocator_api)]
+#![feature(slice_ptr_get)]
+#![feature(ptr_metadata)]
 
-use {boot_protocol::BootInfo, config::vmem::BOOTINFO_REGION, core::hint, x64::mem::addr::Address};
-
-#[cfg(test)]
 extern crate alloc;
 #[cfg(test)]
 extern crate std;
 
-use log::info;
+pub mod bootinfo;
+pub mod kalloc;
+pub mod mem;
+pub mod panic;
 
+use {core::hint, log::info};
+
+/// # Safety
+/// Should be called once in the BSP by klib
+/// Assumes klib is fully functioning
 pub type KMainFn = unsafe fn() -> !;
 
 /// # Safety
@@ -23,6 +31,11 @@ pub unsafe fn init(is_bsp: bool, kmain: KMainFn) -> ! {
     }
     log_debugcon::init();
     info!("Kernel library initialization");
+
+    unsafe {
+        // SAFETY: Called once in the BSP and no other allocator can be called before this initialization ends
+        mem::phys::init()
+    };
 
     unsafe {
         // SAFETY: klib initialized

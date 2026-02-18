@@ -883,6 +883,7 @@ dependencies = [
  "boot-protocol",
  "builder",
  "klib",
+ "log",
  "x64",
 ]
 

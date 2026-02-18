@@ -1,11 +1,10 @@
 mod test;
 
 use {
-    crate::phys::midmem::{BLOCK_SIZE, freelist::Freelist, size::MidFrameSize},
+    crate::mem::phys::midmem::{BLOCK_SIZE, freelist::Freelist, size::MidFrameSize},
     common::collections::smallvec::SmallVec,
-    debug::test_print,
     x64::mem::{
-        addr::PhysAddr,
+        addr::{Address, PhysAddr},
         frame::{
             Frame, FrameRange,
             size::{Frame4KiB, FrameSize},
@@ -37,19 +36,7 @@ pub struct Block {
 }
 
 impl Block {
-    pub const fn all_free(base: PhysAddr) -> Self {
-        Self {
-            k4: [u64::MAX; _],
-            k64: [u64::MAX; _],
-            k128: [u64::MAX; _],
-            m2: [u64::MAX; _],
-            m8: [u64::MAX; _],
-            freelist: Freelist::new(),
-            base,
-        }
-    }
-
-    pub const fn all_used(base: PhysAddr) -> Self {
+    pub const fn zero() -> Self {
         Self {
             k4: [0; _],
             k64: [0; _],
@@ -57,8 +44,14 @@ impl Block {
             m2: [0; _],
             m8: [0; _],
             freelist: Freelist::new(),
-            base,
+            base: PhysAddr::null(),
         }
+    }
+}
+
+impl Block {
+    pub fn init(&mut self, base: PhysAddr) {
+        self.base = base;
     }
 }
 
@@ -72,23 +65,26 @@ impl Block {
         size: MidFrameSize,
         reentering: bool,
     ) -> Option<FrameRange<Frame4KiB>> {
-        test_print!("Bloc::alloc: begin");
+        // debug!(
+        //     "Bloc::alloc: begin {}",
+        //     if reentering { "reentering" } else { "" }
+        // );
         for current in size.into_iter().rev() {
             if let Some(mut frame) = self.freelist.pop(current) {
                 let _freelist_frame_size = MidFrameSize::from_size(*frame.size());
-                test_print!("Block::alloc: freelist {_freelist_frame_size:?} => {size:?}");
+                // debug!("Block::alloc: freelist {_freelist_frame_size:?} => {size:?}");
                 for current in current {
                     // This is guarenteed to be true before the loop ends naturally
                     if current == size {
-                        test_print!("Bloc::alloc => freelist {frame:?}");
+                        // debug!("Bloc::alloc => freelist {frame:?}");
                         return Some(frame);
                     }
                     if let Some(child_order) = current.child_order() {
                         let bitmap = self.getbitmap(child_order);
-                        test_print!(
-                            "Block::alloc: freelist splitting: current: {current:?} child_order: {child_order:?} child_order#:{}",
-                            child_order.order()
-                        );
+                        // debug!(
+                        //     "Block::alloc: freelist splitting: current: {current:?} child_order: {child_order:?} child_order#:{}",
+                        //     child_order.order()
+                        // );
                         let mut buddies = frame.split::<Frame4KiB>(child_order.order());
                         frame = buddies.next().unwrap();
                         let (byte_location, primary_bitloc) = Self::bitlocation(frame);
@@ -103,7 +99,7 @@ impl Block {
                 }
             }
         }
-        test_print!("Block::alloc: freelist empty");
+        // debug!("Block::alloc: freelist empty");
 
         // Freelist was useless
         let mut range = 0..64;
@@ -138,7 +134,7 @@ impl Block {
             }
 
             if current == size {
-                test_print!("Block::alloc => bitmap {frame:?}");
+                // debug!("Block::alloc => bitmap {frame:?}");
                 return Some(frame);
             }
 
@@ -150,6 +146,7 @@ impl Block {
             self.coalesce();
             self.alloc_inner(size, false)
         } else {
+            // debug!("Block::alloc => None");
             None
         }
     }
@@ -193,13 +190,13 @@ impl Block {
                 {
                     let start_idx =
                         unsafe { chunk.as_ptr().offset_from(freelist.as_ptr()) as usize };
-                    test_print!(
-                        "Block::coalesce: chunk {start_idx:02} ({start:04x} // {group:04x}) has {count}/{buddy_count} {size:?} frames",
-                        count = chunk.len(),
-                        start = chunk[0],
-                        group = chunk[0] as usize & parent_mask,
-                        size = current,
-                    );
+                    // debug!(
+                    //     "Block::coalesce: chunk {start_idx:02} ({start:04x} // {group:04x}) has {count}/{buddy_count} {size:?} frames",
+                    //     count = chunk.len(),
+                    //     start = chunk[0],
+                    //     group = chunk[0] as usize & parent_mask,
+                    //     size = current,
+                    // );
                     if chunk.len() == buddy_count && to_delete_cache.push(start_idx).is_err() {
                         break;
                     }

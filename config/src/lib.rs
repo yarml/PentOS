@@ -4,3 +4,4 @@
 pub mod pmem;
 pub mod topology;
 pub mod vmem;
+pub mod kalloc;

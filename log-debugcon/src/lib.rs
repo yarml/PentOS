@@ -14,13 +14,18 @@ pub fn init() {
     log::set_logger(&LOGGER).unwrap();
     log::set_max_level(log::STATIC_MAX_LEVEL);
 }
+pub fn master_unlock() {
+    LOGGER.lock.store(false, Ordering::Relaxed);
+}
 
 static LOGGER: Logger = Logger {
     lock: AtomicBool::new(false),
+    master_unlock: AtomicBool::new(false),
 };
 
 pub struct Logger {
     lock: AtomicBool,
+    master_unlock: AtomicBool,
 }
 
 struct LogEntry<'w, W: Write> {
@@ -65,7 +70,7 @@ impl<W: Write> Write for LogEntry<'_, W> {
         }
 
         let mut lines = s.lines();
-        let first_line = lines.next().unwrap();
+        let first_line = lines.next().unwrap_or_default();
         write!(self.writer, "{first_line}")?;
 
         for line in lines {
@@ -86,12 +91,15 @@ impl Log for Logger {
     }
 
     fn log(&self, record: &log::Record) {
-        while self
-            .lock
-            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
-            .is_err()
-        {
-            hint::spin_loop();
+        let master_unlock = self.master_unlock.load(Ordering::Relaxed);
+        if !master_unlock {
+            while self
+                .lock
+                .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+                .is_err()
+            {
+                hint::spin_loop();
+            }
         }
 
         let mut entry = LogEntry {
@@ -102,7 +110,9 @@ impl Log for Logger {
 
         let _ = writeln!(entry, "{}", *record.args());
 
-        self.lock.store(false, Ordering::Release);
+        if !master_unlock {
+            self.lock.store(false, Ordering::Release);
+        }
     }
 
     fn flush(&self) {

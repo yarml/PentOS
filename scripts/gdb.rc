@@ -2,6 +2,8 @@ set disassembly-flavor intel
 set pagination off
 set script-extension strict
 
+set breakpoint auto-hw on
+
 set logging file run/gdb.log
 set logging enabled on
 

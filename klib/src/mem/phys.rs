@@ -1,12 +1,18 @@
 use {
-    crate::phys::{
-        lowmem::{LowMemAllocator, size::LowMemFrame64KiB},
-        midmem::MidMemAllocator,
+    crate::{
+        bootinfo::bootinfo,
+        mem::phys::{
+            lowmem::{LowMemAllocator, size::LowMemFrame64KiB},
+            midmem::MidMemAllocator,
+        },
     },
-    config::pmem::{LOWMEM, MIDMEM},
+    config::{
+        pmem::{LOWMEM, MIDMEM},
+        vmem::PHYSICAL_MAPPING_REGION,
+    },
     spinlocks::mutex::Mutex,
     x64::mem::{
-        PhysicalMemoryRegion,
+        addr::{Address, PhysAddr},
         frame::{
             Frame, FrameRange,
             size::{Frame4KiB, FrameSize},
@@ -17,10 +23,22 @@ use {
 pub mod lowmem;
 pub mod midmem;
 
-static LOWMEM_ALLOCATOR: Mutex<LowMemAllocator> = Mutex::new(LowMemAllocator::new());
-static MIDMEM_ALLOCATOR: MidMemAllocator = MidMemAllocator::new();
+pub static LOWMEM_ALLOCATOR: Mutex<LowMemAllocator> = Mutex::new(LowMemAllocator::new());
+pub static MIDMEM_ALLOCATOR: MidMemAllocator = MidMemAllocator::zero();
 
-pub fn init(mmap: &[PhysicalMemoryRegion]) {
+/// # Safety
+/// Should be called once in the BSP and no other allocator method should be called before this initialization ends
+pub unsafe fn init() {
+    let bootinfo = bootinfo();
+    let mmap = &bootinfo.mmap[..bootinfo.mmap_len];
+
+    PhysAddr::set_memory_offset(PHYSICAL_MAPPING_REGION.start().as_usize());
+
+    unsafe {
+        // SAFETY: guarenteed by caller
+        MIDMEM_ALLOCATOR.init()
+    };
+
     let mut lowmem_allocator = LOWMEM_ALLOCATOR.lock();
     for &(mut entry) in mmap {
         if LOWMEM.contains_region(entry) {

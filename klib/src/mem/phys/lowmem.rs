@@ -1,7 +1,7 @@
 pub mod size;
 
 use {
-    crate::phys::lowmem::size::{LowMemFrame64KiB, LowMemFrame128KiB, LowMemFrameSize},
+    crate::mem::phys::lowmem::size::{LowMemFrame64KiB, LowMemFrame128KiB, LowMemFrameSize},
     common::collections::smallvec::SmallVec,
     x64::mem::frame::{Frame, FrameRange, size::Frame4KiB},
 };

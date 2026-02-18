@@ -9,6 +9,7 @@ authors.workspace = true
 boot-protocol.workspace = true
 klib.workspace = true
 x64.workspace = true
+log.workspace = true
 
 [build-dependencies]
 builder.workspace = true

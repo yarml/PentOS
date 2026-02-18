@@ -1,7 +1,6 @@
 use {
     super::{BLOCK_SIZE, size::MidFrameSize},
     common::collections::smallvec::{SmallVec, SmallVecBuf},
-    debug::test_print,
     x64::mem::{
         addr::{Address, PhysAddr},
         frame::{Frame, FrameRange, size::Frame4KiB},
@@ -45,13 +44,14 @@ impl Freelist {
                 size.k4_count(),
             )
         });
-        test_print!("Freelist::pop({size:?}) => {result:?}");
+        // debug!("Freelist::pop({size:?}) => {result:?}");
+        #[allow(clippy::let_and_return)]
         result
     }
 
     pub fn push(&mut self, frame: FrameRange<Frame4KiB>) {
         let size = MidFrameSize::from_size(*frame.size());
-        test_print!("Freelist::push({size:?}): {frame:?}");
+        // debug!("Freelist::push({size:?}): {frame:?}");
 
         assert!(frame.start().boundary().is_multiple_of(size.alignment()));
         let list = self.getlist(size);
