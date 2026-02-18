@@ -7,7 +7,6 @@ authors.workspace = true
 
 [dependencies]
 x64.workspace = true
-debug.workspace = true
 common.workspace = true
 boot-protocol.workspace = true
 spinlocks.workspace = true
