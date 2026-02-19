@@ -1,6 +1,7 @@
 use {
+    crate::{allocator::PostBootAllocator, topology, virt_mmap},
     boot_protocol::STACK_SIZE,
-    common::collections::smallvec::SmallVec,
+    utils::collections::smallvec::SmallVec,
     config::{topology::hart::MAX_HART_COUNT, vmem::KSTACK_REGION},
     x64::{
         mem::{
@@ -15,8 +16,6 @@ use {
         msr::pat::MemoryType,
     },
 };
-
-use crate::{allocator::PostBootAllocator, topology, virt_mmap};
 
 /// # Safety
 /// Should be called only once, and in the BSP

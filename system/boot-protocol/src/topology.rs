@@ -1,5 +1,5 @@
 use {
-    common::collections::smallvec::SmallVec,
+    utils::collections::smallvec::SmallVec,
     config::topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
     x64::mem::addr::PhysAddr,
 };

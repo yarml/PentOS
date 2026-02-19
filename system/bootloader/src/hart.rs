@@ -6,7 +6,6 @@ use {
         pit, topology,
     },
     boot_protocol::kernel_init::KernelInitFn,
-    common::collections::smallvec::SmallVecBuf,
     config::{topology::hart::MAX_AP_RETRIES, vmem::LOCAL_APIC_REGION},
     core::{
         hint, slice,
@@ -14,6 +13,7 @@ use {
     },
     log::{debug, error},
     spinlocks::once::Once,
+    utils::collections::smallvec::SmallVecBuf,
     x64::{
         control::{CR0, CR4},
         lapic::{

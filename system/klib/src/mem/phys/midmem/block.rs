@@ -2,7 +2,7 @@ mod test;
 
 use {
     crate::mem::phys::midmem::{BLOCK_SIZE, freelist::Freelist, size::MidFrameSize},
-    common::collections::smallvec::SmallVec,
+    utils::collections::smallvec::SmallVec,
     x64::mem::{
         addr::{Address, PhysAddr},
         frame::{

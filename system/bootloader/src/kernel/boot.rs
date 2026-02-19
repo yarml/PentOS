@@ -1,13 +1,13 @@
 use {
     crate::hart,
     boot_protocol::kernel_init::KernelInitFn,
-    common::collections::smallvec::SmallVecBuf,
     core::{
         arch::asm,
         hint, mem,
         sync::atomic::{AtomicUsize, Ordering},
     },
     elf::Elf,
+    utils::collections::smallvec::SmallVecBuf,
     x64::mem::addr::{Address, VirtAddr},
 };
 

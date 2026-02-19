@@ -15,7 +15,7 @@ elf.workspace = true
 spinlocks.workspace = true
 acpi.workspace = true
 config.workspace = true
-common.workspace = true
+utils.workspace = true
 
 [build-dependencies]
 builder.workspace = true

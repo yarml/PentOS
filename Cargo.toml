@@ -1,19 +1,19 @@
 [workspace]
 members = [
-    "kernel",
-    "bootloader",
-    "chef",
-    "boot-protocol",
-    "builder",
-    "x64",
-    "elf",
-    "spinlocks",
-    "acpi",
-    "common",
-    "config",
-    "klib",
-    "log-debugcon",
     "pentos",
+    "config",
+    "system/kernel",
+    "system/bootloader",
+    "system/klib",
+    "system/boot-protocol",
+    "system/lib/x64",
+    "system/lib/elf",
+    "system/lib/spinlocks",
+    "system/lib/acpi",
+    "system/lib/log-debugcon",
+    "system/lib/utils",
+    "build-system/chef",
+    "build-system/builder",
 ]
 resolver = "3"
 
@@ -23,16 +23,16 @@ package.authors = ["Youssef Harmal"]
 
 [workspace.dependencies]
 log = "0.4.29"
-boot-protocol = { path = "boot-protocol" }
-x64 = { path = "x64" }
-elf = { path = "elf" }
-builder = { path = "builder" }
-spinlocks = { path = "spinlocks" }
-acpi = { path = "acpi" }
-common = { path = "common" }
 config = { path = "config" }
-klib = { path = "klib" }
-log-debugcon = { path = "log-debugcon" }
+klib = { path = "system/klib" }
+boot-protocol = { path = "system/boot-protocol" }
+x64 = { path = "system/lib/x64" }
+elf = { path = "system/lib/elf" }
+builder = { path = "build-system/builder" }
+spinlocks = { path = "system/lib/spinlocks" }
+acpi = { path = "system/lib/acpi" }
+utils = { path = "system/lib/utils" }
+log-debugcon = { path = "system/lib/log-debugcon" }
 
 [workspace.metadata.chef]
 ovmf-version = "edk2-stable202511-r1"

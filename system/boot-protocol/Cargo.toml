@@ -1,5 +1,5 @@
 [package]
-name = "klib"
+name = "boot-protocol"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
@@ -7,9 +7,5 @@ authors.workspace = true
 
 [dependencies]
 x64.workspace = true
-common.workspace = true
-boot-protocol.workspace = true
-spinlocks.workspace = true
+utils.workspace = true
 config.workspace = true
-log.workspace = true
-log-debugcon.workspace = true

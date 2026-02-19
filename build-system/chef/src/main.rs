@@ -5,6 +5,7 @@ mod config;
 mod progress;
 
 use {
+    crate::args::PackagesCommand,
     args::{ChefArgs, ChefCommand},
     cargo_metadata::{Metadata, MetadataCommand},
     clap::Parser,
@@ -15,10 +16,20 @@ use {
     xz::read::XzDecoder,
 };
 
-fn packages(root: &Metadata) {
+fn packages_names(root: &Metadata) {
     for package in &root.workspace_members {
         let package = &root[package];
         println!("{}", package.name);
+    }
+    exit(0);
+}
+
+fn packages_paths(root: &Metadata) {
+    for package in &root.workspace_members {
+        let package = &root[package];
+        let mut path = package.manifest_path.clone();
+        path.pop();
+        println!("{}", path);
     }
     exit(0);
 }
@@ -89,9 +100,10 @@ fn main() {
         ChefCommand::Ovmf => {
             ovmf(&config);
         }
-        ChefCommand::Packages => {
-            packages(&root);
-        }
+        ChefCommand::Packages { command } => match command {
+            PackagesCommand::Name => packages_names(&root),
+            PackagesCommand::Path => packages_paths(&root),
+        },
         ChefCommand::Config { name } => {
             printconfig(raw_config, &name);
         }

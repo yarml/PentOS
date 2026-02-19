@@ -1,6 +1,6 @@
 use {
     super::{BLOCK_SIZE, size::MidFrameSize},
-    common::collections::smallvec::{SmallVec, SmallVecBuf},
+    utils::collections::smallvec::{SmallVec, SmallVecBuf},
     x64::mem::{
         addr::{Address, PhysAddr},
         frame::{Frame, FrameRange, size::Frame4KiB},

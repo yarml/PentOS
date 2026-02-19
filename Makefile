@@ -5,31 +5,37 @@ endif
 .PHONY: nothing
 nothing:
 
-packages = $(shell cargo chef packages)
+packages_names := $(shell cargo chef packages name)
+packages_paths := $(shell cargo chef packages path)
+packages := $(join $(packages_names),$(addprefix :, $(packages_paths)))
 
-kernel_destination = $(shell cargo chef config install-kernel)
-bootloader_destination = $(shell cargo chef config install-bootloader)
+kernel_destination := $(shell cargo chef config install-kernel)
+bootloader_destination := $(shell cargo chef config install-bootloader)
 
-ovmf_target = run/ovmf/vars.fd run/ovmf/code.fd
+ovmf_target := run/ovmf/vars.fd run/ovmf/code.fd
 
 .PHONY: check-all clippy
 define package_build_recipe =
 .PHONY: build-release-$(1) build-debug-$(1) check-$(1) clippy-$(1) doc-$(1)
 build-debug-$(1):
-	cd $(1) && cargo build -p $(1)
+	cd $(2) && cargo build -p $(1)
 build-release-$(1):
-	cd $(1) && cargo build -p $(1) --release
+	cd $(2) && cargo build -p $(1) --release
 check-all: check-$(1)
 check-$(1):
-	@cd $(1) && cargo clippy --all-features --keep-going --quiet --message-format=json -p $(1)
+	@cd $(2) && cargo clippy --all-features --keep-going --quiet --message-format=json -p $(1)
 clippy: clippy-$(1)
 clippy-$(1):
-	cd $(1) && cargo clippy --no-deps --all-features --keep-going -p $(1)
+	cd $(2) && cargo clippy --no-deps --all-features --keep-going -p $(1)
 doc-$(1):
-	cd $(1) && cargo doc --no-deps --all-features -p $(1)
+	cd $(2) && cargo doc --no-deps --all-features -p $(1)
 endef
 
-$(foreach package,$(packages),$(eval $(call package_build_recipe,$(package))))
+$(foreach package,$(packages), \
+	$(eval $(call \
+		package_build_recipe,$(word 1,$(subst :, ,$(package))),$(word 2,$(subst :, ,$(package))) \
+	)) \
+)
 
 $(ovmf_target):
 	cargo chef ovmf
