@@ -137,6 +137,7 @@ name = "boot-protocol"
 version = "0.1.0"
 dependencies = [
  "config",
+ "system",
  "utils",
  "x64",
 ]
@@ -153,6 +154,7 @@ dependencies = [
  "log",
  "log-debugcon",
  "spinlocks",
+ "system",
  "uefi",
  "utils",
  "x64",
@@ -1539,6 +1541,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "system"
+version = "0.1.0"
+dependencies = [
+ "x64",
 ]
 
 [[package]]

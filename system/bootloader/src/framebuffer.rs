@@ -3,9 +3,9 @@ use {
         allocator::{ALLOCATOR_CAP, PostBootAllocator},
         virt_mmap::map,
     },
-    boot_protocol::framebuffer::FramebufferInfo,
     config::vmem::{FRAME_DOUBLEBUFFER_REGION, FRAMEBUFFER_REGION},
     core::{mem, slice},
+    system::framebuffer::FramebufferInfo,
     uefi::{
         Identify,
         boot::{self, SearchType},

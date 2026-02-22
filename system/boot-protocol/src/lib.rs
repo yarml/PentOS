@@ -1,11 +1,10 @@
 #![no_std]
 
 pub mod features;
-pub mod framebuffer;
 pub mod kernel_init;
 pub mod topology;
 
-use {features::FeatureSet, framebuffer::FramebufferInfo, x64::mem::PhysicalMemoryRegion};
+use {features::FeatureSet, system::framebuffer::FramebufferInfo, x64::mem::PhysicalMemoryRegion};
 
 const MMAP_PG_COUNT: usize = 1;
 pub const MAX_MMAP_SIZE: usize =

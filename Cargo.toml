@@ -5,6 +5,7 @@ members = [
     "system/kernel",
     "system/bootloader",
     "system/klib",
+    "system/system",
     "system/boot-protocol",
     "system/lib/x64",
     "system/lib/elf",
@@ -25,6 +26,7 @@ package.authors = ["Youssef Harmal"]
 log = "0.4.29"
 config = { path = "config" }
 klib = { path = "system/klib" }
+system = { path = "system/system" }
 boot-protocol = { path = "system/boot-protocol" }
 x64 = { path = "system/lib/x64" }
 elf = { path = "system/lib/elf" }

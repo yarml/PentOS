@@ -1,5 +1,6 @@
 use {
     crate::allocator::PostBootAllocator,
+    system::pat::pat_index,
     x64::{
         mem::{
             addr::{Address, PhysAddr},
@@ -7,7 +8,7 @@ use {
             page::size::{Page512GiB, PageSize, PageSizeMap},
             paging::{PagingMapEntry, PagingRawEntry, PagingReferenceEntry, PagingRootEntry},
         },
-        msr::pat::{MemoryType as PatMemoryType, pat_index},
+        msr::pat::MemoryType as PatMemoryType,
     },
 };
 

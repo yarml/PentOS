@@ -6,6 +6,7 @@ use {
         phys_mmap::PhysMemMap,
         pic, topology, virt_mmap,
     },
+    ::system::pat::standard_pat,
     boot_protocol::{BootInfo, MAX_MMAP_SIZE},
     config::vmem::PHYSICAL_MAPPING_REGION,
     log::{debug, info},
@@ -16,12 +17,9 @@ use {
         mem::memory_map::MemoryMap as UefiMemoryMap,
         system,
     },
-    x64::{
-        mem::{
-            MemorySize, PhysicalMemoryRegion,
-            addr::{Address, PhysAddr},
-        },
-        msr::pat::standard_pat,
+    x64::mem::{
+        MemorySize, PhysicalMemoryRegion,
+        addr::{Address, PhysAddr},
     },
 };
 
