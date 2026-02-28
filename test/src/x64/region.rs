@@ -1,11 +1,11 @@
 // All written by deepseek
 
 use {
-    crate::mem::{
+    std::{format, vec},
+    x64::mem::{
         MemorySize, PhysicalMemoryRegion,
         addr::{Address, PhysAddr},
     },
-    alloc::{format, vec},
 };
 
 // Helper functions to create test objects

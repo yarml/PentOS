@@ -1,6 +1,3 @@
-#[cfg(test)]
-mod test;
-
 use core::{
     fmt::{Debug, Display},
     iter::Sum,

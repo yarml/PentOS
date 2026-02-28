@@ -7,7 +7,7 @@ use core::{
 
 pub use midmem::MidMemKalloc;
 
-#[cfg_attr(not(test), global_allocator)]
+#[cfg_attr(not(feature = "test"), global_allocator)]
 static KALLOC: Kalloc = Kalloc;
 static MIDMEM_KALLOC: MidMemKalloc = MidMemKalloc;
 

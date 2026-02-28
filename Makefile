@@ -66,7 +66,7 @@ install: build-release-bootloader build-release-kernel
 
 .PHONY: test
 test:
-	cargo test --workspace --no-fail-fast --exclude kernel --exclude bootloader
+	cargo test -p test
 
 .PHONY: doc
 doc:

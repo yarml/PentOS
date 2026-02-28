@@ -143,3 +143,17 @@ impl MidMemAllocator {
         .trailing_ones() as usize
     }
 }
+
+#[cfg(feature = "test")]
+pub mod test_exports {
+    pub const BLOCK_SIZE: usize = super::BLOCK_SIZE;
+    pub mod block {
+        pub use super::super::block::*;
+    }
+    pub mod freelist {
+        pub use super::super::freelist::*;
+    }
+    pub mod size {
+        pub use super::super::size::*;
+    }
+}

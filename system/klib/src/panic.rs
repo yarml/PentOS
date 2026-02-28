@@ -1,4 +1,4 @@
-#![cfg(not(test))]
+#![cfg(not(feature = "test"))]
 
 use {
     core::{arch::asm, panic::PanicInfo},

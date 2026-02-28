@@ -1,6 +1,3 @@
-#[cfg(test)]
-mod test;
-
 mod phys;
 mod virt;
 

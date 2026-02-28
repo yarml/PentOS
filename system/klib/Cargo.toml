@@ -13,3 +13,6 @@ spinlocks.workspace = true
 config.workspace = true
 log.workspace = true
 log-debugcon.workspace = true
+
+[features]
+test = []

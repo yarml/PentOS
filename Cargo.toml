@@ -15,6 +15,7 @@ members = [
     "system/lib/utils",
     "build-system/chef",
     "build-system/builder",
+    "test",
 ]
 resolver = "3"
 

@@ -3,9 +3,6 @@
 #![feature(abi_x86_interrupt)]
 #![feature(const_trait_impl)]
 
-#[cfg(test)]
-extern crate alloc;
-
 pub mod framebuffer;
 pub mod interrupts;
 pub mod io;

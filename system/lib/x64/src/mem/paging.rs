@@ -1,6 +1,3 @@
-#[cfg(test)]
-mod test;
-
 pub mod pat;
 pub mod pcid;
 pub mod pk;

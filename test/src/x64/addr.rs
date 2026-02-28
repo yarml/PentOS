@@ -1,4 +1,4 @@
-use crate::define_addr;
+use x64::define_addr;
 
 define_addr!(Addr, make_canonical);
 

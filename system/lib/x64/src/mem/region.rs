@@ -1,6 +1,3 @@
-#[cfg(test)]
-mod test;
-
 use {
     super::addr::{Address, PhysAddr, VirtAddr},
     crate::mem::MemorySize,

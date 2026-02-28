@@ -1,4 +1,4 @@
-use {crate::mem::MemorySize, alloc::format};
+use {std::format, x64::mem::MemorySize};
 
 #[test]
 fn test_size_creation() {

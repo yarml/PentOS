@@ -1,5 +1,3 @@
-mod test;
-
 use {
     crate::mem::phys::midmem::{BLOCK_SIZE, freelist::Freelist, size::MidFrameSize},
     utils::collections::smallvec::SmallVec,
@@ -43,19 +41,6 @@ impl Block {
             k128: [0; _],
             m2: [0; _],
             m8: [0; _],
-            freelist: Freelist::new(),
-            base: PhysAddr::null(),
-        }
-    }
-
-    #[cfg(test)]
-    pub const fn all_free() -> Self {
-        Self {
-            k4: [u64::MAX; _],
-            k64: [u64::MAX; _],
-            k128: [u64::MAX; _],
-            m2: [u64::MAX; _],
-            m8: [u64::MAX; _],
             freelist: Freelist::new(),
             base: PhysAddr::null(),
         }
@@ -248,5 +233,26 @@ impl Block {
             MidFrameSize::M2 => &mut self.m2,
             MidFrameSize::M8 => &mut self.m8,
         }
+    }
+}
+
+#[cfg(feature = "test")]
+impl Block {
+    pub const fn all_free() -> Self {
+        Self {
+            k4: [u64::MAX; _],
+            k64: [u64::MAX; _],
+            k128: [u64::MAX; _],
+            m2: [u64::MAX; _],
+            m8: [u64::MAX; _],
+            freelist: Freelist::new(),
+            base: PhysAddr::null(),
+        }
+    }
+    pub fn freelist_len(&mut self, size: MidFrameSize) -> usize {
+        self.freelist.getlist(size).len()
+    }
+    pub fn coalesce_test(&mut self) {
+        self.coalesce()
     }
 }

@@ -1,4 +1,4 @@
-#![cfg_attr(not(test), no_std)]
+#![no_std]
 #![feature(unsafe_cell_access)]
 #![feature(const_trait_impl)]
 #![feature(allocator_api)]

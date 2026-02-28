@@ -1,9 +1,7 @@
-#![cfg(test)]
-
 use {
-    crate::mem::phys::midmem::{BLOCK_SIZE, block::Block, size::MidFrameSize},
-    alloc::{boxed::Box, vec::Vec},
     core::ptr,
+    klib::mem::phys::midmem::test_exports::{BLOCK_SIZE, block::Block, size::MidFrameSize},
+    std::boxed::Box,
     x64::mem::{
         addr::Address,
         frame::{FrameRange, size::Frame4KiB},
@@ -178,17 +176,17 @@ fn coalesce() {
     allocations.clear();
 
     // We should have 16 consecutive 4K frames in the freelist
-    assert_eq!(block.freelist.getlist(MidFrameSize::K4).len(), 16);
-    assert_eq!(block.freelist.getlist(MidFrameSize::K64).len(), 1);
-    assert_eq!(block.freelist.getlist(MidFrameSize::K128).len(), 15);
-    assert_eq!(block.freelist.getlist(MidFrameSize::M2).len(), 3);
-    assert_eq!(block.freelist.getlist(MidFrameSize::M8).len(), 0);
-    block.coalesce();
-    assert_eq!(block.freelist.getlist(MidFrameSize::K4).len(), 0);
-    assert_eq!(block.freelist.getlist(MidFrameSize::K64).len(), 0);
-    assert_eq!(block.freelist.getlist(MidFrameSize::K128).len(), 0);
-    assert_eq!(block.freelist.getlist(MidFrameSize::M2).len(), 0);
-    assert_eq!(block.freelist.getlist(MidFrameSize::M8).len(), 1); // M8 don't ever get put back into the bitmaps, stay in freelist forever
+    assert_eq!(block.freelist_len(MidFrameSize::K4), 16);
+    assert_eq!(block.freelist_len(MidFrameSize::K64), 1);
+    assert_eq!(block.freelist_len(MidFrameSize::K128), 15);
+    assert_eq!(block.freelist_len(MidFrameSize::M2), 3);
+    assert_eq!(block.freelist_len(MidFrameSize::M8), 0);
+    block.coalesce_test();
+    assert_eq!(block.freelist_len(MidFrameSize::K4), 0);
+    assert_eq!(block.freelist_len(MidFrameSize::K64), 0);
+    assert_eq!(block.freelist_len(MidFrameSize::K128), 0);
+    assert_eq!(block.freelist_len(MidFrameSize::M2), 0);
+    assert_eq!(block.freelist_len(MidFrameSize::M8), 1); // M8 don't ever get put back into the bitmaps, stay in freelist forever
 
     let allocation = block.alloc(MidFrameSize::K4).unwrap();
     assert_eq!(allocation.start().boundary().as_usize(), 0);
