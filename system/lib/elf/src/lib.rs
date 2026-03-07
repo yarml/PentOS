@@ -163,7 +163,7 @@ impl Segment {
         let file_size = raw.file_size as usize;
         let mem_size = MemorySize::new(raw.mem_size as usize);
         let alignment = raw.alignment as usize;
-        if *vaddr % alignment != 0 {
+        if alignment != 0 && *vaddr % alignment != 0 {
             return None;
         }
         Some(Self {

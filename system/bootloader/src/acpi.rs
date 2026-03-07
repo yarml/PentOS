@@ -19,7 +19,7 @@ pub fn init() {
     });
 
     // ifta7 ya sim sim
-    let Some(Some(rsdp)) = rsdp.get().cloned() else {
+    let Some(Some(rsdp)) = rsdp.poll().cloned() else {
         panic!("ACPI2 table not found");
     };
 

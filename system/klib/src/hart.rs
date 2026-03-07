@@ -1,3 +1,5 @@
+use core::cell::UnsafeCell;
+
 pub use klib_macros::hart_local;
 use {
     core::{
@@ -17,7 +19,11 @@ pub struct HartLocal<T> {
 unsafe impl<T> Sync for HartLocal<T> {}
 
 impl<T> HartLocal<T> {
-    pub const fn new(rf: &T) -> Self {
+    /// # Safety
+    /// This relies on rf being in .hart_local section, and that the linker script
+    /// has the .hart_local loaded into ORIGIN=0
+    /// This function should only be called through the #\[hart_local] attribute
+    pub const unsafe fn new(rf: &T) -> Self {
         let offset = rf as *const T as *const u8;
 
         Self {
@@ -31,10 +37,10 @@ impl<T> HartLocal<T> {
     #[inline(always)]
     /// # Safety
     /// GS needs to point to hart local data structure
-    unsafe fn get_ptr(&self) -> *mut T {
+    unsafe fn get_ptr(&self) -> *const UnsafeCell<T> {
         let hart_info = HartInfo::get();
         let base = hart_info.tls_base;
-        (base + self.offset as usize) as *mut T
+        (base + self.offset as usize) as *const UnsafeCell<T>
     }
 
     pub fn with<R>(&self, f: impl FnOnce(&T) -> R) -> R {
@@ -44,7 +50,7 @@ impl<T> HartLocal<T> {
         };
         unsafe {
             // SAFETY: Safe unless GS is not placed correctly, which shouldn't happen
-            f(&*ptr)
+            f(&*(&*ptr).get())
         }
     }
 
@@ -55,7 +61,7 @@ impl<T> HartLocal<T> {
         };
         unsafe {
             // SAFETY: Safe unless GS is not placed correctly, which shouldn't happen
-            f(&mut *ptr)
+            f(&mut *(&*ptr).get())
         }
     }
 }

@@ -39,7 +39,7 @@ pub(crate) fn expand(item: ItemStatic) -> Result<TokenStream> {
         static #backing_ident: #ty = #expr;
 
         #(#extra_attrs)*
-        #vis static #ident: HartLocal<#ty> = HartLocal::new(&#backing_ident);
+        #vis static #ident: HartLocal<#ty> = unsafe { HartLocal::new(&#backing_ident) };
     };
 
     Ok(expanded)

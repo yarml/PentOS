@@ -50,7 +50,7 @@ impl<T> Once<T> {
 }
 
 impl<T> Once<T> {
-    pub fn get(&self) -> Option<&T> {
+    pub fn poll(&self) -> Option<&T> {
         if self.status() == Status::Init {
             Some(unsafe {
                 // SAFETY: self.status() == Status::Init
@@ -61,7 +61,7 @@ impl<T> Once<T> {
         }
     }
 
-    pub fn poll(&self) -> Option<&T> {
+    pub fn get(&self) -> Option<&T> {
         match self.status() {
             Status::Uninit => None,
             Status::Init => {

@@ -14,11 +14,7 @@ pub mod kalloc;
 pub mod mem;
 pub mod panic;
 
-use {
-    core::hint,
-    log::{debug, info},
-    system::hart::HartInfo,
-};
+use {core::hint, log::info, system::hart::HartInfo};
 
 #[macro_export]
 macro_rules! use_klib {

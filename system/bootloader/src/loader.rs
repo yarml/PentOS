@@ -37,5 +37,5 @@ pub fn init() {
 }
 
 pub fn base() -> PhysAddr {
-    *IMAGE_BASE.get().expect("Loader not initialized")
+    *IMAGE_BASE.poll().expect("Loader not initialized")
 }

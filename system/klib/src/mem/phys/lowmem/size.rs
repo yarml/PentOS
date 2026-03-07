@@ -4,7 +4,7 @@ use x64::mem::frame::{
 };
 
 pub type LowMemFrame64KiB = Frame<FrameDynSize<{ 64 * 1024 }>>;
-pub type LowMemFrame128KiB = Frame<FrameDynSize<{ 64 * 1024 }>>;
+pub type LowMemFrame128KiB = Frame<FrameDynSize<{ 128 * 1024 }>>;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LowMemFrameSize {

@@ -55,14 +55,10 @@ impl<const MAX: usize> PhysMemMap<MAX> {
     }
     pub fn minimize(&mut self) {
         self.sort_start_addr();
-        for i in 0..self.len {
-            if i > 0 && (self.regions[i - 1] + self.regions[i]).is_some() {
+        for i in 1..self.len {
+            if (self.regions[i - 1] + self.regions[i]).is_some() {
                 self.regions[i - 1] += self.regions[i];
                 self.regions[i] = PhysicalMemoryRegion::null();
-            }
-            if i + 1 < self.len && (self.regions[i] + self.regions[i + 1]).is_some() {
-                self.regions[i] += self.regions[i + 1];
-                self.regions[i + 1] = PhysicalMemoryRegion::null();
             }
         }
         self.regions[..self.len].sort_unstable_by(|r0, r1| {
