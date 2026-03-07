@@ -19,6 +19,7 @@ use {core::hint, log::info, system::hart::HartInfo};
 #[macro_export]
 macro_rules! use_klib {
     ($kmain:ident) => {
+        extern crate alloc;
         use system::hart::HartInfo;
         /// # Safety
         /// Should be called by the bootloader after it has finished initializing everything
