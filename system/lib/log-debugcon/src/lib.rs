@@ -10,12 +10,19 @@ use {
     log::Log,
 };
 
+static INIT: AtomicBool = AtomicBool::new(false);
+
 pub fn init() {
     log::set_logger(&LOGGER).unwrap();
     log::set_max_level(log::STATIC_MAX_LEVEL);
+    INIT.store(true, Ordering::Relaxed);
 }
 pub fn master_unlock() {
     LOGGER.lock.store(false, Ordering::Relaxed);
+}
+
+pub fn initialized() -> bool {
+    INIT.load(Ordering::Relaxed)
 }
 
 static LOGGER: Logger = Logger {

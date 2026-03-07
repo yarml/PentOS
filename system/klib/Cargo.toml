@@ -6,6 +6,8 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
+klib-macros = { path = "../macros/klib-macros" }
+
 x64.workspace = true
 utils.workspace = true
 boot-protocol.workspace = true
@@ -13,6 +15,7 @@ spinlocks.workspace = true
 config.workspace = true
 log.workspace = true
 log-debugcon.workspace = true
+system.workspace = true
 
 [features]
 test = []

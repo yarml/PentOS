@@ -52,8 +52,14 @@ pub const KBIN_REGION: VirtualMemoryRegion = after(PHYSICAL_MAPPING_REGION, g(16
 /// Always WriteBack memoty type.
 pub const KSTACK_REGION: VirtualMemoryRegion = after(KBIN_REGION, g(8), b(0), b(0));
 
-/// Reserved for future expansions to kernel execution requirements (e.g. hart local memory).
-pub const KRESERVED_REGION: VirtualMemoryRegion = after(KSTACK_REGION, g(488), b(0), b(0));
+/// Hart local memory
+pub const KTLS_REGION: VirtualMemoryRegion = after(KSTACK_REGION, g(32), b(0), b(0));
+
+/// Hart info section
+pub const KHART_INFO: VirtualMemoryRegion = after(KTLS_REGION, g(1), b(0), b(0));
+
+/// Reserved for future expansions to kernel execution requirements.
+pub const KRESERVED_REGION: VirtualMemoryRegion = after(KSTACK_REGION, g(455), b(0), b(0));
 
 /// Used by drivers which provide global MMIO devices. The framebuffer is mapped here.
 /// The memory type of any page is determined by the driver in question, and the allocator responsible

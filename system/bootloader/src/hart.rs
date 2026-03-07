@@ -247,6 +247,10 @@ pub fn known_state() {
             .with_phys_base(Frame::containing(STANDARD_PHYS_BASE))
             .write();
         CR0::new().numeric_error(true).write_protect(true).write();
-        CR4::new().global_pages(true).debug_extensions(true).write();
+        CR4::new()
+            .global_pages(true)
+            .fsgsbase(true)
+            .debug_extensions(true)
+            .write();
     }
 }

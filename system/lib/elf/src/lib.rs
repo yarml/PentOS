@@ -65,6 +65,9 @@ pub enum SegmentType {
     Dynamic,
     Interpreter,
     Note,
+    SharedLib,
+    ProgramHeader,
+    ThreadLocalStorage,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -182,6 +185,9 @@ impl SegmentType {
             2 => Some(Self::Dynamic),
             3 => Some(Self::Interpreter),
             4 => Some(Self::Note),
+            5 => Some(Self::SharedLib),
+            6 => Some(Self::ProgramHeader),
+            7 => Some(Self::ThreadLocalStorage),
             _ => None,
         }
     }

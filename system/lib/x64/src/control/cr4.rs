@@ -50,6 +50,15 @@ impl CR4 {
         }
         self
     }
+
+    pub const fn fsgsbase(&mut self, fsgsbase: bool) -> &mut Self {
+        if fsgsbase {
+            self.raw |= 1 << 16;
+        } else {
+            self.raw &= !(1 << 16);
+        }
+        self
+    }
 }
 
 impl CR4 {

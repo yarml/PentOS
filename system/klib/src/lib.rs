@@ -12,7 +12,27 @@ pub mod kalloc;
 pub mod mem;
 pub mod panic;
 
-use {core::hint, log::info};
+use {
+    core::hint,
+    log::{debug, info},
+    system::hart::HartInfo,
+};
+
+#[macro_export]
+macro_rules! use_klib {
+    ($kmain:ident) => {
+        use system::hart::HartInfo;
+        /// # Safety
+        /// Should be called by the bootloader after it has finished initializing everything
+        #[unsafe(no_mangle)]
+        unsafe extern "sysv64" fn init() -> ! {
+            unsafe {
+                // SAFETY: Guarenteed by bootloader
+                klib::init($kmain)
+            }
+        }
+    };
+}
 
 /// # Safety
 /// Should be called once in the BSP by klib

@@ -23,6 +23,7 @@ pub enum InsufficientReason {
     NoPCID,
     NoInvPCID,
     NoLongMode, // Can we even get here???
+    NoFSGSBase,
 }
 
 impl FeatureDetect {
@@ -75,6 +76,7 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
     }
 
     let cpuid1 = __cpuid(1);
+    let cpuid7 = __cpuid(7);
     let cpuidext1 = __cpuid(0x8000_0001);
     let cpuid7_0 = __cpuid_count(7, 0);
 
@@ -84,6 +86,7 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
     let has_pat = (cpuid1.edx >> 16) & 1 == 1;
     let has_noexec = (cpuidext1.edx >> 20) & 1 == 1;
     let has_long_mode = (cpuidext1.edx >> 29) & 1 == 1;
+    let has_fsgsbase = (cpuid7.ebx) & 1 == 1;
 
     // I couldn't find in AMD manual where PCID functionality is
     // However they do mention in APM Volume 2 Section 5.5.1 page 158 (March 2024)
@@ -119,6 +122,9 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
     }
     if !has_inv_context_id {
         return FeatureDetect::Insufficient(InsufficientReason::NoInvPCID);
+    }
+    if !has_fsgsbase {
+        return FeatureDetect::Insufficient(InsufficientReason::NoFSGSBase);
     }
 
     let shadow_stack = (cpuid7_0.ecx >> 7) & 1 == 1;

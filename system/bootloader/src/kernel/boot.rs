@@ -1,5 +1,5 @@
 use {
-    crate::hart,
+    crate::{hart, kernel::mem::KernelHartInfo},
     boot_protocol::kernel_init::KernelInitFn,
     core::{
         arch::asm,
@@ -7,15 +7,21 @@ use {
         sync::atomic::{AtomicUsize, Ordering},
     },
     elf::Elf,
-    utils::collections::smallvec::SmallVecBuf,
-    x64::mem::addr::{Address, VirtAddr},
+    spinlocks::{mutex::Mutex, once::Once},
+    system::hart::HartInfo,
+    x64::{
+        lapic,
+        mem::addr::{Address, VirtAddr},
+        msr::kernel_gs::KernelGS,
+    },
 };
 
 static AP_REMAINING: AtomicUsize = AtomicUsize::new(0);
+static KHI: Once<Mutex<KernelHartInfo>> = Once::new();
 
 /// # Safety
 /// Needs to be called after all harts have started or failed to start
-pub unsafe fn boot_kernel(kernel: &Elf<'static>, stacks: &mut SmallVecBuf<VirtAddr>) -> ! {
+pub unsafe fn boot_kernel(kernel: &Elf<'static>, mut khi: KernelHartInfo) -> ! {
     let entry = kernel.entry;
     let entry = entry.as_usize();
     let kernel_init: KernelInitFn = unsafe {
@@ -23,7 +29,17 @@ pub unsafe fn boot_kernel(kernel: &Elf<'static>, stacks: &mut SmallVecBuf<VirtAd
         mem::transmute(entry)
     };
 
-    let bsp_stack = stacks.pop().expect("Did not find stack for BSP");
+    let bsp_stack = khi.stacks.pop().expect("Did not find stack for BSP");
+
+    for hartinfo in &mut khi.hartinfos {
+        let hartinfo = unsafe {
+            // SAFETY: Guarenteed by KHI invariants
+            &mut *hartinfo.as_mut_ptr::<HartInfo>()
+        };
+        hartinfo.tls_base = khi.tlss.pop().expect("Not enough TLSs").as_usize();
+    }
+
+    KHI.init(move || Mutex::new(khi));
 
     AP_REMAINING.store(
         unsafe {
@@ -38,22 +54,55 @@ pub unsafe fn boot_kernel(kernel: &Elf<'static>, stacks: &mut SmallVecBuf<VirtAd
         hint::spin_loop();
     }
 
-    do_jump(bsp_stack.as_usize(), kernel_init as usize, true);
+    let mut khi = KHI.wait().lock();
+    let hartinfo = khi.hartinfos.pop().expect("Not enough HartInfos");
+    drop(khi);
+
+    let hartinfo = unsafe {
+        // SAFETY: Guarenteed by KHI invariants
+        &mut *hartinfo.as_mut_ptr::<HartInfo>()
+    };
+
+    hartinfo.hard_id = lapic::id_cpuid();
+    hartinfo.stack = bsp_stack.as_usize();
+    hartinfo.is_bsp = true;
+    hartinfo.osid = 0;
+
+    do_jump(kernel_init as usize, hartinfo);
 }
 
 pub fn ap_boot_kernel(stack: usize, ap_entry: KernelInitFn) {
-    AP_REMAINING.fetch_sub(1, Ordering::Relaxed);
-    do_jump(stack, ap_entry as usize, false);
+    let khi_mutex = KHI.wait();
+
+    let mut khi = khi_mutex.lock();
+    let hartinfo = khi.hartinfos.pop().expect("Not enough HartInfos");
+    drop(khi);
+
+    let hartinfo = unsafe {
+        // SAFETY: Guarenteed by KHI invariants
+        &mut *hartinfo.as_mut_ptr::<HartInfo>()
+    };
+
+    hartinfo.hard_id = lapic::id_cpuid();
+    hartinfo.stack = stack;
+    hartinfo.is_bsp = false;
+    hartinfo.osid = AP_REMAINING.fetch_sub(1, Ordering::Relaxed);
+
+    do_jump(ap_entry as usize, hartinfo);
 }
 
-fn do_jump(stack: usize, dest: usize, is_bsp: bool) -> ! {
+fn do_jump(dest: usize, hartinfo: &HartInfo) -> ! {
+    let gs = KernelGS::new(VirtAddr::from(hartinfo as *const HartInfo));
+    gs.write();
+    KernelGS::swapgs();
+    gs.write();
+
     unsafe {
         asm!(
             "mov rsp, {stack}",
             "jmp {entry}",
-            stack = in(reg) stack,
+            stack = in(reg) hartinfo.stack,
             entry = in(reg) dest,
-            in("rdi") is_bsp as u64,
             options(noreturn)
         );
     }

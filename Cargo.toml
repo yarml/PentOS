@@ -13,6 +13,7 @@ members = [
     "system/lib/acpi",
     "system/lib/log-debugcon",
     "system/lib/utils",
+    "system/macros/klib-macros",
     "build-system/chef",
     "build-system/builder",
     "test",
@@ -24,7 +25,11 @@ package.license = " GPL-3.0-or-later"
 package.authors = ["Youssef Harmal"]
 
 [workspace.dependencies]
+syn = { version = "2.0.117", features = ["full"] }
+quote = "1.0.45"
+proc-macro2 = "1.0.106"
 log = "0.4.29"
+
 config = { path = "config" }
 klib = { path = "system/klib" }
 system = { path = "system/system" }

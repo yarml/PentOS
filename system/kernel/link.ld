@@ -10,6 +10,8 @@ PHDRS {
     kernel_rodata PT_LOAD;
     kernel_data PT_LOAD;
     kernel_bss PT_LOAD;
+
+    kernel_tls PT_TLS;
 }
 
 SECTIONS {
@@ -17,4 +19,6 @@ SECTIONS {
     .rodata : ALIGN(0x1000) { *(.rodata .rodata.*) } >kernel :kernel_rodata
     .data : ALIGN(0x1000) { *(.data .data.* .got .got.*) } >kernel :kernel_data
     .bss : ALIGN(0x1000) { *(.bss .bss.*) } >kernel :kernel_bss
+
+    .hart_local : ALIGN (0x1000) { *(.hart_local .hart_local.*) } >kernel :kernel_tls
 }

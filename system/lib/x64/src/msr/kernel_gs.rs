@@ -1,6 +1,9 @@
-use crate::{
-    mem::addr::{Address, VirtAddr},
-    msr::RawMsr,
+use {
+    crate::{
+        mem::addr::{Address, VirtAddr},
+        msr::RawMsr,
+    },
+    core::arch::asm,
 };
 
 const MSR: u32 = 0xC000_0102;
@@ -27,6 +30,17 @@ impl KernelGS {
     }
     pub fn write(&self) {
         self.raw.write(MSR)
+    }
+}
+
+impl KernelGS {
+    pub fn swapgs() {
+        unsafe {
+            // SAFETY: Running in kernel mode
+            asm! {
+                "swapgs"
+            }
+        }
     }
 }
 
