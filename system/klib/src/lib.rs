@@ -4,10 +4,12 @@
 #![feature(allocator_api)]
 #![feature(slice_ptr_get)]
 #![feature(ptr_metadata)]
+#![feature(negative_impls)]
 
 extern crate alloc;
 
 pub mod bootinfo;
+pub mod hart;
 pub mod kalloc;
 pub mod mem;
 pub mod panic;
@@ -41,8 +43,10 @@ pub type KMainFn = unsafe fn() -> !;
 
 /// # Safety
 /// Should be called by the kernel::init as soon as it has been called by the bootloader
-pub unsafe fn init(is_bsp: bool, kmain: KMainFn) -> ! {
-    if !is_bsp {
+pub unsafe fn init(kmain: KMainFn) -> ! {
+    let hartinfo = HartInfo::get();
+
+    if !hartinfo.is_bsp {
         loop {
             hint::spin_loop();
         }

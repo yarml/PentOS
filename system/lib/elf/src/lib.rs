@@ -113,7 +113,7 @@ impl<'a> Elf<'a> {
 
 impl ElfIdentification {
     pub fn parse(data: &[UChar; 16]) -> Option<Self> {
-        if &data[0..4] != b"\x7FELF" || data[6] != 1 || data[7] != 0 {
+        if &data[0..4] != b"\x7FELF" || data[5] != 1 || data[6] != 1 {
             return None;
         }
         let class = ElfClass::parse(data[4])?;

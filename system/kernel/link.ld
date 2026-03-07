@@ -3,6 +3,8 @@ ENTRY(init)
 MEMORY {
     /* This needs to stay synchronized with config/vmem/KBIN_REGION */
     kernel (rwx) : ORIGIN = 0xFFFF808000000000, LENGTH = 16384M - 1 /* Kernel code/rodata/data/bss */
+
+    kernel_tls (rwx) : ORIGIN = 0, LENGTH = 16384M - 1
 }
 
 PHDRS {
@@ -20,5 +22,5 @@ SECTIONS {
     .data : ALIGN(0x1000) { *(.data .data.* .got .got.*) } >kernel :kernel_data
     .bss : ALIGN(0x1000) { *(.bss .bss.*) } >kernel :kernel_bss
 
-    .hart_local : ALIGN (0x1000) { *(.hart_local .hart_local.*) } >kernel :kernel_tls
+    .hart_local : ALIGN (0x1000) { *(.hart_local) *(.hart_local.*) } >kernel_tls :kernel_tls
 }

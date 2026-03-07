@@ -26,7 +26,8 @@ pub fn hart_local(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    let output = hart_local::expand(item);
-
-    TokenStream::from(output)
+    match hart_local::expand(item) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
 }
