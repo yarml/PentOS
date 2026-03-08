@@ -16,6 +16,7 @@ use {
     system::lapic_ptr,
     x64::{
         control::{CR0, CR4},
+        interrupts,
         lapic::{
             self, IPIDeliveryMode, IPIDestination, IPIDestinationMode, IPILevel, IPITriggerMode,
             InterProcessorInterrupt, LocalApicPointer,
@@ -258,6 +259,7 @@ extern "sysv64" fn ap_entrypoint(base: usize) {
 pub fn known_state() {
     unsafe {
         // SAFETY: These are normally safe states
+        interrupts::disable();
         Efer::new().exec_disable(true).syscall(true).write();
         ApicBase::read()
             .with_enabled(true)

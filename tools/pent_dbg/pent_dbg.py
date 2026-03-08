@@ -7,6 +7,7 @@ if base_dir not in sys.path:
 import gdb # type: ignore
 import time
 import getpa
+import print_idt
 import websrv
 from events import shutdown_event
 
@@ -23,6 +24,7 @@ class CommandThread(gdb.Thread):
 
 # Register commands
 command_getpa = getpa.GetPA()
+command_print_idt = print_idt.PrintIDT()
 
 # Threads
 ws = websrv.WebServerThread()

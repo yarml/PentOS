@@ -16,9 +16,12 @@ use {
         mem::memory_map::MemoryMap as UefiMemoryMap,
         system,
     },
-    x64::mem::{
-        MemorySize, PhysicalMemoryRegion,
-        addr::{Address, PhysAddr},
+    x64::{
+        interrupts,
+        mem::{
+            MemorySize, PhysicalMemoryRegion,
+            addr::{Address, PhysAddr},
+        },
     },
 };
 
@@ -54,9 +57,8 @@ fn main() -> Status {
         // SAFETY: Only thing we used was the UEFI console logger, and allocator, they are now disabled
         boot::exit_boot_services(Some(MemoryType::LOADER_DATA))
     };
-
+    interrupts::disable();
     pic::disable();
-    debug!("PIC disabled");
 
     // The difference between real_mmap and mmap is that mmap is moved to the allocator
     // real_mmap is exclusively used to identity & offset map memory

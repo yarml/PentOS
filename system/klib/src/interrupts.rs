@@ -1,17 +1,28 @@
 mod handlers;
+mod lapic;
 
 use {
-    crate::interrupts::handlers::{double_fault, nmi_interrupt},
+    crate::interrupts::{
+        handlers::{double_fault, generic_interrupt, nmi_interrupt},
+        lapic::handlers::{error_interrupt, spurious_interrupt, timer_interrupt},
+    },
     spinlocks::mutex::Mutex,
     system::{
         hart::HartInfo,
         tss::{DF_IST, NMI_IST},
     },
     x64::{
-        interrupts::{InterruptDescriptorTable, gate::InterruptGate},
+        interrupts::{self, InterruptDescriptorTable, gate::InterruptGate},
         mem::addr::{Address, VirtAddr},
     },
 };
+
+const TIMER_VECTOR: u8 = 0x20;
+const LAPIC_SPURIOUS_VECTOR: u8 = 0x21;
+const LAPIC_ERROR_VECTOR: u8 = 0x22;
+
+/// We attach a general purpose interrupt handler from here up to & including 255
+const FREE_VECTOR_START: u8 = 0x23;
 
 static IDT: Mutex<InterruptDescriptorTable> = Mutex::new(InterruptDescriptorTable::new());
 
@@ -32,6 +43,26 @@ pub(crate) fn setup() {
         kernel_code_selector,
         NMI_IST,
     ));
+
+    idt.attach(
+        TIMER_VECTOR,
+        InterruptGate::simple(timer_interrupt, kernel_code_selector),
+    );
+    idt.attach(
+        LAPIC_SPURIOUS_VECTOR,
+        InterruptGate::simple(spurious_interrupt, kernel_code_selector),
+    );
+    idt.attach(
+        LAPIC_ERROR_VECTOR,
+        InterruptGate::simple(error_interrupt, kernel_code_selector),
+    );
+
+    for i in FREE_VECTOR_START..=255 {
+        idt.attach(
+            i,
+            InterruptGate::simple(generic_interrupt, kernel_code_selector),
+        );
+    }
 }
 
 pub(crate) fn load() {
@@ -41,4 +72,9 @@ pub(crate) fn load() {
         // Null offset, since IDT is already in virtual space
         idt.load(VirtAddr::null())
     };
+}
+
+pub(crate) fn enable() {
+    interrupts::enable();
+    lapic::setup();
 }

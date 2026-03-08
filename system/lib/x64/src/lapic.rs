@@ -71,12 +71,23 @@ pub enum IPIDestination {
 pub enum LocalApicRegister {
     ID = 0x20,
     Version = 0x30,
+    EndOfInterrupt = 0xB0,
+    SpuriousVector = 0xF0,
     ICRLow = 0x300,
     ICRHigh = 0x310,
     LVTTimer = 0x320,
+    LVTError = 0x0370,
     InitCount = 0x380,
     CurrentCount = 0x390,
     DivConf = 0x3E0,
+}
+
+#[derive(Clone, Copy)]
+#[repr(u8)]
+pub enum TimerMode {
+    OneShot = 0b00,
+    Periodic = 0b01,
+    TSCDeadline = 0b10,
 }
 
 impl LocalApicPointer {
@@ -98,7 +109,7 @@ impl LocalApicPointer {
     #[inline(always)]
     pub fn write_reg32(&self, reg: LocalApicRegister, value: u32) {
         unsafe {
-            // SAFETY: This should be safe since each hart can only access thei own Local APIC.
+            // SAFETY: This should be safe since each hart can only access their own Local APIC.
             ptr::write_volatile((self.pointer + reg as usize).as_mut_ptr(), value);
         };
     }
@@ -171,16 +182,37 @@ impl LocalApicPointer {
             128 => 0b1010,
             _ => panic!("Invalid LAPIC timer divisor {divisor}"),
         };
-        self.write_reg32(LocalApicRegister::DivConf, divconf);
+        self.write_reg32(LocalApicRegister::DivConf, divconf)
     }
 
     #[inline(always)]
     pub fn set_timer_initial(&self, value: u32) {
-        self.write_reg32(LocalApicRegister::InitCount, value);
+        self.write_reg32(LocalApicRegister::InitCount, value)
     }
     #[inline(always)]
     pub fn get_timer(&self) -> u32 {
         self.read_reg32(LocalApicRegister::CurrentCount)
+    }
+
+    #[inline(always)]
+    pub fn program_spurious_vector(&self, vector: u8) {
+        self.write_reg32(LocalApicRegister::SpuriousVector, vector as u32 | 0x100)
+    }
+    #[inline(always)]
+    pub fn program_lvt_timer(&self, vector: u8, mode: TimerMode) {
+        self.write_reg32(
+            LocalApicRegister::LVTTimer,
+            vector as u32 | (mode as u32) << 17,
+        )
+    }
+    #[inline(always)]
+    pub fn program_lvt_error(&self, vector: u8) {
+        self.write_reg32(LocalApicRegister::LVTError, vector as u32)
+    }
+
+    #[inline(always)]
+    pub fn end_of_interrupt(&self) {
+        self.write_reg32(LocalApicRegister::EndOfInterrupt, 0);
     }
 }
 

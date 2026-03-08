@@ -8,3 +8,7 @@ pub extern "x86-interrupt" fn double_fault(_frame: InterruptStackFrame, _code: u
 pub extern "x86-interrupt" fn nmi_interrupt(_frame: InterruptStackFrame) {
     todo!("NMI Interrupt");
 }
+
+pub extern "x86-interrupt" fn generic_interrupt(_frame: InterruptStackFrame) {
+    todo!("GENERIC INTERRUPT FIRED")
+}

@@ -121,3 +121,11 @@ impl Default for InterruptDescriptorTable {
         Self::new()
     }
 }
+
+pub fn disable() {
+    unsafe { asm!("cli") }
+}
+
+pub fn enable() {
+    unsafe { asm!("sti") }
+}

@@ -81,8 +81,8 @@ impl InterruptGateEntry {
         ty: GateType,
         dpl: PrivilegeLevel,
     ) -> Self {
-        let offset_low = (handler.as_usize() & 0xFF) as u16;
-        let offset_middle = ((handler.as_usize() >> 16) & 0xFF) as u16;
+        let offset_low = (handler.as_usize() & 0xFFFF) as u16;
+        let offset_middle = ((handler.as_usize() >> 16) & 0xFFFF) as u16;
         let offset_high = (handler.as_usize() >> 32 & 0xFFFFFFFF) as u32;
 
         let ist = if let Some(ist) = ist { ist.get() } else { 0 };

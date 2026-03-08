@@ -56,7 +56,7 @@ pub unsafe fn init(kmain: KMainFn) -> ! {
     let hartinfo = HartInfo::get();
 
     if !hartinfo.is_bsp() {
-        while BSP_SETUP.load(Ordering::Relaxed) {
+        while !BSP_SETUP.load(Ordering::Relaxed) {
             hint::spin_loop();
         }
         common_setup();
@@ -86,6 +86,7 @@ pub unsafe fn init(kmain: KMainFn) -> ! {
 
 fn common_setup() {
     interrupts::load();
+    interrupts::enable();
 }
 
 #[cfg(feature = "test")]
