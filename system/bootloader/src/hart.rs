@@ -13,7 +13,7 @@ use {
     },
     log::{debug, error},
     spinlocks::{mutex::Mutex, once::Once},
-    system::vmem::LOCAL_APIC_REGION,
+    system::lapic_ptr,
     x64::{
         control::{CR0, CR4},
         lapic::{
@@ -92,10 +92,7 @@ pub unsafe fn init(
     ap_bootstrap_destination.copy_from_slice(AP_INIT_CODE);
 
     let bspid = lapic::id_cpuid();
-    let lapic = unsafe {
-        // SAFETY: Guarenteed by caller
-        LocalApicPointer::from_virt_addr(LOCAL_APIC_REGION.start())
-    };
+    let lapic = lapic_ptr::standard();
 
     let topology = topology::topology();
     for hart in topology.harts.iter().filter(|hart| hart.apic_id != bspid) {

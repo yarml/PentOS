@@ -14,9 +14,7 @@ use {
     elf::Elf,
     spinlocks::{mutex::Mutex, once::Once},
     system::{
-        hart::HartInfo,
-        tss::{DF_IST, NMI_IST, ist_index},
-        vmem::{LOCAL_APIC_REGION, PHYSICAL_MAPPING_REGION},
+        hart::HartInfo, lapic_ptr, tss::{DF_IST, NMI_IST, ist_index}, vmem::{LOCAL_APIC_REGION, PHYSICAL_MAPPING_REGION}
     },
     x64::{
         interrupts::InterruptDescriptorTable,
@@ -134,10 +132,7 @@ fn populate_hartinfo(
     osid: usize,
 ) {
     static PIT_SLEEP_USED: AtomicBool = AtomicBool::new(false);
-    let lapic = unsafe {
-        // SAFETY: Local APIC mapped by now
-        LocalApicPointer::from_virt_addr(LOCAL_APIC_REGION.start())
-    };
+    let lapic = lapic_ptr::standard();
 
     let hartinfo = &mut khi.hartinfo;
 

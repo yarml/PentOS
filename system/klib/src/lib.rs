@@ -87,3 +87,8 @@ pub unsafe fn init(kmain: KMainFn) -> ! {
 fn common_setup() {
     interrupts::load();
 }
+
+#[cfg(feature = "test")]
+pub mod mem_test {
+    pub use super::mem::*;
+}

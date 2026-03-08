@@ -1,6 +1,6 @@
 use {
     core::ptr,
-    klib::mem::phys::midmem::test_exports::{BLOCK_SIZE, block::Block, size::MidFrameSize},
+    klib::mem_test::phys::midmem::test_exports::{BLOCK_SIZE, block::Block, size::MidFrameSize},
     std::boxed::Box,
     x64::mem::{
         addr::Address,

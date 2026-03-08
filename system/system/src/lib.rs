@@ -7,3 +7,4 @@ pub mod pat;
 pub mod pmem;
 pub mod tss;
 pub mod vmem;
+pub mod lapic_ptr;
