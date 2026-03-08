@@ -73,6 +73,10 @@ pub enum LocalApicRegister {
     Version = 0x30,
     ICRLow = 0x300,
     ICRHigh = 0x310,
+    LVTTimer = 0x320,
+    InitCount = 0x380,
+    CurrentCount = 0x390,
+    DivConf = 0x3E0,
 }
 
 impl LocalApicPointer {
@@ -84,12 +88,14 @@ impl LocalApicPointer {
     }
 }
 impl LocalApicPointer {
+    #[inline(always)]
     pub fn read_reg32(&self, reg: LocalApicRegister) -> u32 {
         unsafe {
             // SAFETY: This should be safe since each hart can only access their own Local APIC.
             ptr::read_volatile((self.pointer + reg as usize).as_ptr())
         }
     }
+    #[inline(always)]
     pub fn write_reg32(&self, reg: LocalApicRegister, value: u32) {
         unsafe {
             // SAFETY: This should be safe since each hart can only access thei own Local APIC.
@@ -97,9 +103,11 @@ impl LocalApicPointer {
         };
     }
 
+    #[inline(always)]
     pub fn id(&self) -> usize {
         self.read_reg32(LocalApicRegister::ID) as usize >> 24
     }
+    #[inline(always)]
     pub fn version(&self) -> LocalApicVersion {
         let reg = self.read_reg32(LocalApicRegister::Version) as usize;
         let version = reg & 0xF;
@@ -148,6 +156,31 @@ impl LocalApicPointer {
         while self.read_reg32(LocalApicRegister::ICRLow) & (1 << 12) != 0 {
             hint::spin_loop();
         }
+    }
+
+    #[inline(always)]
+    pub fn set_timer_divisor(&self, divisor: u8) {
+        let divconf: u32 = match divisor {
+            1 => 0b1011,
+            2 => 0b0000,
+            4 => 0b0001,
+            8 => 0b0010,
+            16 => 0b0011,
+            32 => 0b1000,
+            64 => 0b1001,
+            128 => 0b1010,
+            _ => panic!("Invalid LAPIC timer divisor {divisor}"),
+        };
+        self.write_reg32(LocalApicRegister::DivConf, divconf);
+    }
+
+    #[inline(always)]
+    pub fn set_timer_initial(&self, value: u32) {
+        self.write_reg32(LocalApicRegister::InitCount, value);
+    }
+    #[inline(always)]
+    pub fn get_timer(&self) -> u32 {
+        self.read_reg32(LocalApicRegister::CurrentCount)
     }
 }
 

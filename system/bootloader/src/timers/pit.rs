@@ -6,7 +6,11 @@ const CMD: Port<u8> = Port::new(0x43);
 /// Sleep with a precision of 5us and accuracy > 99% (not counting hardware accuracy) for AT LEAST t us
 /// Unless t is too large, in which case it will sleep for the maximum time.
 /// The maximum sleep time is 54610us
-pub fn sleep_us(t: usize) {
+///
+/// # Safety
+/// Must be called by one hart at a time.
+///
+pub unsafe fn sleep_us(t: usize) {
     let t = if t >= 54610 { 54610 } else { t };
     const TU_PER_5US: usize = 6;
     let us5_amount = (t / 5) + 1;

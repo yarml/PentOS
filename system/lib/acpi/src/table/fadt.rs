@@ -69,3 +69,32 @@ pub struct Fadt {
 impl AcpiTable for Fadt {
     const SIG: Signature = FADT_SIG;
 }
+
+pub struct PmTimerInfo {
+    pub port: u16,
+    pub is_32bit: bool,
+}
+
+impl Fadt {
+    pub fn pm_timer_info(&self) -> Option<PmTimerInfo> {
+        let is_32bit = self.pm_timer_length == 4;
+
+        let x_pm_timer = self.x_pm_timer_block;
+        if x_pm_timer.address_space == 0x01 && x_pm_timer.address != 0 {
+            return Some(PmTimerInfo {
+                port: x_pm_timer.address as u16,
+                is_32bit,
+            });
+        }
+
+        let legacy_port = self.pm_timer_block;
+        if legacy_port != 0 {
+            return Some(PmTimerInfo {
+                port: legacy_port as u16,
+                is_32bit,
+            });
+        }
+
+        None
+    }
+}

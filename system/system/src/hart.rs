@@ -23,6 +23,7 @@ pub struct HartInfo {
     pub user_data_selector: usize,
     pub tss_selector: usize,
     pub tss_segment: usize,
+    pub lapic_10ms: usize,
 }
 
 impl HartInfo {

@@ -3,7 +3,7 @@ use {
         features::{self, FeatureDetect},
         kernel::{self, KernelStackSet, KernelStacks},
         phys_mmap::PhysMemMap,
-        pit, topology,
+        timers, topology,
     },
     boot_protocol::kernel_init::KernelInitFn,
     config::topology::hart::MAX_AP_RETRIES,
@@ -182,7 +182,10 @@ fn wakeup_hart(
             lapic.send_ipi(startup_ipi);
             // Linux does only 10us, me just follow, but me want to be creative, so me make it exponential
             // but cap it at 50ms
-            pit::sleep_us(usize::min(10 * (100 * attempt + 1), 50 * 1000));
+            unsafe {
+                // SAFETY: other harts still sleeping, can't call pit::sleep_us in parallel
+                timers::sleep_us(usize::min(10 * (100 * attempt + 1), 50 * 1000))
+            };
 
             if status_flag.load(Ordering::Relaxed) != STATUS_WAIT {
                 break 'success true;

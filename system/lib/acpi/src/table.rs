@@ -6,6 +6,7 @@ mod rsdp;
 mod xsdt;
 
 pub use {
+    fadt::{Fadt, PmTimerInfo},
     gas::GenericAddress,
     header::AcpiHeader,
     madt::{IOApic, InterruptSourceOverride, LocalApic, Madt, MadtEntryHeader, MadtIterator},

@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 #[repr(C, packed)]
 pub struct GenericAddress {
     pub address_space: u8,

@@ -2,24 +2,25 @@ use {
     crate::{
         hart,
         kernel::{KernelStackSet, mem::KernelHartInfo},
+        lapic_timer,
         segmentation::Gdt,
     },
     boot_protocol::kernel_init::KernelInitFn,
     core::{
         arch::asm,
         hint, mem,
-        sync::atomic::{AtomicUsize, Ordering},
+        sync::atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     elf::Elf,
     spinlocks::{mutex::Mutex, once::Once},
     system::{
         hart::HartInfo,
         tss::{DF_IST, NMI_IST, ist_index},
-        vmem::PHYSICAL_MAPPING_REGION,
+        vmem::{LOCAL_APIC_REGION, PHYSICAL_MAPPING_REGION},
     },
     x64::{
         interrupts::InterruptDescriptorTable,
-        lapic,
+        lapic::{self, LocalApicPointer},
         mem::{
             addr::{Address, VirtAddr},
             segmentation::{selector::SegmentSelector, task_state::TaskStateSegment},
@@ -132,7 +133,15 @@ fn populate_hartinfo(
     tls_base: VirtAddr,
     osid: usize,
 ) {
+    static PIT_SLEEP_USED: AtomicBool = AtomicBool::new(false);
+    let lapic = unsafe {
+        // SAFETY: Local APIC mapped by now
+        LocalApicPointer::from_virt_addr(LOCAL_APIC_REGION.start())
+    };
+
     let hartinfo = &mut khi.hartinfo;
+
+    let lapic_10ms = lapic_timer::ticks_per_10ms(lapic);
 
     **hartinfo = HartInfo {
         hard_id: lapic::id_cpuid(),
@@ -148,6 +157,7 @@ fn populate_hartinfo(
         tss_selector: *khi.tss_selector as usize,
         tss_segment: khi.tss_segment as *const _ as usize,
         tls_base: tls_base.as_usize(),
+        lapic_10ms,
     };
 }
 
