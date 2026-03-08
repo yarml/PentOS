@@ -1,7 +1,5 @@
 use {
-    crate::allocator::PostBootAllocator,
-    system::pat::pat_index,
-    x64::{
+    crate::allocator::PostBootAllocator, core::hint, system::pat::pat_index, x64::{
         mem::{
             addr::{Address, PhysAddr},
             frame::Frame,
@@ -9,7 +7,7 @@ use {
             paging::{PagingMapEntry, PagingRawEntry, PagingReferenceEntry, PagingRootEntry},
         },
         msr::pat::MemoryType as PatMemoryType,
-    },
+    }
 };
 
 pub fn paging_root_new<const ALLOCATOR_CAP: usize>(
@@ -23,10 +21,10 @@ pub fn paging_root_new<const ALLOCATOR_CAP: usize>(
     )))
 }
 
-pub fn page_target_or_new<'a, PS, const ALLOCATOR_CAP: usize>(
+pub fn page_target_or_new<PS, const ALLOCATOR_CAP: usize>(
     entry: &mut PagingRawEntry<PS>,
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
-) -> &'a mut [PagingRawEntry<PS::ReferenceTarget>]
+) -> &'static mut [PagingRawEntry<PS::ReferenceTarget>]
 where
     PS: PageSize,
     PS::ReferenceTarget: PageSize,
@@ -49,6 +47,7 @@ where
         *entry = reference;
         target
     } else {
+        hint::cold_path();
         unimplemented!()
     }
 }

@@ -1,5 +1,6 @@
 pub mod descriptor;
 pub mod selector;
+pub mod task_state;
 
 use {
     super::addr::{Address, VirtAddr},
@@ -10,7 +11,7 @@ use {
 
 #[repr(C)]
 pub struct GlobalDescriptorTable<const N: usize> {
-    table: [SegmentDescriptorEntry; N],
+    table: [u64; N],
     len: usize,
 }
 
@@ -23,7 +24,7 @@ pub struct GDTPointer {
 impl<const N: usize> GlobalDescriptorTable<N> {
     pub const fn empty() -> Self {
         Self {
-            table: [SegmentDescriptor::Null.encode().0; N],
+            table: [0; N],
             len: 1, // We already have the mandatory NULL segment descriptor
         }
     }
@@ -38,10 +39,10 @@ impl<const N: usize> GlobalDescriptorTable<N> {
             panic!("Tried adding entry to already full GDT");
         }
         let index = self.len;
-        self.table[self.len] = lower_half;
+        self.table[self.len] = lower_half.as_u64();
         self.len += 1;
         if let Some(upper_half) = upper_half {
-            self.table[self.len] = upper_half;
+            self.table[self.len] = upper_half.as_u64();
             self.len += 1;
         }
         SegmentSelector::new(index as u16, descriptor.dpl())
@@ -52,7 +53,12 @@ impl<const N: usize> GlobalDescriptorTable<N> {
     /// # Safety
     /// Caller must ensure the selectors come from this GDT, and that the priviliege levels
     /// are set appropriatly for the continued work of the system
-    pub unsafe fn load(&self, code_selector: SegmentSelector, data_selector: SegmentSelector) {
+    pub unsafe fn load(
+        &self,
+        code_selector: SegmentSelector,
+        data_selector: SegmentSelector,
+        task_selector: SegmentSelector,
+    ) {
         let gdtr = GDTPointer {
             gdt: VirtAddr::new_panic(self as *const _ as usize),
             limit: (self.len * mem::size_of::<SegmentDescriptorEntry>() - 1) as u16,
@@ -64,36 +70,40 @@ impl<const N: usize> GlobalDescriptorTable<N> {
                 "lgdt [{gdtrp}]",
                 gdtrp = in(reg) gdtrp,
             }
-            Self::load_selectors(code_selector, data_selector);
+            Self::load_selectors(code_selector, data_selector, task_selector);
         }
     }
 
     /// # Safety
-    /// Caller must ensure that selectors come from current loaded selectors
-    pub unsafe fn load_selectors(code_selector: SegmentSelector, data_selector: SegmentSelector) {
+    /// Caller must ensure that selectors come from currently loaded selectors
+    pub unsafe fn load_selectors(
+        code_selector: SegmentSelector,
+        data_selector: SegmentSelector,
+        tss_selector: SegmentSelector,
+    ) {
         unsafe {
             // SAFETY: Guarenteed by caller
             asm! {
                 "mov ss, {ds:x}",
                 "mov ds, {ds:x}",
                 "mov es, {ds:x}",
-                "mov fs, {ds:x}",
-                "mov gs, {ds:x}",
                 // The manipulation to load CS with a variable selector
                 // Previously used in HeliumOS:
                 // https://github.com/yarml/HeliumOS/blob/69d3c50916d261117131e5284b6ce50242e0c049/kernel/src/asm/gdt.asm#L6
                 // The good old C days.
-                "call 2", // -> manip
-                "jmp 3", // -> leave
+                "call 2f", // -> manip
+                "jmp 3f", // -> leave
                 "2:", // manip:
                 "pop {scratch:r}",
                 "push {cs:r}",
                 "push {scratch:r}",
                 "retfq",
                 "3:", // leave:
+                "ltr {tss:x}",
                 scratch = in(reg) 0,
                 ds = in(reg) *data_selector,
                 cs = in(reg) *code_selector,
+                tss = in(reg) *tss_selector,
             }
         }
     }

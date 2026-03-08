@@ -20,3 +20,4 @@ mod pic;
 mod pit;
 mod topology;
 mod virt_mmap;
+mod segmentation;

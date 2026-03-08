@@ -35,7 +35,12 @@ impl PhysAddr {
 
     #[inline(always)]
     pub fn to_virt(&self) -> VirtAddr {
-        VirtAddr::new_panic(self.inner + PHYSICAL_MEMORY_OFFSET.load(Ordering::Relaxed))
+        self.to_virt_with_offset(PHYSICAL_MEMORY_OFFSET.load(Ordering::Relaxed))
+    }
+
+    #[inline(always)]
+    pub fn to_virt_with_offset(&self, offset: usize) -> VirtAddr {
+        VirtAddr::new_panic(self.inner + offset)
     }
 
     #[inline(always)]
@@ -59,6 +64,30 @@ impl PhysAddr {
         unsafe {
             // SAFETY: ensured by caller
             &mut *self.to_virt().as_mut_ptr()
+        }
+    }
+
+    #[inline(always)]
+    /// # Safety
+    /// Must ensure that physical memory identity is set and valid
+    /// and that the memory location contains a valid instance of T
+    /// and that the memory location is not mutably aliased
+    pub unsafe fn to_ref_ident<'a, T>(&self) -> &'a T {
+        unsafe {
+            // SAFETY: ensured by caller
+            &*self.as_ptr()
+        }
+    }
+
+    #[inline(always)]
+    /// # Safety
+    /// Must ensure that physical memory identity is set and valid
+    /// and that the memory location contains a valid instance of T
+    /// and that the memory location is not aliased
+    pub unsafe fn to_mut_ident<'a, T>(&self) -> &'a mut T {
+        unsafe {
+            // SAFETY: ensured by caller
+            &mut *self.as_mut_ptr()
         }
     }
 }

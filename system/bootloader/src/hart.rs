@@ -139,23 +139,23 @@ fn wakeup_hart(
 
     let status_flag = unsafe {
         // SAFETY: We own chunk memory
-        (chunk.start() + STATUS_FLAG_OFFSET).to_ref::<AtomicU8>()
+        (chunk.start() + STATUS_FLAG_OFFSET).to_ref_ident::<AtomicU8>()
     };
     let base = unsafe {
         // SAFETY: We own chunk memory
-        (chunk.start() + BASE_OFFSET).to_ref::<AtomicU32>()
+        (chunk.start() + BASE_OFFSET).to_ref_ident::<AtomicU32>()
     };
     let cr3val = unsafe {
         // SAFETY: We own chunk memory
-        (chunk.start() + CR3_OFFSET).to_ref::<AtomicU32>()
+        (chunk.start() + CR3_OFFSET).to_ref_ident::<AtomicU32>()
     };
     let entrypoint = unsafe {
         // SAFETY: We own chunk memory
-        (chunk.start() + ENTRYPOINT_OFFSET).to_ref::<AtomicU64>()
+        (chunk.start() + ENTRYPOINT_OFFSET).to_ref_ident::<AtomicU64>()
     };
     let stack = unsafe {
         // SAFETY: We own chunk memory
-        (chunk.start() + STACK_OFFSET).to_ref::<AtomicU64>()
+        (chunk.start() + STACK_OFFSET).to_ref_ident::<AtomicU64>()
     };
 
     status_flag.store(STATUS_WAIT, Ordering::Relaxed);
@@ -214,7 +214,7 @@ extern "sysv64" fn ap_entrypoint(base: usize, stack: usize) {
 
     let status_flag = unsafe {
         // SAFETY: We own chunk memory
-        PhysAddr::new_panic(base + STATUS_FLAG_OFFSET).to_ref::<AtomicU8>()
+        PhysAddr::new_panic(base + STATUS_FLAG_OFFSET).to_ref_ident::<AtomicU8>()
     };
 
     let FeatureDetect::Sufficient(features) = FeatureDetect::detect() else {

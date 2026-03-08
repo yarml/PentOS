@@ -2,7 +2,7 @@ use core::ops::Deref;
 
 use crate::prot::PrivilegeLevel;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 #[repr(C)]
 pub struct SegmentSelector {
     inner: u16,
@@ -13,6 +13,18 @@ impl SegmentSelector {
         Self {
             inner: index << 3 | rpl as u16,
         }
+    }
+
+    pub const fn new_kernel(index: u16) -> Self {
+        Self::new(index, PrivilegeLevel::Kernel)
+    }
+
+    pub const fn new_user(index: u16) -> Self {
+        Self::new(index, PrivilegeLevel::User)
+    }
+
+    pub const fn new_raw(raw: u16) -> Self {
+        Self { inner: raw }
     }
 }
 

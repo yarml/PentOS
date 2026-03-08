@@ -1,8 +1,14 @@
-use crate::prot::PrivilegeLevel;
+use crate::{
+    mem::{
+        addr::{Address, VirtAddr},
+        segmentation::task_state::TaskStateSegment,
+    },
+    prot::PrivilegeLevel,
+};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SegmentDescriptor {
-    SystemSegment, // TODO
+    TaskStateSegment { base: VirtAddr },
     AccessSegment { exec: bool, dpl: PrivilegeLevel },
     Null,
 }
@@ -18,10 +24,25 @@ pub struct SegmentDescriptorEntry {
     base_high: u8,
 }
 
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct ExtendedSegmentDescriptorEntry {
+    base: u32,
+    res0: u32,
+}
+
 impl SegmentDescriptor {
-    pub const fn encode(&self) -> (SegmentDescriptorEntry, Option<SegmentDescriptorEntry>) {
+    pub const fn encode(
+        &self,
+    ) -> (
+        SegmentDescriptorEntry,
+        Option<ExtendedSegmentDescriptorEntry>,
+    ) {
         match self {
-            SegmentDescriptor::SystemSegment => todo!(),
+            SegmentDescriptor::TaskStateSegment { base } => (
+                SegmentDescriptorEntry::tss(*base),
+                Some(ExtendedSegmentDescriptorEntry::tss(*base)),
+            ),
             SegmentDescriptor::AccessSegment { exec, dpl } => {
                 (SegmentDescriptorEntry::flat(*exec, *dpl), None)
             }
@@ -31,9 +52,9 @@ impl SegmentDescriptor {
 
     pub const fn dpl(&self) -> PrivilegeLevel {
         match self {
-            SegmentDescriptor::SystemSegment => todo!(),
+            SegmentDescriptor::TaskStateSegment { .. } => PrivilegeLevel::Kernel,
             SegmentDescriptor::AccessSegment { dpl, .. } => *dpl,
-            SegmentDescriptor::Null => panic!("Attempt to get dpl of NULL descriptor"),
+            SegmentDescriptor::Null => PrivilegeLevel::Kernel,
         }
     }
 }
@@ -68,11 +89,57 @@ impl SegmentDescriptorEntry {
         let flags_limit_high = flags << 4 | 0xF;
         Self {
             access,
-            base_high: 0,
             base_low: 0,
             base_middle: 0,
+            base_high: 0,
             flags_limit_high,
-            limit_low: 0xFF,
+            limit_low: 0xFFFF,
+        }
+    }
+
+    #[inline(always)]
+    const fn tss(base: VirtAddr) -> Self {
+        let limit = core::mem::size_of::<TaskStateSegment>() - 1;
+        let limit_low = (limit & 0xFFFF) as u16;
+        let flags_limit_high = ((limit >> 16) & 0xF) as u8; // Flags = 0 (No G)
+
+        let base = base.as_u64();
+        let base_low = (base & 0xFFFF) as u16;
+        let base_middle = ((base >> 16) & 0xFF) as u8;
+        let base_high = ((base >> 24) & 0xFF) as u8;
+
+        Self {
+            access: 0x89, // System, Present, DPL=0, Type = 9 (TSS)
+            limit_low,
+            flags_limit_high,
+            base_low,
+            base_middle,
+            base_high,
+        }
+    }
+
+    pub const fn as_u64(&self) -> u64 {
+        *unsafe {
+            // SAFETY: SegmentDescriptorEntry is 8 bytes repr(C)
+            &*(self as *const Self as *const u64)
+        }
+    }
+}
+
+impl ExtendedSegmentDescriptorEntry {
+    #[inline(always)]
+    const fn tss(base: VirtAddr) -> Self {
+        let base_high2 = (base.as_u64() >> 32) as u32;
+        Self {
+            base: base_high2,
+            res0: 0,
+        }
+    }
+
+    pub const fn as_u64(&self) -> u64 {
+        *unsafe {
+            // SAFETY: SegmentDescriptorEntry is 8 bytes repr(C)
+            &*(self as *const Self as *const u64)
         }
     }
 }

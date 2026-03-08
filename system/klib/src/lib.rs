@@ -43,7 +43,7 @@ pub type KMainFn = unsafe fn() -> !;
 pub unsafe fn init(kmain: KMainFn) -> ! {
     let hartinfo = HartInfo::get();
 
-    if !hartinfo.is_bsp {
+    if !hartinfo.is_bsp() {
         loop {
             hint::spin_loop();
         }

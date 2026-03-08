@@ -55,7 +55,7 @@ impl<const MAX: usize> PostBootAllocator<MAX> {
         }
         None
     }
-    pub fn alloc<'a, T>(&mut self, init: T) -> Option<&'a mut T> {
+    pub fn alloc<T>(&mut self, init: T) -> Option<&'static mut T> {
         let size = mem::size_of::<T>();
         let align = mem::align_of::<T>();
         let start = self.alloc_raw(size, align)?;
@@ -68,8 +68,10 @@ impl<const MAX: usize> PostBootAllocator<MAX> {
     }
 
     pub fn alloc_slice<T>(&mut self, len: usize) -> Option<&'static mut [MaybeUninit<T>]> {
-        let size = mem::size_of::<T>().checked_mul(len)?;
         let align = mem::align_of::<T>();
+        let size = mem::size_of::<T>()
+            .checked_mul(len)?
+            .next_multiple_of(align);
         let start = self.alloc_raw(size, align)?;
         let ptr = start.as_mut_ptr::<MaybeUninit<T>>();
         Some(unsafe {

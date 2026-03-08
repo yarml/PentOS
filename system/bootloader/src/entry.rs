@@ -131,6 +131,7 @@ fn main() -> Status {
     };
 
     map_root.load();
+    PhysAddr::set_memory_offset(PHYSICAL_MAPPING_REGION.start().as_usize());
     debug!("Initialized kernel memory map");
 
     let mmap = allocator.fini(loader_mmap);

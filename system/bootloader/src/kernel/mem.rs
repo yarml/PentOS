@@ -1,5 +1,9 @@
 use {
-    crate::{allocator::PostBootAllocator, topology, virt_mmap},
+    crate::{
+        allocator::PostBootAllocator,
+        segmentation::{self, GdtInfo},
+        topology, virt_mmap,
+    },
     boot_protocol::STACK_SIZE,
     config::{
         topology::hart::MAX_HART_COUNT,
@@ -32,6 +36,7 @@ pub struct KernelHartInfo {
     pub stacks: SmallVec<VirtAddr, MAX_HART_COUNT>,
     pub tlss: SmallVec<VirtAddr, MAX_HART_COUNT>,
     pub hartinfos: SmallVec<VirtAddr, MAX_HART_COUNT>,
+    pub gdt_info: GdtInfo,
 }
 
 /// # Safety
@@ -54,10 +59,13 @@ pub unsafe fn alloc_and_map_hart_mem<const ALLOCATOR_CAP: usize>(
         alloc_and_map_hartinfo(map_root, allocator)
     };
 
+    let gdt_info = segmentation::setup_gdt(allocator);
+
     KernelHartInfo {
         stacks,
         tlss,
         hartinfos,
+        gdt_info,
     }
 }
 
