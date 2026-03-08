@@ -11,11 +11,20 @@ extern crate alloc;
 
 pub mod bootinfo;
 pub mod hart;
-pub mod kalloc;
-pub mod mem;
-pub mod panic;
+pub mod interrupts;
 
-use {core::hint, log::info, system::hart::HartInfo};
+mod kalloc;
+mod mem;
+mod panic;
+
+use {
+    core::{
+        hint,
+        sync::atomic::{AtomicBool, Ordering},
+    },
+    log::info,
+    system::hart::HartInfo,
+};
 
 #[macro_export]
 macro_rules! use_klib {
@@ -42,9 +51,15 @@ pub type KMainFn = unsafe fn() -> !;
 /// # Safety
 /// Should be called by the kernel::init as soon as it has been called by the bootloader
 pub unsafe fn init(kmain: KMainFn) -> ! {
+    static BSP_SETUP: AtomicBool = AtomicBool::new(false);
+
     let hartinfo = HartInfo::get();
 
     if !hartinfo.is_bsp() {
+        while BSP_SETUP.load(Ordering::Relaxed) {
+            hint::spin_loop();
+        }
+        common_setup();
         loop {
             hint::spin_loop();
         }
@@ -57,8 +72,18 @@ pub unsafe fn init(kmain: KMainFn) -> ! {
         mem::phys::init()
     };
 
+    interrupts::setup();
+
+    BSP_SETUP.store(true, Ordering::Relaxed);
+
+    common_setup();
+
     unsafe {
         // SAFETY: klib initialized
         kmain()
     }
+}
+
+fn common_setup() {
+    interrupts::load();
 }

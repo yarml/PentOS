@@ -36,11 +36,11 @@ impl_interrupt_handler!(InterruptHandlerWithErrCodeFn);
 
 #[derive(Clone, Copy)]
 pub struct InterruptGate<F: InterruptHandler> {
-    handler: F,
-    selector: SegmentSelector,
-    ist: Option<NonZeroU8>,
-    ty: GateType,
-    dpl: PrivilegeLevel,
+    pub handler: F,
+    pub selector: SegmentSelector,
+    pub ist: Option<NonZeroU8>,
+    pub ty: GateType,
+    pub dpl: PrivilegeLevel,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -108,6 +108,26 @@ impl InterruptGateEntry {
 }
 
 impl<F: InterruptHandler> InterruptGate<F> {
+    pub fn simple(handler: F, selector: SegmentSelector) -> Self {
+        Self {
+            handler,
+            selector,
+            ist: None,
+            ty: GateType::Interrupt,
+            dpl: PrivilegeLevel::Kernel,
+        }
+    }
+
+    pub fn simple_ist(handler: F, selector: SegmentSelector, ist: NonZeroU8) -> Self {
+        Self {
+            handler,
+            selector,
+            ist: Some(ist),
+            ty: GateType::Interrupt,
+            dpl: PrivilegeLevel::Kernel,
+        }
+    }
+
     pub fn encode(&self) -> InterruptGateEntry {
         InterruptGateEntry::mkentry(
             self.handler.addr(),

@@ -85,9 +85,9 @@ impl InterruptDescriptorTable {
 impl InterruptDescriptorTable {
     /// # Safety
     /// Self IDT must only use selectors which come from the currently loaded GDT
-    pub unsafe fn load(&self) {
+    pub unsafe fn load(&self, offset: VirtAddr) {
         let idtr = IDTPointer {
-            idt: VirtAddr::new_panic(self as *const _ as usize),
+            idt: offset + self as *const _ as usize,
             limit: (mem::size_of::<InterruptDescriptorTable>() - 1) as u16,
         };
         let idtrp = &idtr as *const _;
