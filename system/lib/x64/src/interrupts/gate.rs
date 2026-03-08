@@ -12,7 +12,7 @@ use {
 
 // A bit (too much) plagiarism from x86_64 crate
 pub type InterruptHandlerFn = extern "x86-interrupt" fn(InterruptStackFrame);
-pub type InterruptHandlerWithErrCode = extern "x86-interrupt" fn(InterruptStackFrame, u64);
+pub type InterruptHandlerWithErrCodeFn = extern "x86-interrupt" fn(InterruptStackFrame, u64);
 
 /// # Safety
 /// addr must return a valid VirtAddr to an interrupt handler
@@ -32,10 +32,10 @@ macro_rules! impl_interrupt_handler {
 }
 
 impl_interrupt_handler!(InterruptHandlerFn);
-impl_interrupt_handler!(InterruptHandlerWithErrCode);
+impl_interrupt_handler!(InterruptHandlerWithErrCodeFn);
 
 #[derive(Clone, Copy)]
-pub struct InterruptGate<F> {
+pub struct InterruptGate<F: InterruptHandler> {
     handler: F,
     selector: SegmentSelector,
     ist: Option<NonZeroU8>,
@@ -100,6 +100,10 @@ impl InterruptGateEntry {
             access,
             res0: 0,
         }
+    }
+
+    pub fn is_free(&self) -> bool {
+        self.access & 0x80 == 0
     }
 }
 
