@@ -6,4 +6,4 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
-nasm-rs = "0.3.0"
+nasm-rs.workspace = true
