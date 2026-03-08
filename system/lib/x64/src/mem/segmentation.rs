@@ -4,6 +4,7 @@ pub mod task_state;
 
 use {
     super::addr::{Address, VirtAddr},
+    crate::mem::addr::PhysAddr,
     core::{arch::asm, hint, mem},
     descriptor::{SegmentDescriptor, SegmentDescriptorEntry},
     selector::SegmentSelector,
@@ -55,12 +56,13 @@ impl<const N: usize> GlobalDescriptorTable<N> {
     /// are set appropriatly for the continued work of the system
     pub unsafe fn load(
         &self,
+        offset: VirtAddr,
         code_selector: SegmentSelector,
         data_selector: SegmentSelector,
         task_selector: SegmentSelector,
     ) {
         let gdtr = GDTPointer {
-            gdt: VirtAddr::new_panic(self as *const _ as usize),
+            gdt: PhysAddr::new_panic(self as *const _ as usize).to_virt_with_offset(offset),
             limit: (self.len * mem::size_of::<SegmentDescriptorEntry>() - 1) as u16,
         };
         let gdtrp = &gdtr as *const _;

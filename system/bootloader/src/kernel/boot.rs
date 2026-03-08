@@ -15,6 +15,7 @@ use {
     system::{
         hart::HartInfo,
         tss::{DF_IST, NMI_IST, ist_index},
+        vmem::PHYSICAL_MAPPING_REGION,
     },
     x64::{
         lapic,
@@ -84,6 +85,7 @@ fn do_jump(dest: usize, khi: &mut ExtractedKernelHartInfo) -> ! {
         // SAFETY: GdtInfo's configuration is just flat
         // And TSS was just setup
         khi.gdt.load(
+            PHYSICAL_MAPPING_REGION.start(),
             khi.kernel_code_selector,
             khi.kernel_data_selector,
             khi.tss_selector,

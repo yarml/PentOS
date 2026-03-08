@@ -6,7 +6,7 @@ use {
     utils::collections::smallvec::SmallVec,
     x64::{
         mem::{
-            addr::{Address, PhysAddr, VirtAddr},
+            addr::{PhysAddr, VirtAddr},
             segmentation::{
                 GlobalDescriptorTable, descriptor::SegmentDescriptor, selector::SegmentSelector,
                 task_state::TaskStateSegment,
@@ -16,14 +16,13 @@ use {
     },
 };
 
-// Null + Kernel Code&Data + User Code&Data + TSS/hart
-const TOTAL_GDT_LEN: usize = 5 + MAX_HART_COUNT;
+// Null + Kernel Code&Data + User Code&Data + TSS/hart (each TSS taking two entries)
+const TOTAL_GDT_LEN: usize = 5 + 2 * MAX_HART_COUNT;
 
 pub type Gdt = GlobalDescriptorTable<TOTAL_GDT_LEN>;
 
 pub struct GdtInfo {
     pub gdt: &'static Gdt,
-    pub null: SegmentSelector,
     pub kernel_code: SegmentSelector,
     pub kernel_data: SegmentSelector,
     pub user_code: SegmentSelector,
@@ -40,7 +39,6 @@ pub fn setup_gdt<const ALLOCATOR_CAP: usize>(
 
     let hart_count = topology::topology().harts.len();
 
-    let null = gdt.push(SegmentDescriptor::Null);
     let kernel_code = gdt.push(SegmentDescriptor::AccessSegment {
         exec: true,
         dpl: PrivilegeLevel::Kernel,
@@ -73,7 +71,7 @@ pub fn setup_gdt<const ALLOCATOR_CAP: usize>(
 
     for tss_ref in all_tss {
         let phys_addr = PhysAddr::from(tss_ref as *const TaskStateSegment);
-        let virt_addr = phys_addr.to_virt_with_offset(PHYSICAL_MAPPING_REGION.start().as_usize());
+        let virt_addr = phys_addr.to_virt_with_offset(PHYSICAL_MAPPING_REGION.start());
         let selector = gdt.push(SegmentDescriptor::TaskStateSegment { base: virt_addr });
         tss_table
             .push((selector, virt_addr))
@@ -82,7 +80,6 @@ pub fn setup_gdt<const ALLOCATOR_CAP: usize>(
 
     GdtInfo {
         gdt,
-        null,
         kernel_code,
         kernel_data,
         user_code,

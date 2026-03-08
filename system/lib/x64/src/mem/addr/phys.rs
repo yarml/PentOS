@@ -35,12 +35,14 @@ impl PhysAddr {
 
     #[inline(always)]
     pub fn to_virt(&self) -> VirtAddr {
-        self.to_virt_with_offset(PHYSICAL_MEMORY_OFFSET.load(Ordering::Relaxed))
+        self.to_virt_with_offset(VirtAddr::from(
+            PHYSICAL_MEMORY_OFFSET.load(Ordering::Relaxed),
+        ))
     }
 
     #[inline(always)]
-    pub fn to_virt_with_offset(&self, offset: usize) -> VirtAddr {
-        VirtAddr::new_panic(self.inner + offset)
+    pub fn to_virt_with_offset(&self, offset: VirtAddr) -> VirtAddr {
+        VirtAddr::new_panic(self.inner + offset.as_usize())
     }
 
     #[inline(always)]

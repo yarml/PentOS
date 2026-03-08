@@ -56,6 +56,7 @@ pub struct Segment {
     pub vaddr: VirtAddr,
     pub file_size: usize,
     pub mem_size: MemorySize,
+    pub alignment: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -173,6 +174,7 @@ impl Segment {
             vaddr,
             file_size,
             mem_size,
+            alignment,
         })
     }
 }

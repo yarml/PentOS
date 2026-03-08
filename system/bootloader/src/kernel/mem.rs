@@ -188,7 +188,7 @@ unsafe fn alloc_and_map_tls<const ALLOCATOR_CAP: usize>(
         return storages;
     }
 
-    let tls_size = tls.mem_size.next_multiple_of(Frame4KiB::SIZE);
+    let tls_size = tls.mem_size.next_multiple_of(tls.alignment);
     let total_size = tls_size * hart_count;
 
     debug!(
