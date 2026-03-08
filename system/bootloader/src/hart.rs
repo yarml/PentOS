@@ -1,7 +1,7 @@
 use {
     crate::{
         features::{self, FeatureDetect},
-        kernel,
+        kernel::{self, KernelStackSet, KernelStacks},
         phys_mmap::PhysMemMap,
         pit, topology,
     },
@@ -12,8 +12,7 @@ use {
         sync::atomic::{AtomicU8, AtomicU32, AtomicU64, AtomicUsize, Ordering},
     },
     log::{debug, error},
-    spinlocks::once::Once,
-    utils::collections::smallvec::SmallVecBuf,
+    spinlocks::{mutex::Mutex, once::Once},
     x64::{
         control::{CR0, CR4},
         lapic::{
@@ -22,7 +21,7 @@ use {
         },
         mem::{
             MemorySize, PhysicalMemoryRegion,
-            addr::{Address, PhysAddr, VirtAddr},
+            addr::{Address, PhysAddr},
             frame::{
                 Frame,
                 size::{Frame4KiB, FrameSize},
@@ -35,6 +34,7 @@ use {
         },
     },
 };
+
 static AP_INIT_CODE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ap_init.bin"));
 const _: () = assert!(
     AP_INIT_CODE.len() <= MAX_AP_CODE_SIZE,
@@ -56,6 +56,9 @@ const STATUS_DONE: u8 = 2;
 const STATUS_ERROR: u8 = 3;
 // end sync
 
+// Data passed to hart accessed in Rust
+static AP_KERNEL_STACK_SET: Mutex<Option<KernelStackSet>> = Mutex::new(None);
+
 /// Counts actually working and initialized harts.
 static HART_ACTIVE: AtomicUsize = AtomicUsize::new(1); // BSP already in
 
@@ -68,7 +71,7 @@ static AP_BOOT_ENTRYPOINT: Once<KernelInitFn> = Once::new();
 pub unsafe fn init(
     legacy_mmap: PhysMemMap<16>,
     map_root: PagingRootEntry,
-    stacks: &mut SmallVecBuf<VirtAddr>,
+    kernel_stacks: &mut KernelStacks,
 ) {
     // find a scratch 64k segment that will be used to bootstrap processors
     let Some(chunk) = legacy_mmap
@@ -95,8 +98,8 @@ pub unsafe fn init(
 
     let topology = topology::topology();
     for hart in topology.harts.iter().filter(|hart| hart.apic_id != bspid) {
-        let stack = stacks.pop().expect("Did not find stack for AP");
-        wakeup_hart(lapic, hart.apic_id as u8, chunk, map_root, stack);
+        let stack_set = kernel_stacks.pop_set();
+        wakeup_hart(lapic, hart.apic_id as u8, chunk, map_root, stack_set);
     }
 }
 
@@ -105,7 +108,7 @@ fn wakeup_hart(
     apic_id: u8,
     chunk: PhysicalMemoryRegion,
     map_root: PagingRootEntry,
-    ap_stack: VirtAddr,
+    ap_stack_set: KernelStackSet,
 ) {
     let init_ipi = InterProcessorInterrupt {
         delivery_mode: IPIDeliveryMode::Init {
@@ -162,7 +165,12 @@ fn wakeup_hart(
     base.store(chunk.start().as_usize() as u32, Ordering::Relaxed);
     cr3val.store(map_root.rawval() as u32, Ordering::Relaxed);
     entrypoint.store(ap_entrypoint as *const () as u64, Ordering::Relaxed);
-    stack.store(ap_stack.as_u64(), Ordering::Relaxed);
+    stack.store(ap_stack_set.stack.as_u64(), Ordering::Relaxed);
+
+    {
+        let mut ap_kernel_stack_set = AP_KERNEL_STACK_SET.lock();
+        *ap_kernel_stack_set = Some(ap_stack_set)
+    }
 
     lapic.send_ipi(init_ipi);
     // Linux does not put any delay here for post ~2000 processors, neither do I
@@ -205,7 +213,7 @@ pub fn ap_boot(entrypoint: KernelInitFn) {
     AP_BOOT_ENTRYPOINT.init(|| entrypoint);
 }
 
-extern "sysv64" fn ap_entrypoint(base: usize, stack: usize) {
+extern "sysv64" fn ap_entrypoint(base: usize) {
     // APs arrive one at a time here
     // Here we can finally take a breathe and use nice APIs
     // to continue the setup into a deterministic state
@@ -226,6 +234,14 @@ extern "sysv64" fn ap_entrypoint(base: usize, stack: usize) {
         status_flag.store(STATUS_ERROR, Ordering::Relaxed);
         panic!("Assymetric AP");
     }
+
+    let stack_set = {
+        let mut ap_kernel_stack_set = AP_KERNEL_STACK_SET.lock();
+        ap_kernel_stack_set
+            .take()
+            .expect("AP found not kernel stack set")
+    };
+
     status_flag.store(STATUS_DONE, Ordering::Relaxed);
     HART_ACTIVE.fetch_add(1, Ordering::Relaxed);
 
@@ -234,7 +250,7 @@ extern "sysv64" fn ap_entrypoint(base: usize, stack: usize) {
     known_state();
 
     let ap_entry = *AP_BOOT_ENTRYPOINT.wait();
-    kernel::ap_boot_kernel(stack, ap_entry);
+    kernel::ap_boot_kernel(stack_set, ap_entry);
 }
 
 /// Put CPU in a known state

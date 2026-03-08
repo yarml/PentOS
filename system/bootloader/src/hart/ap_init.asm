@@ -96,8 +96,7 @@ ALIGN 4
 ALIGN 8
 .start_64:
     mov rdi, rbx
-    mov rsi, QWORD [ebx + STACK_OFFSET]
-    mov rsp, rsi
+    mov rsp, QWORD [ebx + STACK_OFFSET]
     mov rax, QWORD [ebx + ENTRYPOINT_OFFSET]
     jmp rax ; goto rust
 .halt_64:

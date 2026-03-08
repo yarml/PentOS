@@ -1,4 +1,7 @@
-use x64::mem::MemorySize;
+use x64::mem::{
+    MemorySize,
+    frame::size::{Frame2MiB, Frame4KiB, FrameSize},
+};
 
 /// Maximum number of CPUs supported by the OS.
 /// The OS will refuse to boot and instead panic if run on a machine
@@ -16,9 +19,12 @@ pub const MAX_AP_RETRIES: usize = 4;
 
 /// Kernel stack for each hart
 /// Must be divisible by 2 Mib
-pub const KSTACK_SIZE: MemorySize = MemorySize::new(2 * 1024 * 1024);
+pub const KSTACK_SIZE: MemorySize = MemorySize::new(Frame2MiB::SIZE);
 
-/// Stack size for special purposes
-/// These include  double fault and NMI interrupts
+/// Stack size for double fault interrupts
 /// Must be divisible by 4Kib
-pub const SPECIAL_KSTACK_SIZE: MemorySize = MemorySize::new(4 * 1024);
+pub const DF_STACK_SIZE: MemorySize = MemorySize::new(Frame4KiB::SIZE);
+
+/// Stack size for NMI interrupts
+/// Must be divisible by 4Kib
+pub const NMI_STACK_SIZE: MemorySize = MemorySize::new(Frame4KiB::SIZE);

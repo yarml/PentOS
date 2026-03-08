@@ -3,3 +3,4 @@
 pub mod framebuffer;
 pub mod pat;
 pub mod hart;
+pub mod tss;

@@ -141,7 +141,7 @@ fn main() -> Status {
 
     unsafe {
         // SAFETY: Local APIC registers mapped & legacy memory identity mapped
-        hart::init(legacy_mmap, map_root, &mut khi.stacks);
+        hart::init(legacy_mmap, map_root, &mut khi.kernel_stacks);
     }
 
     debug!("Booting kernel");

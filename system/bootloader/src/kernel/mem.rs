@@ -4,10 +4,9 @@ use {
         segmentation::{self, GdtInfo},
         topology, virt_mmap,
     },
-    boot_protocol::STACK_SIZE,
     config::{
-        topology::hart::MAX_HART_COUNT,
-        vmem::{KHART_INFO, KSTACK_REGION, KTLS_REGION},
+        topology::hart::{DF_STACK_SIZE, KSTACK_SIZE, MAX_HART_COUNT, NMI_STACK_SIZE},
+        vmem::{DF_STACK_REGION, KHART_INFO, KSTACK_REGION, KTLS_REGION, NMI_STACK_REGION},
     },
     core::{cmp::min, slice},
     elf::{Elf, SegmentType},
@@ -24,7 +23,7 @@ use {
             },
             page::{
                 Page,
-                size::{Page4KiB, PageSize},
+                size::{Page2MiB, Page4KiB, PageSize},
             },
             paging::PagingRootEntry,
         },
@@ -33,10 +32,22 @@ use {
 };
 
 pub struct KernelHartInfo {
-    pub stacks: SmallVec<VirtAddr, MAX_HART_COUNT>,
+    pub kernel_stacks: KernelStacks,
     pub tlss: SmallVec<VirtAddr, MAX_HART_COUNT>,
     pub hartinfos: SmallVec<VirtAddr, MAX_HART_COUNT>,
     pub gdt_info: GdtInfo,
+}
+
+pub struct KernelStacks {
+    pub stacks: SmallVec<VirtAddr, MAX_HART_COUNT>,
+    pub df_stacks: SmallVec<VirtAddr, MAX_HART_COUNT>,
+    pub nmi_stacks: SmallVec<VirtAddr, MAX_HART_COUNT>,
+}
+
+pub struct KernelStackSet {
+    pub stack: VirtAddr,
+    pub df_stack: VirtAddr,
+    pub nmi_stack: VirtAddr,
 }
 
 /// # Safety
@@ -46,7 +57,7 @@ pub unsafe fn alloc_and_map_hart_mem<const ALLOCATOR_CAP: usize>(
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
     kernel: &Elf<'static>,
 ) -> KernelHartInfo {
-    let stacks = unsafe {
+    let kernel_stacks = unsafe {
         // SAFETY: Guarenteed by caller
         alloc_and_map_stacks(map_root, allocator)
     };
@@ -62,7 +73,7 @@ pub unsafe fn alloc_and_map_hart_mem<const ALLOCATOR_CAP: usize>(
     let gdt_info = segmentation::setup_gdt(allocator);
 
     KernelHartInfo {
-        stacks,
+        kernel_stacks,
         tlss,
         hartinfos,
         gdt_info,
@@ -74,57 +85,71 @@ pub unsafe fn alloc_and_map_hart_mem<const ALLOCATOR_CAP: usize>(
 unsafe fn alloc_and_map_stacks<const ALLOCATOR_CAP: usize>(
     map_root: PagingRootEntry,
     allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
-) -> SmallVec<VirtAddr, MAX_HART_COUNT> {
+) -> KernelStacks {
     // We will allocate as many stacks as harts on the system
     // And leave gaps between them to cause a page fault if a stack ever runs out
     // The gaps will be as large as a single stack
     // We allocate stacks starting from the highest address, leaving a gap at the
     // end as well
+
+    // Kernel stacks
     let mut stacks = SmallVec::new();
     let hart_count = topology::topology().harts.len();
     let mut current_stack = KSTACK_REGION.end();
-    let pg_count = STACK_SIZE / Page4KiB::SIZE;
+    let pg_count = KSTACK_SIZE.as_usize() / Page2MiB::SIZE;
+
+    // DF stacks
+    let mut df_stacks = SmallVec::new();
+    let mut current_df_stack = DF_STACK_REGION.end();
+    let df_pg_count = DF_STACK_SIZE.as_usize() / Page4KiB::SIZE;
+
+    // NMI stacks
+    let mut nmi_stacks = SmallVec::new();
+    let mut current_nmi_stack = NMI_STACK_REGION.end();
+    let nmi_pg_count = NMI_STACK_SIZE.as_usize() / Page4KiB::SIZE;
 
     assert!(hart_count <= MAX_HART_COUNT);
     assert!(
-        hart_count * 2 * STACK_SIZE < KSTACK_REGION.size().as_usize(),
+        hart_count * 2 * KSTACK_SIZE.as_usize() < KSTACK_REGION.size().as_usize(),
         "Cannot fit kernel stacks for the number of harts"
     );
 
     for _ in 0..hart_count {
-        let stack_ptr = current_stack - STACK_SIZE;
-        current_stack -= 2 * STACK_SIZE;
-
-        let phys_stack = unsafe {
-            // SAFETY: All u8 are valid
-            allocator
-                .alloc_slice::<u8>(STACK_SIZE)
-                .expect("Couldn't allocate a kernel stack")
-                .assume_init_mut()
-        };
-        phys_stack.fill(0); // Not really needed, but what we losing (time, time is money)
-
-        let frame = Frame::containing(PhysAddr::new_panic(phys_stack.as_ptr() as usize));
-        let page = Page::containing(stack_ptr - STACK_SIZE);
-
-        virt_mmap::map_many::<Page4KiB, ALLOCATOR_CAP>(
+        let stack_ptr = alloc_and_map_kernel_stack::<Page2MiB, ALLOCATOR_CAP>(
             map_root,
             allocator,
-            frame,
-            page,
+            &mut current_stack,
             pg_count,
-            true,  // WRITE
-            false, // EXEC
-            MemoryType::WriteBack,
+        );
+        let df_stack_ptr = alloc_and_map_kernel_stack::<Page4KiB, ALLOCATOR_CAP>(
+            map_root,
+            allocator,
+            &mut current_df_stack,
+            df_pg_count,
+        );
+        let nmi_stack_ptr = alloc_and_map_kernel_stack::<Page4KiB, ALLOCATOR_CAP>(
+            map_root,
+            allocator,
+            &mut current_nmi_stack,
+            nmi_pg_count,
         );
 
-        unsafe {
-            // SAFETY: We checked that hart_count is less than the maximum
-            stacks.push(stack_ptr).unwrap_unchecked()
-        };
+        stacks
+            .push(stack_ptr)
+            .expect("Not enough kernel stack slots");
+        df_stacks
+            .push(df_stack_ptr)
+            .expect("Not enoough DF stack slots");
+        nmi_stacks
+            .push(nmi_stack_ptr)
+            .expect("Not enoough NMI stack slots");
     }
 
-    stacks
+    KernelStacks {
+        stacks,
+        df_stacks,
+        nmi_stacks,
+    }
 }
 
 /// # Safety
@@ -279,4 +304,51 @@ unsafe fn alloc_and_map_hartinfo<const ALLOCATOR_CAP: usize>(
     }
 
     hartinfos
+}
+
+fn alloc_and_map_kernel_stack<PS: PageSize, const ALLOCATOR_CAP: usize>(
+    map_root: PagingRootEntry,
+    allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
+    current_stack: &mut VirtAddr,
+    pg_count: usize,
+) -> VirtAddr {
+    let stack_ptr = *current_stack - PS::SIZE * pg_count;
+    *current_stack -= 2 * PS::SIZE * pg_count;
+
+    let phys_stack = unsafe {
+        // SAFETY: All u8 are valid
+        allocator
+            .alloc_slice::<u8>(KSTACK_SIZE.as_usize())
+            .expect("Couldn't allocate a kernel stack")
+            .assume_init_mut()
+    };
+    phys_stack.fill(0); // Not really needed, but what we losing (time, time is money)
+
+    let frame = Frame::containing(PhysAddr::new_panic(phys_stack.as_ptr() as usize));
+    let page = Page::containing(stack_ptr - KSTACK_SIZE.as_usize());
+
+    virt_mmap::map_many::<PS, ALLOCATOR_CAP>(
+        map_root,
+        allocator,
+        frame,
+        page,
+        pg_count,
+        true,  // WRITE
+        false, // EXEC
+        MemoryType::WriteBack,
+    );
+    stack_ptr
+}
+
+impl KernelStacks {
+    pub fn pop_set(&mut self) -> KernelStackSet {
+        let stack = self.stacks.pop().expect("Not enough kernel stacks");
+        let df_stack = self.df_stacks.pop().expect("Not enough DF stacks");
+        let nmi_stack = self.nmi_stacks.pop().expect("Not enough NMI stacks");
+        KernelStackSet {
+            stack,
+            df_stack,
+            nmi_stack,
+        }
+    }
 }

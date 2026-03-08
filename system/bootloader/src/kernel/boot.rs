@@ -1,5 +1,9 @@
 use {
-    crate::{hart, kernel::mem::KernelHartInfo, segmentation::Gdt},
+    crate::{
+        hart,
+        kernel::{KernelStackSet, mem::KernelHartInfo},
+        segmentation::Gdt,
+    },
     boot_protocol::kernel_init::KernelInitFn,
     core::{
         arch::asm,
@@ -8,7 +12,10 @@ use {
     },
     elf::Elf,
     spinlocks::{mutex::Mutex, once::Once},
-    system::hart::HartInfo,
+    system::{
+        hart::HartInfo,
+        tss::{DF_IST, NMI_IST, ist_index},
+    },
     x64::{
         lapic,
         mem::{
@@ -32,15 +39,7 @@ pub unsafe fn boot_kernel(kernel: &Elf<'static>, mut khi: KernelHartInfo) -> ! {
         mem::transmute(entry)
     };
 
-    let bsp_stack = khi.stacks.pop().expect("Did not find stack for BSP");
-
-    for hartinfo in &mut khi.hartinfos {
-        let hartinfo = unsafe {
-            // SAFETY: Guarenteed by KHI invariants
-            &mut *hartinfo.as_mut_ptr::<HartInfo>()
-        };
-        hartinfo.tls_base = khi.tlss.pop().expect("Not enough TLSs").as_usize();
-    }
+    let bsp_stack_set = khi.kernel_stacks.pop_set();
 
     KHI.init(move || Mutex::new(khi));
 
@@ -58,15 +57,17 @@ pub unsafe fn boot_kernel(kernel: &Elf<'static>, mut khi: KernelHartInfo) -> ! {
     }
 
     let mut khi = extract_khi_entry();
-    populate_hartinfo(&mut khi, bsp_stack.as_usize(), 0);
+    let tls_base = khi.tls_base;
+    populate_hartinfo(&mut khi, bsp_stack_set, tls_base, 0);
 
     do_jump(kernel_init as usize, &mut khi);
 }
 
-pub fn ap_boot_kernel(stack: usize, ap_entry: KernelInitFn) {
+pub fn ap_boot_kernel(stack_set: KernelStackSet, ap_entry: KernelInitFn) {
     let mut khi = extract_khi_entry();
     let osid = AP_REMAINING.fetch_sub(1, Ordering::Relaxed);
-    populate_hartinfo(&mut khi, stack, osid);
+    let tls_base = khi.tls_base;
+    populate_hartinfo(&mut khi, stack_set, tls_base, osid);
 
     do_jump(ap_entry as usize, &mut khi);
 }
@@ -77,7 +78,7 @@ fn do_jump(dest: usize, khi: &mut ExtractedKernelHartInfo) -> ! {
     KernelGS::swapgs();
     gs.write();
 
-    populate_tss(khi.tss_segment, khi.hartinfo.stack);
+    populate_tss(khi.hartinfo);
 
     unsafe {
         // SAFETY: GdtInfo's configuration is just flat
@@ -109,6 +110,7 @@ struct ExtractedKernelHartInfo {
     user_data_selector: SegmentSelector,
     tss_selector: SegmentSelector,
     tss_segment: &'static mut TaskStateSegment,
+    tls_base: VirtAddr,
 }
 
 fn extract_khi_entry() -> ExtractedKernelHartInfo {
@@ -136,6 +138,8 @@ fn extract_khi_entry() -> ExtractedKernelHartInfo {
         // SAFETY: exists within offset memory
         tss_data.1.to_mut()
     };
+    let tls_base = khi.tlss.pop().expect("Not enough TLSs");
+
     ExtractedKernelHartInfo {
         hartinfo,
         gdt: khi.gdt_info.gdt,
@@ -145,24 +149,39 @@ fn extract_khi_entry() -> ExtractedKernelHartInfo {
         user_data_selector,
         tss_selector,
         tss_segment,
+        tls_base,
     }
 }
 
-fn populate_hartinfo(khi: &mut ExtractedKernelHartInfo, stack: usize, osid: usize) {
+fn populate_hartinfo(
+    khi: &mut ExtractedKernelHartInfo,
+    stack_set: KernelStackSet,
+    tls_base: VirtAddr,
+    osid: usize,
+) {
     let hartinfo = &mut khi.hartinfo;
 
-    hartinfo.hard_id = lapic::id_cpuid();
-    hartinfo.stack = stack;
-    hartinfo.is_bsp = (osid == 0) as usize;
-    hartinfo.osid = osid;
-
-    hartinfo.kernel_code_selector = *khi.kernel_code_selector as usize;
-    hartinfo.kernel_data_selector = *khi.kernel_data_selector as usize;
-    hartinfo.user_code_selector = *khi.user_code_selector as usize;
-    hartinfo.user_data_selector = *khi.user_data_selector as usize;
-    hartinfo.tss_selector = *khi.tss_selector as usize;
+    **hartinfo = HartInfo {
+        hard_id: lapic::id_cpuid(),
+        stack: stack_set.stack.as_usize(),
+        df_stack: stack_set.df_stack.as_usize(),
+        nmi_stack: stack_set.nmi_stack.as_usize(),
+        is_bsp: (osid == 0) as usize,
+        osid,
+        kernel_code_selector: *khi.kernel_code_selector as usize,
+        kernel_data_selector: *khi.kernel_data_selector as usize,
+        user_code_selector: *khi.user_code_selector as usize,
+        user_data_selector: *khi.user_data_selector as usize,
+        tss_selector: *khi.tss_selector as usize,
+        tss_segment: khi.tss_segment as *const _ as usize,
+        tls_base: tls_base.as_usize(),
+    };
 }
 
-fn populate_tss(tss: &mut TaskStateSegment, stack: usize) {
-    tss.rsp[0] = VirtAddr::from(stack);
+fn populate_tss(hartinfo: &HartInfo) {
+    let tss = unsafe { &mut *(hartinfo.tss_segment as *mut TaskStateSegment) };
+
+    tss.rsp[0] = VirtAddr::from(hartinfo.stack);
+    tss.ist[ist_index(DF_IST)] = VirtAddr::from(hartinfo.df_stack);
+    tss.ist[ist_index(NMI_IST)] = VirtAddr::from(hartinfo.nmi_stack);
 }

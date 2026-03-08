@@ -58,8 +58,14 @@ pub const KTLS_REGION: VirtualMemoryRegion = after(KSTACK_REGION, g(32), b(0), b
 /// Hart info section
 pub const KHART_INFO: VirtualMemoryRegion = after(KTLS_REGION, g(1), b(0), b(0));
 
+/// DF stack section
+pub const DF_STACK_REGION: VirtualMemoryRegion = after(KHART_INFO, m(512), b(0), b(0));
+
+/// NMI stack section
+pub const NMI_STACK_REGION: VirtualMemoryRegion = after(DF_STACK_REGION, m(512), b(0), b(0));
+
 /// Reserved for future expansions to kernel execution requirements.
-pub const KRESERVED_REGION: VirtualMemoryRegion = after(KSTACK_REGION, g(455), b(0), b(0));
+pub const KRESERVED_REGION: VirtualMemoryRegion = after(NMI_STACK_REGION, g(454), b(0), b(0));
 
 /// Used by drivers which provide global MMIO devices. The framebuffer is mapped here.
 /// The memory type of any page is determined by the driver in question, and the allocator responsible

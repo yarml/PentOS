@@ -15,11 +15,14 @@ pub struct HartInfo {
     pub hard_id: usize,
     pub tls_base: usize,
     pub stack: usize,
+    pub df_stack: usize,
+    pub nmi_stack: usize,
     pub kernel_code_selector: usize,
     pub kernel_data_selector: usize,
     pub user_code_selector: usize,
     pub user_data_selector: usize,
     pub tss_selector: usize,
+    pub tss_segment: usize,
 }
 
 impl HartInfo {
