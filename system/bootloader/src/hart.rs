@@ -6,13 +6,14 @@ use {
         pit, topology,
     },
     boot_protocol::kernel_init::KernelInitFn,
-    config::{topology::hart::MAX_AP_RETRIES, vmem::LOCAL_APIC_REGION},
+    config::topology::hart::MAX_AP_RETRIES,
     core::{
         hint, slice,
         sync::atomic::{AtomicU8, AtomicU32, AtomicU64, AtomicUsize, Ordering},
     },
     log::{debug, error},
     spinlocks::{mutex::Mutex, once::Once},
+    system::vmem::LOCAL_APIC_REGION,
     x64::{
         control::{CR0, CR4},
         lapic::{

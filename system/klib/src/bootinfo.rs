@@ -1,4 +1,4 @@
-use {boot_protocol::BootInfo, config::vmem::BOOTINFO_REGION, x64::mem::addr::Address};
+use {boot_protocol::BootInfo, system::vmem::BOOTINFO_REGION, x64::mem::addr::Address};
 
 pub fn bootinfo() -> &'static BootInfo {
     unsafe {

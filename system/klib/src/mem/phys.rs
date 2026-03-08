@@ -6,7 +6,7 @@ use {
             midmem::MidMemAllocator,
         },
     },
-    config::{
+    system::{
         pmem::{LOWMEM, MIDMEM},
         vmem::PHYSICAL_MAPPING_REGION,
     },

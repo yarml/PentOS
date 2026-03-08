@@ -1,4 +1,3 @@
-//! Non configurable
 //! # Physical memory layout
 //! Physical memory is divided into 4 parts
 //! - [Super low memory](SUPERLOWMEM)

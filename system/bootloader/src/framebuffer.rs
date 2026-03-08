@@ -3,7 +3,7 @@ use {
         allocator::{ALLOCATOR_CAP, PostBootAllocator},
         virt_mmap::map,
     },
-    config::vmem::{FRAME_DOUBLEBUFFER_REGION, FRAMEBUFFER_REGION},
+    system::vmem::{FRAME_DOUBLEBUFFER_REGION, FRAMEBUFFER_REGION},
     core::{mem, slice},
     system::framebuffer::FramebufferInfo,
     uefi::{

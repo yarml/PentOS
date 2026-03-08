@@ -6,9 +6,8 @@ use {
         phys_mmap::PhysMemMap,
         pic, topology, virt_mmap,
     },
-    ::system::pat::standard_pat,
+    ::system::{pat::standard_pat, vmem::PHYSICAL_MAPPING_REGION},
     boot_protocol::{BootInfo, MAX_MMAP_SIZE},
-    config::vmem::PHYSICAL_MAPPING_REGION,
     log::{debug, info},
     uefi::{
         Status,

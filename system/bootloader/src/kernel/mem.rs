@@ -4,14 +4,14 @@ use {
         segmentation::{self, GdtInfo},
         topology, virt_mmap,
     },
-    config::{
-        topology::hart::{DF_STACK_SIZE, KSTACK_SIZE, MAX_HART_COUNT, NMI_STACK_SIZE},
-        vmem::{DF_STACK_REGION, KHART_INFO, KSTACK_REGION, KTLS_REGION, NMI_STACK_REGION},
-    },
+    config::topology::hart::{DF_STACK_SIZE, KSTACK_SIZE, MAX_HART_COUNT, NMI_STACK_SIZE},
     core::{cmp::min, slice},
     elf::{Elf, SegmentType},
     log::debug,
-    system::hart::HartInfo,
+    system::{
+        hart::HartInfo,
+        vmem::{DF_STACK_REGION, KHART_INFO, KSTACK_REGION, KTLS_REGION, NMI_STACK_REGION},
+    },
     utils::collections::smallvec::SmallVec,
     x64::{
         mem::{

@@ -17,7 +17,7 @@
 use {
     super::{size::BucketSize, slab::SlabHeader},
     crate::mem::phys::MIDMEM_ALLOCATOR,
-    config::vmem::PHYSICAL_MAPPING_REGION,
+    system::vmem::PHYSICAL_MAPPING_REGION,
     core::ptr::NonNull,
     x64::mem::{addr::Address, frame::FrameRange},
 };

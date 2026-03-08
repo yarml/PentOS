@@ -1,7 +1,8 @@
 use {
     crate::{allocator::PostBootAllocator, topology},
-    config::{topology::hart::MAX_HART_COUNT, vmem::PHYSICAL_MAPPING_REGION},
+    config::topology::hart::MAX_HART_COUNT,
     core::mem::MaybeUninit,
+    system::vmem::PHYSICAL_MAPPING_REGION,
     utils::collections::smallvec::SmallVec,
     x64::{
         mem::{

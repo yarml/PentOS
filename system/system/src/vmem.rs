@@ -1,4 +1,3 @@
-//! Non configurable
 //! # Memory layout of PentOS
 //! Virtual memory is divided into 3 parts
 //! - [Userspace](USERSPACE_REGION): Contains currently running process and is different per hart at any given point in time
@@ -117,6 +116,7 @@ const fn firstof(
 const fn b(n: usize) -> MemorySize {
     MemorySize::new(n)
 }
+#[allow(unused)]
 const fn k(n: usize) -> MemorySize {
     const K1: usize = 0x400;
     MemorySize::new(n * K1)

@@ -22,7 +22,7 @@
 
 use {
     crate::mem::phys::{MIDMEM_ALLOCATOR, midmem::MidFrameSize},
-    config::vmem::PHYSICAL_MAPPING_REGION,
+    system::vmem::PHYSICAL_MAPPING_REGION,
     core::ptr::NonNull,
     x64::mem::{
         addr::{Address, PhysAddr, VirtAddr},

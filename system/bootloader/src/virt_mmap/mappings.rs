@@ -5,7 +5,7 @@ use {
         virt_mmap::{self, map_many, map_optimal},
     },
     boot_protocol::BootInfo,
-    config::{
+    system::{
         pmem::IDENTITY_MAPPED_REGION,
         vmem::{BOOTINFO_REGION, KBIN_REGION, LOCAL_APIC_REGION},
     },
