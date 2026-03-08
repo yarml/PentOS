@@ -37,7 +37,22 @@ impl InterruptDescriptorTable {
     pub unsafe fn load(&self) {
         let idtr = IDTPointer {
             idt: VirtAddr::new_panic(self as *const _ as usize),
-            limit: (256 * mem::size_of::<InterruptGateEntry>() - 1) as u16,
+            limit: (mem::size_of::<InterruptDescriptorTable>() - 1) as u16,
+        };
+        let idtrp = &idtr as *const _;
+        unsafe {
+            // SAFETY: Guarenteed by caller
+            asm! {
+                "lidt [{idtrp}]",
+                idtrp = in(reg) idtrp,
+            }
+        }
+    }
+
+    pub fn load_null() {
+        let idtr = IDTPointer {
+            idt: VirtAddr::null(),
+            limit: 0,
         };
         let idtrp = &idtr as *const _;
         unsafe {

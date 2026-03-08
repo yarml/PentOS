@@ -18,6 +18,7 @@ use {
         vmem::PHYSICAL_MAPPING_REGION,
     },
     x64::{
+        interrupts::InterruptDescriptorTable,
         lapic,
         mem::{
             addr::{Address, VirtAddr},
@@ -71,36 +72,6 @@ pub fn ap_boot_kernel(stack_set: KernelStackSet, ap_entry: KernelInitFn) {
     populate_hartinfo(&mut khi, stack_set, tls_base, osid);
 
     do_jump(ap_entry as usize, &mut khi);
-}
-
-fn do_jump(dest: usize, khi: &mut ExtractedKernelHartInfo) -> ! {
-    let gs = KernelGS::new(VirtAddr::from(khi.hartinfo as *const HartInfo));
-    gs.write();
-    KernelGS::swapgs();
-    gs.write();
-
-    populate_tss(khi.hartinfo);
-
-    unsafe {
-        // SAFETY: GdtInfo's configuration is just flat
-        // And TSS was just setup
-        khi.gdt.load(
-            PHYSICAL_MAPPING_REGION.start(),
-            khi.kernel_code_selector,
-            khi.kernel_data_selector,
-            khi.tss_selector,
-        );
-    }
-
-    unsafe {
-        asm!(
-            "mov rsp, {stack}",
-            "jmp {entry}",
-            stack = in(reg) khi.hartinfo.stack,
-            entry = in(reg) dest,
-            options(noreturn)
-        );
-    }
 }
 
 struct ExtractedKernelHartInfo {
@@ -186,4 +157,55 @@ fn populate_tss(hartinfo: &HartInfo) {
     tss.rsp[0] = VirtAddr::from(hartinfo.stack);
     tss.ist[ist_index(DF_IST)] = VirtAddr::from(hartinfo.df_stack);
     tss.ist[ist_index(NMI_IST)] = VirtAddr::from(hartinfo.nmi_stack);
+}
+
+fn do_jump(dest: usize, khi: &mut ExtractedKernelHartInfo) -> ! {
+    populate_tss(khi.hartinfo);
+    unsafe {
+        // SAFETY: GdtInfo's configuration is just flat
+        // And TSS was just setup
+        khi.gdt.load(
+            PHYSICAL_MAPPING_REGION.start(),
+            khi.kernel_code_selector,
+            khi.kernel_data_selector,
+            khi.tss_selector,
+        );
+    }
+    Gdt::clear_gs_fs();
+    InterruptDescriptorTable::load_null();
+
+    let gs = KernelGS::new(VirtAddr::from(khi.hartinfo as *const HartInfo));
+    gs.write();
+    KernelGS::swapgs();
+    gs.write();
+
+    unsafe {
+        asm! {
+            "mov rsp, {stack}",
+
+            // Everything 0, except the reserved bit to 1
+            "push 0x2",
+            "popfq",
+
+            "xor rbx, rbx",
+            "xor rcx, rcx",
+            "xor rdx, rdx",
+            "xor rsi, rsi",
+            "xor rdi, rdi",
+            "xor rbp, rbp",
+            "xor r8,  r8",
+            "xor r9,  r9",
+            "xor r10, r10",
+            "xor r11, r11",
+            "xor r12, r12",
+            "xor r13, r13",
+            "xor r14, r14",
+            "xor r15, r15",
+
+            "jmp rax",
+            stack = in(reg) khi.hartinfo.stack,
+            in("rax") dest,
+            options(noreturn)
+        };
+    }
 }

@@ -109,4 +109,14 @@ impl<const N: usize> GlobalDescriptorTable<N> {
             }
         }
     }
+
+    pub fn clear_gs_fs() {
+        unsafe {
+            asm! {
+                "mov gs, {z:x}",
+                "mov fs, {z:x}",
+                z = in(reg) 0,
+            }
+        }
+    }
 }
