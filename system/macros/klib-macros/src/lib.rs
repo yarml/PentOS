@@ -1,33 +1,13 @@
 mod hart_local;
 
-use {proc_macro::TokenStream, syn::Item};
+use {proc_macro::TokenStream, quote::quote};
 
 #[proc_macro_attribute]
 pub fn hart_local(attr: TokenStream, item: TokenStream) -> TokenStream {
-    if !attr.is_empty() {
-        return syn::Error::new_spanned(
-            proc_macro2::TokenStream::from(attr),
-            "hart_local does not accept arguments",
-        )
-        .into_compile_error()
-        .into();
-    }
+    hart_local::handle_common(attr, item, quote! { klib::hart })
+}
 
-    let item = syn::parse_macro_input!(item as Item);
-    let item = match item {
-        Item::Static(item) => item,
-        other_item => {
-            return syn::Error::new_spanned(
-                other_item,
-                "hart_local can only be applied to static items",
-            )
-            .into_compile_error()
-            .into();
-        }
-    };
-
-    match hart_local::expand(item) {
-        Ok(tokens) => tokens.into(),
-        Err(err) => err.to_compile_error().into(),
-    }
+#[proc_macro_attribute]
+pub fn klib_hart_local(attr: TokenStream, item: TokenStream) -> TokenStream {
+    hart_local::handle_common(attr, item, quote! { crate::hart })
 }

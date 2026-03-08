@@ -17,6 +17,8 @@ use {
     },
 };
 
+pub use lapic::get_timestamp;
+
 const TIMER_VECTOR: u8 = 0x20;
 const LAPIC_SPURIOUS_VECTOR: u8 = 0x21;
 const LAPIC_ERROR_VECTOR: u8 = 0x22;

@@ -1,10 +1,43 @@
 use {
     proc_macro2::{Ident, Span, TokenStream},
     quote::quote,
-    syn::{Error, ItemStatic, Result, Visibility},
+    syn::{Error, Item, ItemStatic, Result, Visibility},
 };
 
-pub(crate) fn expand(item: ItemStatic) -> Result<TokenStream> {
+pub(crate) fn handle_common(
+    attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+    hart_crate: TokenStream,
+) -> proc_macro::TokenStream {
+    if !attr.is_empty() {
+        return syn::Error::new_spanned(
+            proc_macro2::TokenStream::from(attr),
+            "hart_local does not accept arguments",
+        )
+        .into_compile_error()
+        .into();
+    }
+
+    let item = syn::parse_macro_input!(item as Item);
+    let item = match item {
+        Item::Static(item) => item,
+        other_item => {
+            return syn::Error::new_spanned(
+                other_item,
+                "hart_local can only be applied to static items",
+            )
+            .into_compile_error()
+            .into();
+        }
+    };
+
+    match expand(item, hart_crate) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
+}
+
+fn expand(item: ItemStatic, hart_crate: TokenStream) -> Result<TokenStream> {
     let ItemStatic {
         attrs,
         vis,
@@ -36,10 +69,11 @@ pub(crate) fn expand(item: ItemStatic) -> Result<TokenStream> {
     let expanded = quote! {
         #[unsafe(link_section = ".hart_local")]
         #[used]
-        static #backing_ident: #ty = #expr;
+        // Make it mut just so that accessing it is unsafe
+        static mut #backing_ident: #hart_crate::Wrapper<#ty> = #hart_crate::Wrapper::new(#expr);
 
         #(#extra_attrs)*
-        #vis static #ident: klib::hart::HartLocal<#ty> = unsafe { klib::hart::HartLocal::new(&#backing_ident) };
+        #vis static #ident: #hart_crate::HartLocal<#ty> = unsafe { #hart_crate::HartLocal::new(&#backing_ident) };
     };
 
     Ok(expanded)

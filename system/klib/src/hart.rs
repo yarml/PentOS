@@ -6,6 +6,16 @@ use {
 pub use klib_macros::hart_local;
 
 #[repr(transparent)]
+pub struct Wrapper<T> {
+    inner: T,
+    _phantom: PhantomData<T>,
+}
+
+/// # Safety
+/// The Wrapper is never accessed, it goes to TLS init image.
+unsafe impl<T> Sync for Wrapper<T> {}
+
+#[repr(transparent)]
 pub struct HartLocal<T> {
     offset: *const u8,
     _phantom: PhantomData<T>,
@@ -20,8 +30,8 @@ impl<T> HartLocal<T> {
     /// This relies on rf being in .hart_local section, and that the linker script
     /// has the .hart_local loaded into ORIGIN=0
     /// This function should only be called through the #\[hart_local] attribute
-    pub const unsafe fn new(rf: &T) -> Self {
-        let offset = rf as *const T as *const u8;
+    pub const unsafe fn new(rf: &Wrapper<T>) -> Self {
+        let offset = rf as *const Wrapper<T> as *const u8;
 
         Self {
             offset,
@@ -59,6 +69,15 @@ impl<T> HartLocal<T> {
         unsafe {
             // SAFETY: Safe unless GS is not placed correctly, which shouldn't happen
             f(&mut *(&*ptr).get())
+        }
+    }
+}
+
+impl<T> Wrapper<T> {
+    pub const fn new(value: T) -> Self {
+        Self {
+            inner: value,
+            _phantom: PhantomData,
         }
     }
 }

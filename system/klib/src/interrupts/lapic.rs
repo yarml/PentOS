@@ -2,6 +2,7 @@ pub mod handlers;
 
 use {
     crate::interrupts::{LAPIC_ERROR_VECTOR, LAPIC_SPURIOUS_VECTOR, TIMER_VECTOR},
+    core::sync::atomic::Ordering,
     system::{hart::HartInfo, lapic_ptr},
     x64::lapic::TimerMode,
 };
@@ -17,4 +18,8 @@ pub fn setup() {
     lapic.program_lvt_error(LAPIC_ERROR_VECTOR);
 
     lapic.set_timer_initial(hartinfo.lapic_10ms as u32);
+}
+
+pub fn get_timestamp() -> usize {
+    handlers::TIMESTAMP.load(Ordering::Relaxed)
 }
