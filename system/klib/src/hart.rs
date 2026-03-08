@@ -1,12 +1,9 @@
-use core::cell::UnsafeCell;
-
-pub use klib_macros::hart_local;
 use {
-    core::{
-        marker::PhantomData,
-    },
+    core::{cell::UnsafeCell, marker::PhantomData},
     system::hart::HartInfo,
 };
+
+pub use klib_macros::hart_local;
 
 #[repr(transparent)]
 pub struct HartLocal<T> {

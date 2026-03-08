@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 #![allow(dead_code)]
-#![feature(cold_path)]
 #![feature(const_trait_impl)]
 
 mod acpi;

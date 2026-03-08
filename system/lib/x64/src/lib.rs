@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(cold_path)]
 #![feature(abi_x86_interrupt)]
 #![feature(const_trait_impl)]
 

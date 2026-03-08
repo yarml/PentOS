@@ -3,3 +3,4 @@ target = "../targets/uefi.json"
 
 [unstable]
 build-std = ["core", "alloc", "compiler_builtins"]
+json-target-spec = true

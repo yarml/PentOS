@@ -51,19 +51,19 @@ impl InterruptDescriptorTable {
     attach_system!(5, attach_bound_range_exceeded);
     attach_system!(6, attach_invalid_opcode);
     attach_system!(7, attach_device_not_available);
-    attach_system_errcode!(8, double_fault);
-    attach_system!(9, coproc_segment_overrun);
-    attach_system_errcode!(10, invalid_tss);
-    attach_system_errcode!(11, segment_not_present);
-    attach_system_errcode!(12, stack_segment);
-    attach_system_errcode!(13, general_protection);
-    attach_system_errcode!(14, page_fault);
-    attach_system!(16, fpu_error);
-    attach_system_errcode!(17, alignment_check);
-    attach_system!(18, machine_check);
-    attach_system!(19, simd_exception);
-    attach_system!(20, vt_exception);
-    attach_system_errcode!(21, control_protection_exception);
+    attach_system_errcode!(8, attach_double_fault);
+    attach_system!(9, attach_coproc_segment_overrun);
+    attach_system_errcode!(10, attach_invalid_tss);
+    attach_system_errcode!(11, attach_segment_not_present);
+    attach_system_errcode!(12, attach_stack_segment);
+    attach_system_errcode!(13, attach_general_protection);
+    attach_system_errcode!(14, attach_page_fault);
+    attach_system!(16, attach_fpu_error);
+    attach_system_errcode!(17, attach_alignment_check);
+    attach_system!(18, attach_machine_check);
+    attach_system!(19, attach_simd_exception);
+    attach_system!(20, attach_vt_exception);
+    attach_system_errcode!(21, attach_control_protection_exception);
 
     pub fn attach(&mut self, vector: u8, gate: InterruptGate<InterruptHandlerFn>) {
         assert!(vector >= 32);
