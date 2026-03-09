@@ -2,10 +2,12 @@ pub mod handlers;
 
 use {
     crate::interrupts::{LAPIC_ERROR_VECTOR, LAPIC_SPURIOUS_VECTOR, TIMER_VECTOR},
-    core::sync::atomic::Ordering,
+    core::sync::atomic::{AtomicUsize, Ordering},
     system::{hart::HartInfo, lapic_ptr},
     x64::lapic::TimerMode,
 };
+
+static TIMESTAMP: AtomicUsize = AtomicUsize::new(0);
 
 pub fn setup() {
     let lapic = lapic_ptr::standard();
@@ -21,5 +23,5 @@ pub fn setup() {
 }
 
 pub fn get_timestamp() -> usize {
-    handlers::TIMESTAMP.load(Ordering::Relaxed)
+    TIMESTAMP.load(Ordering::Relaxed)
 }

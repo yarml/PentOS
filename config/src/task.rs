@@ -1,0 +1,1 @@
+pub const MAX_TASK_COUNT: usize = 64;

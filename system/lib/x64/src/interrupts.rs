@@ -138,3 +138,21 @@ pub fn enable_and_halt() {
         }
     }
 }
+
+pub fn with_disabled<F, R>(f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    let rflags: u64;
+    unsafe { asm!("pushfq; pop {}", out(reg) rflags) };
+    let were_enabled = rflags & (1 << 9) != 0;
+
+    disable();
+    let result = f();
+
+    if were_enabled {
+        enable();
+    }
+
+    result
+}

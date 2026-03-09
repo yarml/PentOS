@@ -1,11 +1,9 @@
-use core::sync::atomic::{AtomicUsize, Ordering};
-
 use {
+    crate::interrupts::lapic::TIMESTAMP,
+    core::sync::atomic::Ordering,
     system::{hart::HartInfo, lapic_ptr},
     x64::interrupts::stackframe::InterruptStackFrame,
 };
-
-pub static TIMESTAMP: AtomicUsize = AtomicUsize::new(0);
 
 pub extern "x86-interrupt" fn timer_interrupt(_frame: InterruptStackFrame) {
     let lapic = lapic_ptr::standard();
