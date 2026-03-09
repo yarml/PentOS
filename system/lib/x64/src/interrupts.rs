@@ -129,3 +129,12 @@ pub fn disable() {
 pub fn enable() {
     unsafe { asm!("sti") }
 }
+
+pub fn enable_and_halt() {
+    unsafe {
+        asm! {
+            "sti",
+            "hlt"
+        }
+    }
+}
