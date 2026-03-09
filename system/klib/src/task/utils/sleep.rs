@@ -42,23 +42,23 @@ impl Future for Sleeper {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let current = get_timestamp();
-        if current > self.end_time {
-            Poll::Ready(())
-        } else {
-            if !self.registered {
-                let end_time = self.end_time;
-                self.get_mut().registered = true;
-                interrupts::with_disabled(|| {
+        interrupts::with_disabled(|| {
+            let current = get_timestamp();
+            if current >= self.end_time {
+                Poll::Ready(())
+            } else {
+                if !self.registered {
+                    let end_time = self.end_time;
+                    self.get_mut().registered = true;
                     let mut wakers = WAKERS.lock();
                     wakers.push(SleepingWaker {
                         end_time,
                         waker: cx.waker().clone(),
                     });
-                })
+                }
+                Poll::Pending
             }
-            Poll::Pending
-        }
+        })
     }
 }
 
@@ -86,7 +86,7 @@ pub fn wake() {
         let mut wakers = WAKERS.lock();
         while wakers
             .peek()
-            .filter(|waker| current > waker.end_time)
+            .filter(|waker| current >= waker.end_time)
             .is_some()
         {
             wakers.pop().unwrap().waker.wake();

@@ -10,6 +10,7 @@
 extern crate alloc;
 
 pub mod bootinfo;
+pub mod dev;
 pub mod hart;
 pub mod interrupts;
 pub mod task;
@@ -24,14 +25,13 @@ use {
         sync::atomic::{AtomicBool, Ordering},
     },
     log::info,
-    system::hart::HartInfo,
+    system::{framebuffer, hart::HartInfo},
 };
 
 #[macro_export]
 macro_rules! use_klib {
     ($kmain:ident) => {
         extern crate alloc;
-        use system::hart::HartInfo;
         /// # Safety
         /// Should be called by the bootloader after it has finished initializing everything
         #[unsafe(no_mangle)]
@@ -52,7 +52,7 @@ pub unsafe fn init(kmain: impl Future<Output = ()> + Send + 'static) -> ! {
     let hartinfo = HartInfo::get();
 
     if !hartinfo.is_bsp() {
-        while !BSP_SETUP.load(Ordering::Relaxed) {
+        while !BSP_SETUP.load(Ordering::Acquire) {
             hint::spin_loop();
         }
         common_setup();
@@ -71,7 +71,12 @@ pub unsafe fn init(kmain: impl Future<Output = ()> + Send + 'static) -> ! {
     task::init();
     task::spawn(kmain);
 
-    BSP_SETUP.store(true, Ordering::Relaxed);
+    {
+        let bootinfo = bootinfo::bootinfo();
+        framebuffer::init(&bootinfo.framebuffer);
+    }
+
+    BSP_SETUP.store(true, Ordering::Release);
 
     common_setup();
     task::run()

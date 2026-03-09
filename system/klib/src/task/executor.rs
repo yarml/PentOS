@@ -86,9 +86,16 @@ impl Executor {
                     let mut tasks = self.tasks.lock();
                     tasks.get_mut(&task_id).map(|task_mut| unsafe {
                         task_mut.set_state(TaskState::Running);
-                        // SAFETY: By setting state to Running while still locking
-                        // we ensure that no other task_id is for this same task
-                        // in the queue for another hart to get a reference to the same task
+                        // SAFETY: This is safe due to two combined invariants:
+                        // 1. BTreeMap guarantees stable node addresses — inserting or removing
+                        //    *other* keys does not move or invalidate existing values in place,
+                        //    so the pointer remains valid for the lifetime of the task entry.
+                        // 2. We set the task state to `Running` while still holding the `tasks`
+                        //    lock. `schedule()` only re-enqueues a task if its state is `Pending`,
+                        //    so no other hart can observe this task_id in the queue while it is
+                        //    `Running`, making the &mut unique.
+                        // Together these ensure the &mut alias is exclusive and the pointee lives
+                        // at least until we call tasks.remove() in the Poll::Ready branch.
                         &mut *(task_mut as *mut Task)
                     })
                 }) else {
@@ -97,22 +104,21 @@ impl Executor {
 
                 let waker = interrupts::with_disabled(|| {
                     let mut waker_cache = self.waker_cache.lock();
-                    unsafe {
-                        // SAFETY: Queue contains an ID that is not repeated twice
-                        // in the queue for another hart to get a reference to the same task
-                        &*(waker_cache
-                            .entry(task_id)
-                            .or_insert_with(|| TaskWaker::waker(task_id, self))
-                            as *const Waker)
-                    }
+
+                    waker_cache
+                        .entry(task_id)
+                        .or_insert_with(|| TaskWaker::waker(task_id, self))
+                        .clone()
                 });
 
-                let mut context = Context::from_waker(waker);
+                let mut context = Context::from_waker(&waker);
 
                 match task.poll(&mut context) {
                     Poll::Ready(()) => interrupts::with_disabled(|| {
                         let mut tasks = self.tasks.lock();
+                        let mut waker_cache = self.waker_cache.lock();
                         tasks.remove(&task_id);
+                        waker_cache.remove(&task_id);
                     }),
                     Poll::Pending => {
                         task.set_state(TaskState::Pending);
