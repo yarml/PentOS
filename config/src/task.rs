@@ -1,1 +1,1 @@
-pub const MAX_TASK_COUNT: usize = 64;
+pub const MAX_URGENT_TASK_COUNT: usize = 1024;

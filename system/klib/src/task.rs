@@ -1,8 +1,13 @@
 mod executor;
 mod task_impl;
+mod urgent_task;
 mod utils;
 
-use {crate::task::executor::Executor, spinlocks::once::Once};
+use {
+    crate::task::{executor::Executor, urgent_task::UrgentTask},
+    core::pin::Pin,
+    spinlocks::once::Once,
+};
 
 pub use utils::*;
 
@@ -12,8 +17,8 @@ pub(crate) fn init() {
     MAIN_EXECUTOR.init(Executor::new);
 }
 
-fn main_executor() -> &'static Executor {
-    MAIN_EXECUTOR.poll().expect("Main executor not initialized")
+fn main_executor() -> Pin<&'static Executor> {
+    Pin::static_ref(MAIN_EXECUTOR.poll().expect("Main executor not initialized"))
 }
 
 pub fn run() -> ! {
@@ -21,5 +26,9 @@ pub fn run() -> ! {
 }
 
 pub fn spawn(future: impl Future<Output = ()> + 'static + Send) {
-    main_executor().spawn(future);
+    main_executor().spawn(future)
+}
+
+pub fn spawn_urgent(urgent: UrgentTask) {
+    main_executor().spawn_urgent(urgent)
 }

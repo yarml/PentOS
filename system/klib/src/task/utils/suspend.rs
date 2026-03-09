@@ -1,6 +1,11 @@
-use core::{
-    pin::Pin,
-    task::{Context, Poll},
+use {
+    alloc::vec::Vec,
+    core::{
+        pin::Pin,
+        task::{Context, Poll, Waker},
+    },
+    spinlocks::mutex::Mutex,
+    x64::interrupts,
 };
 
 pub fn suspend() -> Suspender {
@@ -8,13 +13,13 @@ pub fn suspend() -> Suspender {
 }
 
 pub struct Suspender {
-    polled: bool,
+    registered: bool,
 }
 
 impl Suspender {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
-        Self { polled: false }
+        Self { registered: false }
     }
 }
 
@@ -22,12 +27,26 @@ impl Future for Suspender {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if self.polled {
+        if self.registered {
             Poll::Ready(())
         } else {
-            self.get_mut().polled = true;
-            cx.waker().wake_by_ref();
+            self.get_mut().registered = true;
+            interrupts::with_disabled(|| {
+                let mut wakers = WAKERS.lock();
+                wakers.push(cx.waker().clone());
+            });
             Poll::Pending
         }
     }
+}
+
+static WAKERS: Mutex<Vec<Waker>> = Mutex::new(Vec::new());
+
+pub fn wake() {
+    interrupts::with_disabled(|| {
+        let mut wakers = WAKERS.lock();
+        while let Some(waker) = wakers.pop() {
+            waker.wake();
+        }
+    })
 }
