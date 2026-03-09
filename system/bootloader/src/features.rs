@@ -37,25 +37,20 @@ impl FeatureDetect {
         let max_basic = max_basic as usize;
         let max_extended = __cpuid(0x8000_0000).eax as usize;
 
-        let vendor = match Vendor::try_from({
+        let vendor = Vendor::from({
             let mut vendor = [0; 12];
             vendor[0..4].copy_from_slice(&vendor0.to_ne_bytes());
             vendor[4..8].copy_from_slice(&vendor1.to_ne_bytes());
             vendor[8..12].copy_from_slice(&vendor2.to_ne_bytes());
             vendor
-        }) {
-            Ok(vendor) => vendor,
-            Err(unsupported) => {
-                return Self::Insufficient(InsufficientReason::UnsupportedVendor(unsupported));
-            }
-        };
+        });
         vendor_detect(vendor, max_basic, max_extended)
     }
 }
 
 fn vendor_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> FeatureDetect {
     let detector = match vendor {
-        Vendor::GenuineIntel | Vendor::AuthenticAMD => intel_amd_detect,
+        Vendor::GenuineIntel | Vendor::AuthenticAMD | Vendor::Other => intel_amd_detect,
     };
     detector(vendor, max_basic, max_extended)
 }
@@ -132,6 +127,7 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
     let pk_super = match vendor {
         Vendor::GenuineIntel => (cpuid7_0.ecx >> 31) & 1 == 1,
         Vendor::AuthenticAMD => false, // I couldn't find any mention of PKS, and bit 31 is marked as reserved
+        Vendor::Other => false,
     };
 
     FeatureDetect::Sufficient(FeatureSet {

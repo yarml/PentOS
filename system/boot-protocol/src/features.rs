@@ -12,16 +12,15 @@ pub struct FeatureSet {
 pub enum Vendor {
     GenuineIntel,
     AuthenticAMD,
+    Other,
 }
 
-impl TryFrom<[u8; 12]> for Vendor {
-    type Error = [u8; 12];
-
-    fn try_from(value: [u8; 12]) -> Result<Self, Self::Error> {
+impl From<[u8; 12]> for Vendor {
+    fn from(value: [u8; 12]) -> Self {
         match &value {
-            b"GenuineIntel" => Ok(Self::GenuineIntel),
-            b"AuthenticAMD" => Ok(Self::AuthenticAMD),
-            _ => Err(value),
+            b"GenuineIntel" => Self::GenuineIntel,
+            b"AuthenticAMD" => Self::AuthenticAMD,
+            _ => Self::Other,
         }
     }
 }

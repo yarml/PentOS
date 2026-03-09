@@ -46,6 +46,7 @@ jobs:
         with:
           name: bootloader-debug
           path: target/uefi/debug/bootloader.efi
+
   build-kernel:
     runs-on: ubuntu-latest
     steps:
@@ -83,3 +84,42 @@ jobs:
         with:
           name: kernel-debug
           path: target/kernel/debug/kernel
+
+  build-img:
+    runs-on: ubuntu-latest
+    needs: [build-bootloader, build-kernel]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install nasm mtools parted
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./target
+          key: ${{ runner.os }}-cargo-build-img
+      - name: Cache Toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.rustup/toolchains
+          key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
+      - name: Setup Build System
+        run: make
+      - name: Build Release Image
+        run: make img-release
+      - name: Upload Release Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: pentos-release.img
+          path: run/release/pentos.img
+      - name: Build Debug Image
+        run: make img-debug
+      - name: Upload Debug Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: pentos-debug.img
+          path: run/debug/pentos.img
