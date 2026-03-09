@@ -25,7 +25,7 @@ use {
         sync::atomic::{AtomicBool, Ordering},
     },
     log::info,
-    system::{framebuffer, hart::HartInfo},
+    system::hart::HartInfo,
 };
 
 #[macro_export]
@@ -68,13 +68,10 @@ pub unsafe fn init(kmain: impl Future<Output = ()> + Send + 'static) -> ! {
 
     interrupts::setup();
 
+    dev::init();
+
     task::init();
     task::spawn(kmain);
-
-    {
-        let bootinfo = bootinfo::bootinfo();
-        framebuffer::init(&bootinfo.framebuffer);
-    }
 
     BSP_SETUP.store(true, Ordering::Release);
 

@@ -6,7 +6,7 @@ use {
     core::{mem, slice},
     system::{
         framebuffer::{FramebufferInfo, PixelMode},
-        vmem::{FRAME_DOUBLEBUFFER_REGION, FRAMEBUFFER_REGION},
+        vmem::{FRAME_DOUBLEBUFFER_REGION, FRAMEBUFFER_REGION, PHYSICAL_MAPPING_REGION},
     },
     uefi::{
         Identify,
@@ -54,7 +54,7 @@ pub fn init() -> PrimaryFramebufferInfo {
                 let (this_width, this_height) = this_mode.info().resolution();
                 let best_area = best_width * best_height;
                 let this_area = this_width * this_height;
-                best_area > this_area
+                best_area < this_area
             }) {
                 Some(this_mode)
             } else {
@@ -99,11 +99,11 @@ pub fn postboot_init(
     let buffer_frame_start = Frame::<Frame4KiB>::containing(buffer);
 
     let bufferptr = buffer.as_mut_ptr();
-    let bufferlen = *primary.size / mem::size_of::<u32>();
+    let len = *primary.size / mem::size_of::<u32>();
 
     let buffer = unsafe {
         // SAFETY: trust in the process
-        slice::from_raw_parts_mut(bufferptr, bufferlen)
+        slice::from_raw_parts_mut(bufferptr, len)
     };
     buffer.fill(0);
 
@@ -136,15 +136,16 @@ pub fn postboot_init(
     }
 
     let fbptr = fb.as_mut_ptr();
-    let fblen = *primary.size / mem::size_of::<u32>();
 
     FramebufferInfo {
         fbptr,
-        fblen,
+        len,
         width: primary.width,
         height: primary.height,
         stride: primary.stride,
-        bufferptr,
-        bufferlen,
+        bufferptr: PhysAddr::from(bufferptr)
+            .to_virt_with_offset(PHYSICAL_MAPPING_REGION.start())
+            .as_mut_ptr(),
+        mode: primary.mode,
     }
 }

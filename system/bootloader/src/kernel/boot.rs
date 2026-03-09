@@ -14,11 +14,14 @@ use {
     elf::Elf,
     spinlocks::{mutex::Mutex, once::Once},
     system::{
-        hart::HartInfo, lapic_ptr, tss::{DF_IST, NMI_IST, ist_index}, vmem::{LOCAL_APIC_REGION, PHYSICAL_MAPPING_REGION}
+        hart::HartInfo,
+        lapic_ptr,
+        tss::{DF_IST, NMI_IST, ist_index},
+        vmem::PHYSICAL_MAPPING_REGION,
     },
     x64::{
         interrupts::InterruptDescriptorTable,
-        lapic::{self, LocalApicPointer},
+        lapic,
         mem::{
             addr::{Address, VirtAddr},
             segmentation::{selector::SegmentSelector, task_state::TaskStateSegment},

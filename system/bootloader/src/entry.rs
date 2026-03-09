@@ -106,6 +106,7 @@ fn main() -> Status {
             mmap: [PhysicalMemoryRegion::null(); MAX_MMAP_SIZE],
             mmap_len: 0,
             features,
+            topology: topology::topology().clone(),
             framebuffer,
         })
         .expect("Failed to allocate bootinfo");

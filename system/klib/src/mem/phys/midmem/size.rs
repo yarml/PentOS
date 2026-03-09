@@ -44,37 +44,12 @@ impl MidFrameSize {
         let order_diff = self.order() - child.order();
         Some(1 << order_diff)
     }
-    pub const fn children_mask(&self) -> Option<u64> {
-        let children_count = if let Some(children_count) = self.children_count() {
-            children_count
-        } else {
-            return None;
-        };
-        Some(u64::MAX >> (64 - children_count))
-    }
-
-    pub const fn buddy_count(&self) -> usize {
-        if let Some(parent_order) = self.parent_order() {
-            parent_order.children_count().unwrap()
-        } else {
-            1
-        }
-    }
 
     pub const fn k4_count(&self) -> usize {
         1 << self.order()
     }
     pub const fn size(&self) -> usize {
         self.k4_count() * Frame4KiB::SIZE
-    }
-    pub const fn alignment(&self) -> usize {
-        self.size()
-    }
-    pub const fn shift(&self) -> usize {
-        self.order() + 12
-    }
-    pub const fn mask(&self) -> usize {
-        usize::MAX >> self.shift() << self.shift()
     }
 
     pub const fn child_order(&self) -> Option<Self> {

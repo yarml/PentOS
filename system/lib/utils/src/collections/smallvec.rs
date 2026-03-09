@@ -17,6 +17,18 @@ pub struct SmallVec<T, const N: usize> {
     buffer: [MaybeUninit<T>; N],
 }
 
+impl<T, const N: usize> Clone for SmallVec<T, N>
+where
+    T: Copy,
+{
+    fn clone(&self) -> Self {
+        Self {
+            len: self.len,
+            buffer: self.buffer,
+        }
+    }
+}
+
 #[repr(C)]
 pub struct SmallVecBuf<T> {
     len: usize,

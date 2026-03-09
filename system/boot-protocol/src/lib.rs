@@ -4,7 +4,10 @@ pub mod features;
 pub mod kernel_init;
 pub mod topology;
 
-use {features::FeatureSet, system::framebuffer::FramebufferInfo, x64::mem::PhysicalMemoryRegion};
+use {
+    crate::topology::Topology, features::FeatureSet, system::framebuffer::FramebufferInfo,
+    x64::mem::PhysicalMemoryRegion,
+};
 
 const MMAP_PG_COUNT: usize = 1;
 pub const MAX_MMAP_SIZE: usize =
@@ -15,5 +18,6 @@ pub struct BootInfo {
     pub mmap: [PhysicalMemoryRegion; MAX_MMAP_SIZE],
     pub mmap_len: usize,
     pub features: FeatureSet,
+    pub topology: Topology,
     pub framebuffer: FramebufferInfo,
 }

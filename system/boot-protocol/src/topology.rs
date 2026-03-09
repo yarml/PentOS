@@ -1,9 +1,10 @@
 use {
-    utils::collections::smallvec::SmallVec,
     config::topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
+    utils::collections::smallvec::SmallVec,
     x64::mem::addr::PhysAddr,
 };
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Topology {
     pub harts: SmallVec<Hart, MAX_HART_COUNT>,
@@ -11,6 +12,7 @@ pub struct Topology {
 }
 
 // Too proud of myself to call this CPU
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Hart {
     pub apic_id: usize,
@@ -18,6 +20,7 @@ pub struct Hart {
 }
 
 // Too proud of myself to call this IO APIC
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct InterruptController {
     pub id: usize,
