@@ -3,16 +3,17 @@ use {
         allocator::{ALLOCATOR_CAP, PostBootAllocator},
         virt_mmap::map,
     },
-    system::vmem::{FRAME_DOUBLEBUFFER_REGION, FRAMEBUFFER_REGION},
     core::{mem, slice},
-    system::framebuffer::FramebufferInfo,
+    system::{
+        framebuffer::{FramebufferInfo, PixelMode},
+        vmem::{FRAME_DOUBLEBUFFER_REGION, FRAMEBUFFER_REGION},
+    },
     uefi::{
         Identify,
         boot::{self, SearchType},
         proto::console::gop::{GraphicsOutput, Mode, PixelFormat},
     },
     x64::{
-        framebuffer::PixelMode,
         mem::{
             MemorySize,
             addr::{Address, PhysAddr},

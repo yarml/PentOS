@@ -2,7 +2,6 @@
 #![feature(abi_x86_interrupt)]
 #![feature(const_trait_impl)]
 
-pub mod framebuffer;
 pub mod interrupts;
 pub mod io;
 pub mod lapic;
