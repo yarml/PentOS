@@ -179,4 +179,3 @@ class PrintIDT(gdb.Command):
 
 
 PrintIDT()
-print("print_idt loaded. Usage: print_idt [address [count]]")

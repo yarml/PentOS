@@ -90,13 +90,12 @@ pub unsafe fn init(
         slice::from_raw_parts_mut(chunk.start().as_mut_ptr::<u8>(), AP_INIT_CODE.len())
     };
 
-    ap_bootstrap_destination.copy_from_slice(AP_INIT_CODE);
-
     let bspid = lapic::id_cpuid();
     let lapic = lapic_ptr::standard();
 
     let topology = topology::topology();
     for hart in topology.harts.iter().filter(|hart| hart.apic_id != bspid) {
+        ap_bootstrap_destination.copy_from_slice(AP_INIT_CODE);
         let stack_set = kernel_stacks.pop_set();
         wakeup_hart(lapic, hart.apic_id as u8, chunk, map_root, stack_set);
     }
