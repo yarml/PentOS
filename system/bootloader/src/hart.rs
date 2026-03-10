@@ -11,7 +11,7 @@ use {
         hint, slice,
         sync::atomic::{AtomicU8, AtomicU32, AtomicU64, AtomicUsize, Ordering},
     },
-    log::{debug, error},
+    log::error,
     spinlocks::{mutex::Mutex, once::Once},
     x64::{
         control::{CR0, CR4},

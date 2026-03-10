@@ -7,7 +7,7 @@ use {
         hint,
         sync::atomic::{AtomicBool, Ordering},
     },
-    log::Log,
+    log::{Level, Log},
 };
 
 static INIT: AtomicBool = AtomicBool::new(false);
@@ -98,6 +98,10 @@ impl Log for Logger {
     }
 
     fn log(&self, record: &log::Record) {
+        #[cfg(not(debug_assertions))]
+        if record.level() >= Level::Debug {
+            return;
+        }
         let master_unlock = self.master_unlock.load(Ordering::Relaxed);
         if !master_unlock {
             while self

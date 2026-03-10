@@ -1,13 +1,17 @@
 #![no_std]
 #![no_main]
 
+mod version;
+
 use {
     klib::{
         bootinfo::bootinfo,
         dev::framebuffer,
         task::{self, sleep::sleep},
     },
+    log::info,
     system::framebuffer::PixelColor,
+    version::VERSION,
     x64::interrupts,
 };
 
@@ -16,6 +20,7 @@ klib::use_klib!(kmain);
 // Currently kmain is just testing the async system
 
 async fn kmain() {
+    info!("PentOS v{VERSION}");
     let hartcount = bootinfo().topology.harts.len();
 
     for i in 0..hartcount {
