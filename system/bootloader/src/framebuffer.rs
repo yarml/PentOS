@@ -6,7 +6,7 @@ use {
     core::{mem, slice},
     system::{
         framebuffer::{FramebufferInfo, PixelMode},
-        vmem::{FRAME_DOUBLEBUFFER_REGION, FRAMEBUFFER_REGION, PHYSICAL_MAPPING_REGION},
+        vmem::{FRAME_BACKBUFFER_REGION, FRAMEBUFFER_REGION},
     },
     uefi::{
         Identify,
@@ -108,7 +108,9 @@ pub fn postboot_init(
     buffer.fill(0);
 
     let fb = FRAMEBUFFER_REGION.start();
-    let buffer_page_start = Page::<Page4KiB>::containing(FRAME_DOUBLEBUFFER_REGION.start());
+    let backbuffer_virtaddr = FRAME_BACKBUFFER_REGION.start();
+
+    let buffer_page_start = Page::<Page4KiB>::containing(backbuffer_virtaddr);
 
     let pg_count = primary.size.next_multiple_of(0x1000) / 0x1000;
     let fb_frame_start = Frame::<Frame4KiB>::containing(primary.base);
@@ -136,6 +138,7 @@ pub fn postboot_init(
     }
 
     let fbptr = fb.as_mut_ptr();
+    let backbuffer_ptr = backbuffer_virtaddr.as_mut_ptr();
 
     FramebufferInfo {
         fbptr,
@@ -143,9 +146,7 @@ pub fn postboot_init(
         width: primary.width,
         height: primary.height,
         stride: primary.stride,
-        bufferptr: PhysAddr::from(bufferptr)
-            .to_virt_with_offset(PHYSICAL_MAPPING_REGION.start())
-            .as_mut_ptr(),
+        bufferptr: backbuffer_ptr,
         mode: primary.mode,
     }
 }

@@ -77,19 +77,9 @@ pub const LOCAL_APIC_REGION: VirtualMemoryRegion = after(GLOBAL_MMIO_REGION, g(1
 /// Framebuffer as setup by the bootloader. Uses WriteCombining memory type.
 pub const FRAMEBUFFER_REGION: VirtualMemoryRegion = after(LOCAL_APIC_REGION, g(1), b(0), b(0));
 
-/// Framebuffer double buffer in memory, uses WriteBack memory type.
-pub const FRAME_DOUBLEBUFFER_REGION: VirtualMemoryRegion =
+/// Framebuffer back-buffer in memory, uses WriteBack memory type.
+pub const FRAME_BACKBUFFER_REGION: VirtualMemoryRegion =
     after(FRAMEBUFFER_REGION, g(1), b(0), b(0));
-
-/// Like global kernel space, this is also divded into parts.
-pub const KERNEL_LOCAL_REGION: VirtualMemoryRegion = after(KERNEL_SHARED_REGION, t(64), b(0), b(0));
-
-/// Hart local heap. Only pages actually used are mapped. Always uses the WriteBack memory type.
-/// Subject to swapping policies.
-pub const LOCAL_HEAP_REGION: VirtualMemoryRegion = firstof(KERNEL_LOCAL_REGION, g(512), b(0));
-
-/// Used by drivers which provide MMIO that should only be accessed through a single hart.
-pub const LOCAL_MMIO_REGION: VirtualMemoryRegion = firstof(KERNEL_LOCAL_REGION, t(1), b(0));
 
 const fn after(
     prev: VirtualMemoryRegion,
