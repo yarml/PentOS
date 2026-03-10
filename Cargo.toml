@@ -7,13 +7,13 @@ members = [
     "system/klib",
     "system/system",
     "system/boot-protocol",
-    "system/lib/x64",
-    "system/lib/elf",
-    "system/lib/spinlocks",
-    "system/lib/acpi",
-    "system/lib/log-debugcon",
-    "system/lib/utils",
-    "system/macros/klib-macros",
+    "lib/x64",
+    "lib/elf",
+    "lib/spinlocks",
+    "lib/acpi",
+    "lib/log-debugcon",
+    "lib/utils",
+    "macros/klib-macros",
     "build-system/chef",
     "build-system/builder",
     "test",
@@ -55,13 +55,13 @@ config = { path = "config" }
 klib = { path = "system/klib" }
 system = { path = "system/system" }
 boot-protocol = { path = "system/boot-protocol" }
-x64 = { path = "system/lib/x64" }
-elf = { path = "system/lib/elf" }
+x64 = { path = "lib/x64" }
+elf = { path = "lib/elf" }
 builder = { path = "build-system/builder" }
-spinlocks = { path = "system/lib/spinlocks" }
-acpi = { path = "system/lib/acpi" }
-utils = { path = "system/lib/utils" }
-log-debugcon = { path = "system/lib/log-debugcon" }
+spinlocks = { path = "lib/spinlocks" }
+acpi = { path = "lib/acpi" }
+utils = { path = "lib/utils" }
+log-debugcon = { path = "lib/log-debugcon" }
 
 [workspace.metadata.chef]
 ovmf-version = "edk2-stable202511-r1"
