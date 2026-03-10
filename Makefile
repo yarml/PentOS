@@ -63,6 +63,10 @@ run: image-release
 debug: image-debug
 	bash scripts/debug.sh
 
+.PHONY: run-debug
+run-debug: image-debug
+	bash scripts/run-debug.sh
+
 .PHONY: install
 install: build-release-bootloader build-release-kernel
 	sudo cp target/uefi/release/bootloader.efi $(bootloader_destination)
