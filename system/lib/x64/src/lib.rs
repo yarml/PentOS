@@ -9,3 +9,4 @@ pub mod mem;
 pub mod msr;
 pub mod prot;
 pub mod control;
+pub mod ioapic;

@@ -1,11 +1,9 @@
 use {
-    boot_protocol::topology::{
-        Hart, InterruptController, InterruptOverrride, InterruptPolarity, InterruptTriggerMode,
-        Topology,
-    },
+    boot_protocol::topology::{Hart, InterruptController, InterruptOverrride, Topology},
     config::topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
     log::debug,
     spinlocks::mutex::{Mutex, MutexGuard},
+    x64::ioapic::{InputPolarity, TriggerMode},
 };
 
 static SYSTEM_TOPOLOGY: Mutex<Topology> = Mutex::new(Topology::new());
@@ -30,8 +28,8 @@ pub fn registr_interrupt_source_override(irq: usize, r#override: InterruptOverrr
         panic!("IRQ override for {irq} specified more than once");
     }
     if irq == r#override.gsi
-        && r#override.polarity == InterruptPolarity::ActiveHigh
-        && r#override.trigger == InterruptTriggerMode::EdgeTriggered
+        && r#override.polarity == InputPolarity::ActiveHigh
+        && r#override.trigger == TriggerMode::Edge
     {
         return;
     }

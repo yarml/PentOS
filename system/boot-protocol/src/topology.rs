@@ -1,7 +1,10 @@
 use {
     config::topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
     utils::collections::smallvec::SmallVec,
-    x64::mem::addr::PhysAddr,
+    x64::{
+        ioapic::{InputPolarity, TriggerMode},
+        mem::addr::PhysAddr,
+    },
 };
 
 #[derive(Clone)]
@@ -49,20 +52,6 @@ impl Default for Topology {
 #[repr(C)]
 pub struct InterruptOverrride {
     pub gsi: usize,
-    pub polarity: InterruptPolarity,
-    pub trigger: InterruptTriggerMode,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(C)]
-pub enum InterruptPolarity {
-    ActiveHigh,
-    ActiveLow,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(C)]
-pub enum InterruptTriggerMode {
-    EdgeTriggered,
-    LevelTriggered,
+    pub polarity: InputPolarity,
+    pub trigger: TriggerMode,
 }

@@ -1,15 +1,13 @@
-use boot_protocol::topology::{InterruptOverrride, InterruptTriggerMode};
-
-use {acpi::table::InterruptSourceOverride, boot_protocol::topology::InterruptPolarity};
-
 use {
-    acpi::table::{IOApic, LocalApic, LocalX2Apic, Madt},
-    boot_protocol::topology::{Hart, InterruptController},
-    x64::mem::addr::{Address, PhysAddr},
-};
-
-use crate::topology::{
-    register_hart, register_interrupt_controller, registr_interrupt_source_override,
+    crate::topology::{
+        register_hart, register_interrupt_controller, registr_interrupt_source_override,
+    },
+    acpi::table::{IOApic, InterruptSourceOverride, LocalApic, LocalX2Apic, Madt},
+    boot_protocol::topology::{Hart, InterruptController, InterruptOverrride},
+    x64::{
+        ioapic::{InputPolarity, TriggerMode},
+        mem::addr::{Address, PhysAddr},
+    },
 };
 
 pub fn parse(madt: &Madt) {
@@ -68,14 +66,14 @@ fn parse_is_override(is_override: &InterruptSourceOverride) {
     let raw_trigger = (is_override.flags >> 2) & 0b11;
 
     let polarity = match raw_polarity {
-        0b00 | 0b01 => InterruptPolarity::ActiveHigh,
-        0b11 => InterruptPolarity::ActiveLow,
+        0b00 | 0b01 => InputPolarity::ActiveHigh,
+        0b11 => InputPolarity::ActiveLow,
         _ => panic!("invalid interrupt override polarity"),
     };
 
     let trigger = match raw_trigger {
-        0b00 | 0b01 => InterruptTriggerMode::EdgeTriggered,
-        0b11 => InterruptTriggerMode::LevelTriggered,
+        0b00 | 0b01 => TriggerMode::Edge,
+        0b11 => TriggerMode::Level,
         _ => panic!("invalid interrupt override trigger"),
     };
 

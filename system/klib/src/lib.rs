@@ -12,9 +12,9 @@ extern crate alloc;
 pub mod bootinfo;
 pub mod dev;
 pub mod hart;
-pub mod interrupts;
 pub mod task;
 
+mod interrupts;
 mod kalloc;
 mod mem;
 mod panic;

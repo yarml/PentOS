@@ -2,7 +2,8 @@ use {
     crate::{
         allocator::PostBootAllocator,
         phys_mmap::PhysMemMap,
-        virt_mmap::{map_many, map_optimal},
+        topology,
+        virt_mmap::{map, map_many, map_optimal},
     },
     boot_protocol::BootInfo,
     core::{cmp::min, mem, slice},
@@ -10,7 +11,7 @@ use {
     log::debug,
     system::{
         pmem::IDENTITY_MAPPED_REGION,
-        vmem::{BOOTINFO_REGION, KBIN_REGION},
+        vmem::{BOOTINFO_REGION, IOAPIC_REGION, KBIN_REGION},
     },
     x64::{
         mem::{
@@ -177,6 +178,33 @@ pub unsafe fn apply_legacy_mem_mapping<const ALLOCATOR_CAP: usize, const LEGACY_
             true, // WRITE
             true, // EXEC
             PatMemoryType::WriteBack,
+        );
+    }
+}
+
+/// Maps I/O APICS at id * 4K within IOAPIC_REGION
+/// # Safety
+/// Should be called only once, and in the BSP
+pub unsafe fn apply_ioapic_mappings<const ALLOCATOR_CAP: usize>(
+    map_root: PagingRootEntry,
+    allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
+) {
+    let ioapics = &topology::topology().int_controllers;
+    for ioapic in ioapics {
+        let base = system::ioapic::standard_addressof(ioapic.id);
+        if !IOAPIC_REGION.contains(base) {
+            panic!("I/O APIC ID too large making its address outside the I/O APIC region");
+        }
+        let frame = Frame::containing(ioapic.register_base);
+        let page = Page::containing(base);
+        map::<Page4KiB, ALLOCATOR_CAP>(
+            map_root,
+            allocator,
+            frame,
+            page,
+            true,
+            false,
+            PatMemoryType::Uncacheable,
         );
     }
 }
