@@ -1,5 +1,5 @@
 use {
-    crate::interrupts::get_timestamp,
+    crate::dev::timer::get_timestamp,
     alloc::collections::binary_heap::BinaryHeap,
     core::{
         cmp::Ordering,

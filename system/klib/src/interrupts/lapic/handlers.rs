@@ -1,20 +1,13 @@
 use {
-    crate::{
-        interrupts::lapic::TIMESTAMP,
-        task::{self, sleep, suspend},
-    },
-    core::sync::atomic::Ordering,
+    crate::{dev, task},
     system::hart::HartInfo,
     x64::{interrupts::stackframe::InterruptStackFrame, lapic::LocalApic},
 };
 
 pub extern "x86-interrupt" fn timer_interrupt(_frame: InterruptStackFrame) {
     let hartinfo = HartInfo::get();
-
     if hartinfo.is_bsp() {
-        TIMESTAMP.fetch_add(1, Ordering::Relaxed);
-        task::spawn_urgent(sleep::wake);
-        task::spawn_urgent(suspend::wake);
+        task::spawn_urgent(dev::timer::on_tick);
     }
     LocalApic::end_of_interrupt();
 }

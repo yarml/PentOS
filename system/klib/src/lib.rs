@@ -24,7 +24,7 @@ use {
         hint,
         sync::atomic::{AtomicBool, Ordering},
     },
-    log::info,
+    log::{debug, info},
     system::hart::HartInfo,
 };
 
@@ -58,6 +58,7 @@ pub unsafe fn init(kmain: impl Future<Output = ()> + Send + 'static) -> ! {
         common_setup();
         task::run();
     }
+
     log_debugcon::init();
     info!("Kernel library initialization");
 
@@ -71,6 +72,7 @@ pub unsafe fn init(kmain: impl Future<Output = ()> + Send + 'static) -> ! {
     dev::init();
 
     task::init();
+    debug!("Spawning kmain");
     task::spawn(kmain);
 
     BSP_SETUP.store(true, Ordering::Release);

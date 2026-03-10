@@ -243,8 +243,6 @@ extern "sysv64" fn ap_entrypoint(base: usize) {
     status_flag.store(STATUS_DONE, Ordering::Relaxed);
     HART_ACTIVE.fetch_add(1, Ordering::Relaxed);
 
-    debug!("AP core UP!");
-
     known_state();
 
     let ap_entry = *AP_BOOT_ENTRYPOINT.wait();

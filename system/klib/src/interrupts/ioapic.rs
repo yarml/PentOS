@@ -17,7 +17,7 @@ static INT_CONTROLLERS: Once<SmallVec<IoApicContainer, MAX_INTCTL_COUNT>> = Once
 
 struct IoApicContainer {
     ioapic: Mutex<IoApic>,
-    id: usize,
+    // id: usize,
     gsi_base: usize,
     count: usize,
 }
@@ -56,7 +56,7 @@ pub(crate) fn init() {
             ioapic: Mutex::new(ioapic),
             count,
             gsi_base,
-            id: controller.id,
+            // id: controller.id,
         };
         if int_controllers.push(container).is_err() {
             panic!("not enough interrupt controller slots");
@@ -97,7 +97,7 @@ fn apply_irq_redirection(
         ioapic.write_redirection(
             (redirection.gsi - gsi_controller.gsi_base) as u8,
             IoRedirection::FixedPhysical {
-                vector: vector,
+                vector,
                 apic_id: io_hart_apic_id as u8,
                 trigger: redirection.trigger,
                 polarity: redirection.polarity,
