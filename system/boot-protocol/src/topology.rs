@@ -9,6 +9,7 @@ use {
 pub struct Topology {
     pub harts: SmallVec<Hart, MAX_HART_COUNT>,
     pub int_controllers: SmallVec<InterruptController, MAX_INTCTL_COUNT>,
+    pub irq_overrides: [Option<InterruptOverrride>; 16],
 }
 
 // Too proud of myself to call this CPU
@@ -33,6 +34,7 @@ impl Topology {
         Self {
             harts: SmallVec::new(),
             int_controllers: SmallVec::new(),
+            irq_overrides: [None; 16],
         }
     }
 }
@@ -41,4 +43,26 @@ impl Default for Topology {
     fn default() -> Self {
         Self::new()
     }
+}
+
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct InterruptOverrride {
+    pub gsi: usize,
+    pub polarity: InterruptPolarity,
+    pub trigger: InterruptTriggerMode,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
+pub enum InterruptPolarity {
+    ActiveHigh,
+    ActiveLow,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
+pub enum InterruptTriggerMode {
+    EdgeTriggered,
+    LevelTriggered,
 }

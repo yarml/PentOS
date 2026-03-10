@@ -61,6 +61,13 @@ impl ApicBase {
         }
     }
 
+    pub fn with_x2apic_enabled(self, enabled: bool) -> ApicBase {
+        let mask = 1 << X2APIC_BIT;
+        ApicBase {
+            raw: RawMsr::new(if enabled { *self | mask } else { *self & !mask }),
+        }
+    }
+
     pub fn with_phys_base(self, phys_base: Frame<Frame4KiB>) -> ApicBase {
         ApicBase {
             raw: RawMsr::new((*self & !BASE_MASK as u64) | phys_base.boundary().as_u64()),

@@ -25,6 +25,15 @@ pub struct LocalApic {
 }
 
 #[repr(C, packed)]
+pub struct LocalX2Apic {
+    pub header: MadtEntryHeader,
+    res0: u16,
+    pub x2apic_id: u32,
+    pub flags: u32,
+    pub proc_uid: u32,
+}
+
+#[repr(C, packed)]
 pub struct IOApic {
     pub header: MadtEntryHeader,
     pub ioapic_id: u8,
@@ -57,6 +66,7 @@ impl Madt {
     pub const IO_APIC_TY: u8 = 1;
     pub const IS_OVERRIDE_TY: u8 = 2;
     pub const LOCAL_APIC_NMI_TY: u8 = 4;
+    pub const LOCAL_X2APIC_TY: u8 = 9;
 }
 
 impl Madt {
@@ -149,4 +159,8 @@ impl MadtEntry for IOApic {
 
 impl MadtEntry for InterruptSourceOverride {
     const TYPE: u8 = Madt::IS_OVERRIDE_TY;
+}
+
+impl MadtEntry for LocalX2Apic {
+    const TYPE: u8 = Madt::LOCAL_X2APIC_TY;
 }

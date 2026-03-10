@@ -124,7 +124,6 @@ fn main() -> Status {
         virt_mmap::apply_kbin_mapping(map_root, &mut allocator, &kernel);
         virt_mmap::apply_bootinfo_mapping(map_root, &mut allocator, bootinfo);
         virt_mmap::apply_legacy_mem_mapping(map_root, &mut allocator, &legacy_mmap);
-        virt_mmap::apply_lapic_mapping(map_root, &mut allocator);
     }
 
     let mut khi = unsafe {

@@ -1,16 +1,6 @@
-use {
-    crate::mem::addr::{Address, VirtAddr},
-    core::{arch::x86_64::__cpuid, hint, ptr},
-};
+use crate::msr::RawMsr;
 
-pub fn id_cpuid() -> usize {
-    (__cpuid(1).ebx >> 24) as usize
-}
-
-#[derive(Clone, Copy)]
-pub struct LocalApicPointer {
-    pointer: VirtAddr,
-}
+pub struct LocalApic;
 
 #[derive(Clone, Copy)]
 pub struct LocalApicVersion {
@@ -60,7 +50,7 @@ pub enum IPITriggerMode {
 #[derive(Clone, Copy)]
 #[repr(u8)]
 pub enum IPIDestination {
-    Explicit { tartget_apicid: u8 } = 0b00,
+    Explicit { tartget_apicid: usize } = 0b00,
     OnlySelf = 0b01,
     EveryoneAndSelf = 0b10,
     EveryoneExceptSelf = 0b11,
@@ -73,8 +63,7 @@ pub enum LocalApicRegister {
     Version = 0x30,
     EndOfInterrupt = 0xB0,
     SpuriousVector = 0xF0,
-    ICRLow = 0x300,
-    ICRHigh = 0x310,
+    ICR = 0x300,
     LVTTimer = 0x320,
     LVTError = 0x0370,
     InitCount = 0x380,
@@ -90,37 +79,25 @@ pub enum TimerMode {
     TSCDeadline = 0b10,
 }
 
-impl LocalApicPointer {
-    /// # Safety
-    /// virt_addr should mapped up to 4KiB to the phyhsical
-    /// address in IA32_APIC_BASE with Strong Unchachable type
-    pub const unsafe fn from_virt_addr(virt_addr: VirtAddr) -> Self {
-        Self { pointer: virt_addr }
-    }
-}
-impl LocalApicPointer {
+impl LocalApic {
     #[inline(always)]
-    pub fn read_reg32(&self, reg: LocalApicRegister) -> u32 {
-        unsafe {
-            // SAFETY: This should be safe since each hart can only access their own Local APIC.
-            ptr::read_volatile((self.pointer + reg as usize).as_ptr())
-        }
+    pub fn read_reg(reg: LocalApicRegister) -> usize {
+        let msr = 0x800 + (reg as u32 >> 4);
+        *RawMsr::read(msr) as usize
     }
     #[inline(always)]
-    pub fn write_reg32(&self, reg: LocalApicRegister, value: u32) {
-        unsafe {
-            // SAFETY: This should be safe since each hart can only access their own Local APIC.
-            ptr::write_volatile((self.pointer + reg as usize).as_mut_ptr(), value);
-        };
+    pub fn write_reg(reg: LocalApicRegister, value: usize) {
+        let msr = 0x800 + (reg as u32 >> 4);
+        RawMsr::new(value as u64).write(msr)
     }
 
     #[inline(always)]
-    pub fn id(&self) -> usize {
-        self.read_reg32(LocalApicRegister::ID) as usize >> 24
+    pub fn id() -> usize {
+        Self::read_reg(LocalApicRegister::ID)
     }
     #[inline(always)]
-    pub fn version(&self) -> LocalApicVersion {
-        let reg = self.read_reg32(LocalApicRegister::Version) as usize;
+    pub fn version() -> LocalApicVersion {
+        let reg = Self::read_reg(LocalApicRegister::Version);
         let version = reg & 0xF;
         let lvt_count = ((reg >> 16) & 0xFF) + 1;
         let supress_eoi_ability = (reg >> 24) & 1 == 1;
@@ -131,7 +108,7 @@ impl LocalApicPointer {
         }
     }
 
-    pub fn send_ipi(&self, ipi: InterProcessorInterrupt) {
+    pub fn send_ipi(ipi: InterProcessorInterrupt) {
         let destination_field = match ipi.destination {
             IPIDestination::Explicit { tartget_apicid } => tartget_apicid,
             _ => 0,
@@ -152,26 +129,20 @@ impl LocalApicPointer {
         let destination_mode = ipi.destination_mode as u8;
         let destination_shorthand = ipi.destination.discriminant();
 
-        let upper_dword = (destination_field as u32) << 24;
-        let lower_dword = (vector as u32)
-            | (delivery_mode as u32) << 8
-            | (destination_mode as u32) << 11
-            | (level as u32) << 14
-            | (trigger_mode as u32) << 15
-            | (destination_shorthand as u32) << 18;
+        let icr = (vector as usize)
+            | (delivery_mode as usize) << 8
+            | (destination_mode as usize) << 11
+            | (level as usize) << 14
+            | (trigger_mode as usize) << 15
+            | (destination_shorthand as usize) << 18
+            | destination_field << 32;
 
-        self.write_reg32(LocalApicRegister::ICRHigh, upper_dword);
-        self.write_reg32(LocalApicRegister::ICRLow, lower_dword);
-
-        // Wait for delivery
-        while self.read_reg32(LocalApicRegister::ICRLow) & (1 << 12) != 0 {
-            hint::spin_loop();
-        }
+        Self::write_reg(LocalApicRegister::ICR, icr);
     }
 
     #[inline(always)]
-    pub fn set_timer_divisor(&self, divisor: u8) {
-        let divconf: u32 = match divisor {
+    pub fn set_timer_divisor(divisor: u8) {
+        let divconf: usize = match divisor {
             1 => 0b1011,
             2 => 0b0000,
             4 => 0b0001,
@@ -182,37 +153,37 @@ impl LocalApicPointer {
             128 => 0b1010,
             _ => panic!("Invalid LAPIC timer divisor {divisor}"),
         };
-        self.write_reg32(LocalApicRegister::DivConf, divconf)
+        Self::write_reg(LocalApicRegister::DivConf, divconf)
     }
 
     #[inline(always)]
-    pub fn set_timer_initial(&self, value: u32) {
-        self.write_reg32(LocalApicRegister::InitCount, value)
+    pub fn set_timer_initial(value: u32) {
+        Self::write_reg(LocalApicRegister::InitCount, value as usize)
     }
     #[inline(always)]
-    pub fn get_timer(&self) -> u32 {
-        self.read_reg32(LocalApicRegister::CurrentCount)
+    pub fn get_timer() -> u32 {
+        Self::read_reg(LocalApicRegister::CurrentCount) as u32
     }
 
     #[inline(always)]
-    pub fn program_spurious_vector(&self, vector: u8) {
-        self.write_reg32(LocalApicRegister::SpuriousVector, vector as u32 | 0x100)
+    pub fn program_spurious_vector(vector: u8) {
+        Self::write_reg(LocalApicRegister::SpuriousVector, vector as usize | 0x100)
     }
     #[inline(always)]
-    pub fn program_lvt_timer(&self, vector: u8, mode: TimerMode) {
-        self.write_reg32(
+    pub fn program_lvt_timer(vector: u8, mode: TimerMode) {
+        Self::write_reg(
             LocalApicRegister::LVTTimer,
-            vector as u32 | (mode as u32) << 17,
+            vector as usize | (mode as usize) << 17,
         )
     }
     #[inline(always)]
-    pub fn program_lvt_error(&self, vector: u8) {
-        self.write_reg32(LocalApicRegister::LVTError, vector as u32)
+    pub fn program_lvt_error(vector: u8) {
+        Self::write_reg(LocalApicRegister::LVTError, vector as usize)
     }
 
     #[inline(always)]
-    pub fn end_of_interrupt(&self) {
-        self.write_reg32(LocalApicRegister::EndOfInterrupt, 0);
+    pub fn end_of_interrupt() {
+        Self::write_reg(LocalApicRegister::EndOfInterrupt, 0);
     }
 }
 

@@ -71,11 +71,8 @@ pub const KRESERVED_REGION: VirtualMemoryRegion = after(NMI_STACK_REGION, g(454)
 /// for this region allows specifying any memory type.
 pub const GLOBAL_MMIO_REGION: VirtualMemoryRegion = after(KRESERVED_REGION, t(1), b(0), b(0));
 
-/// Local APIC
-pub const LOCAL_APIC_REGION: VirtualMemoryRegion = after(GLOBAL_MMIO_REGION, g(1), b(0), b(0));
-
 /// Framebuffer as setup by the bootloader. Uses WriteCombining memory type.
-pub const FRAMEBUFFER_REGION: VirtualMemoryRegion = after(LOCAL_APIC_REGION, g(1), b(0), b(0));
+pub const FRAMEBUFFER_REGION: VirtualMemoryRegion = after(GLOBAL_MMIO_REGION, g(1), b(0), b(0));
 
 /// Framebuffer back-buffer in memory, uses WriteBack memory type.
 pub const FRAME_BACKBUFFER_REGION: VirtualMemoryRegion =

@@ -15,13 +15,12 @@ use {
     spinlocks::{mutex::Mutex, once::Once},
     system::{
         hart::HartInfo,
-        lapic_ptr,
         tss::{DF_IST, NMI_IST, ist_index},
         vmem::PHYSICAL_MAPPING_REGION,
     },
     x64::{
         interrupts::InterruptDescriptorTable,
-        lapic,
+        lapic::LocalApic,
         mem::{
             addr::{Address, VirtAddr},
             segmentation::{selector::SegmentSelector, task_state::TaskStateSegment},
@@ -135,14 +134,13 @@ fn populate_hartinfo(
     osid: usize,
 ) {
     static PIT_SLEEP_USED: AtomicBool = AtomicBool::new(false);
-    let lapic = lapic_ptr::standard();
 
     let hartinfo = &mut khi.hartinfo;
 
-    let lapic_10ms = lapic_timer::ticks_per_10ms(lapic);
+    let lapic_10ms = lapic_timer::ticks_per_10ms();
 
     **hartinfo = HartInfo {
-        hard_id: lapic::id_cpuid(),
+        hard_id: LocalApic::id(),
         stack: stack_set.stack.as_usize(),
         df_stack: stack_set.df_stack.as_usize(),
         nmi_stack: stack_set.nmi_stack.as_usize(),

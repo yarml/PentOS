@@ -5,11 +5,11 @@ use {
         hint,
         sync::atomic::{AtomicBool, Ordering},
     },
-    x64::lapic::LocalApicPointer,
+    x64::lapic::LocalApic,
 };
 
-pub fn ticks_per_10ms(lapic: LocalApicPointer) -> usize {
-    calib_cpuid().unwrap_or_else(|| calib_timers(lapic))
+pub fn ticks_per_10ms() -> usize {
+    calib_cpuid().unwrap_or_else(calib_timers)
 }
 
 fn calib_cpuid() -> Option<usize> {
@@ -32,10 +32,10 @@ fn calib_cpuid() -> Option<usize> {
     Some(ticks_per_10ms as usize)
 }
 
-fn calib_timers(lapic: LocalApicPointer) -> usize {
+fn calib_timers() -> usize {
     static SLEEP_USED: AtomicBool = AtomicBool::new(false);
 
-    lapic.set_timer_divisor(1);
+    LocalApic::set_timer_divisor(1);
 
     while SLEEP_USED
         .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
@@ -43,12 +43,12 @@ fn calib_timers(lapic: LocalApicPointer) -> usize {
     {
         hint::spin_loop();
     }
-    lapic.set_timer_initial(0xFFFF_FFFF);
+    LocalApic::set_timer_initial(0xFFFF_FFFF);
     unsafe {
         // SAFETY: locking for one sleep at a time
         timers::sleep_us(10_000)
     };
-    let remaining = lapic.get_timer();
+    let remaining = LocalApic::get_timer();
 
     SLEEP_USED.store(false, Ordering::Relaxed);
     (0xFFFF_FFFF - remaining) as usize

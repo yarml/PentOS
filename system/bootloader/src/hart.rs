@@ -13,13 +13,12 @@ use {
     },
     log::{debug, error},
     spinlocks::{mutex::Mutex, once::Once},
-    system::lapic_ptr,
     x64::{
         control::{CR0, CR4},
         interrupts,
         lapic::{
-            self, IPIDeliveryMode, IPIDestination, IPIDestinationMode, IPILevel, IPITriggerMode,
-            InterProcessorInterrupt, LocalApicPointer,
+            IPIDeliveryMode, IPIDestination, IPIDestinationMode, IPILevel, IPITriggerMode,
+            InterProcessorInterrupt, LocalApic,
         },
         mem::{
             MemorySize, PhysicalMemoryRegion,
@@ -90,20 +89,18 @@ pub unsafe fn init(
         slice::from_raw_parts_mut(chunk.start().as_mut_ptr::<u8>(), AP_INIT_CODE.len())
     };
 
-    let bspid = lapic::id_cpuid();
-    let lapic = lapic_ptr::standard();
+    let bspid = LocalApic::id();
 
     let topology = topology::topology();
     for hart in topology.harts.iter().filter(|hart| hart.apic_id != bspid) {
         ap_bootstrap_destination.copy_from_slice(AP_INIT_CODE);
         let stack_set = kernel_stacks.pop_set();
-        wakeup_hart(lapic, hart.apic_id as u8, chunk, map_root, stack_set);
+        wakeup_hart(hart.apic_id, chunk, map_root, stack_set);
     }
 }
 
 fn wakeup_hart(
-    lapic: LocalApicPointer,
-    apic_id: u8,
+    apic_id: usize,
     chunk: PhysicalMemoryRegion,
     map_root: PagingRootEntry,
     ap_stack_set: KernelStackSet,
@@ -170,13 +167,13 @@ fn wakeup_hart(
         *ap_kernel_stack_set = Some(ap_stack_set)
     }
 
-    lapic.send_ipi(init_ipi);
+    LocalApic::send_ipi(init_ipi);
     // Linux does not put any delay here for post ~2000 processors, neither do I
-    lapic.send_ipi(init_deassert_ipi);
+    LocalApic::send_ipi(init_deassert_ipi);
 
     let success = 'success: {
         for attempt in 0..MAX_AP_RETRIES {
-            lapic.send_ipi(startup_ipi);
+            LocalApic::send_ipi(startup_ipi);
             // Linux does only 10us, me just follow, but me want to be creative, so me make it exponential
             // but cap it at 50ms
             unsafe {
@@ -262,6 +259,7 @@ pub fn known_state() {
         Efer::new().exec_disable(true).syscall(true).write();
         ApicBase::read()
             .with_enabled(true)
+            .with_x2apic_enabled(true)
             .with_phys_base(Frame::containing(STANDARD_PHYS_BASE))
             .write();
         CR0::new().numeric_error(true).write_protect(true).write();

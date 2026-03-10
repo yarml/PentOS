@@ -4,12 +4,11 @@ use {
         task::{self, sleep, suspend},
     },
     core::sync::atomic::Ordering,
-    system::{hart::HartInfo, lapic_ptr},
-    x64::interrupts::stackframe::InterruptStackFrame,
+    system::hart::HartInfo,
+    x64::{interrupts::stackframe::InterruptStackFrame, lapic::LocalApic},
 };
 
 pub extern "x86-interrupt" fn timer_interrupt(_frame: InterruptStackFrame) {
-    let lapic = lapic_ptr::standard();
     let hartinfo = HartInfo::get();
 
     if hartinfo.is_bsp() {
@@ -17,7 +16,7 @@ pub extern "x86-interrupt" fn timer_interrupt(_frame: InterruptStackFrame) {
         task::spawn_urgent(sleep::wake);
         task::spawn_urgent(suspend::wake);
     }
-    lapic.end_of_interrupt();
+    LocalApic::end_of_interrupt();
 }
 
 pub extern "x86-interrupt" fn spurious_interrupt(_frame: InterruptStackFrame) {

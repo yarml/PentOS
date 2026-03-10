@@ -2,16 +2,16 @@ use {
     crate::{
         allocator::PostBootAllocator,
         phys_mmap::PhysMemMap,
-        virt_mmap::{self, map_many, map_optimal},
+        virt_mmap::{map_many, map_optimal},
     },
     boot_protocol::BootInfo,
-    system::{
-        pmem::IDENTITY_MAPPED_REGION,
-        vmem::{BOOTINFO_REGION, KBIN_REGION, LOCAL_APIC_REGION},
-    },
     core::{cmp::min, mem, slice},
     elf::{Elf, SegmentType},
     log::debug,
+    system::{
+        pmem::IDENTITY_MAPPED_REGION,
+        vmem::{BOOTINFO_REGION, KBIN_REGION},
+    },
     x64::{
         mem::{
             VirtualMemoryRegion,
@@ -26,10 +26,7 @@ use {
             },
             paging::PagingRootEntry,
         },
-        msr::{
-            apic_base::{ApicBase, STANDARD_PHYS_BASE},
-            pat::MemoryType as PatMemoryType,
-        },
+        msr::pat::MemoryType as PatMemoryType,
     },
 };
 
@@ -182,29 +179,4 @@ pub unsafe fn apply_legacy_mem_mapping<const ALLOCATOR_CAP: usize, const LEGACY_
             PatMemoryType::WriteBack,
         );
     }
-}
-
-/// # Safety
-/// Should be called only once, and in the BSP
-pub unsafe fn apply_lapic_mapping<const ALLOCATOR_CAP: usize>(
-    map_root: PagingRootEntry,
-    allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
-) {
-    let frame = ApicBase::read().phys_base();
-    assert!(
-        frame.boundary() == STANDARD_PHYS_BASE,
-        "Invalid LAPIC physical base address"
-    );
-
-    let page = Page::containing(LOCAL_APIC_REGION.start());
-
-    virt_mmap::map::<Page4KiB, ALLOCATOR_CAP>(
-        map_root,
-        allocator,
-        frame,
-        page,
-        true,
-        false,
-        PatMemoryType::Uncacheable,
-    );
 }

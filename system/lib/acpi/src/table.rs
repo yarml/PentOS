@@ -9,7 +9,10 @@ pub use {
     fadt::{Fadt, PmTimerInfo},
     gas::GenericAddress,
     header::AcpiHeader,
-    madt::{IOApic, InterruptSourceOverride, LocalApic, Madt, MadtEntryHeader, MadtIterator},
+    madt::{
+        IOApic, InterruptSourceOverride, LocalApic, LocalX2Apic, Madt, MadtEntryHeader,
+        MadtIterator,
+    },
     rsdp::Rsdp,
     xsdt::Xsdt,
 };

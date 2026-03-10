@@ -1,5 +1,8 @@
 use {
-    boot_protocol::topology::{Hart, InterruptController, Topology},
+    boot_protocol::topology::{
+        Hart, InterruptController, InterruptOverrride, InterruptPolarity, InterruptTriggerMode,
+        Topology,
+    },
     config::topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
     log::debug,
     spinlocks::mutex::{Mutex, MutexGuard},
@@ -19,6 +22,20 @@ pub fn register_interrupt_controller(interrupt_controller: InterruptController) 
     if topology.int_controllers.push(interrupt_controller).is_err() {
         complain_big_system("interrupt controllers", MAX_INTCTL_COUNT);
     }
+}
+
+pub fn registr_interrupt_source_override(irq: usize, r#override: InterruptOverrride) {
+    let mut topology = SYSTEM_TOPOLOGY.lock();
+    if topology.irq_overrides[irq].is_some() {
+        panic!("IRQ override for {irq} specified more than once");
+    }
+    if irq == r#override.gsi
+        && r#override.polarity == InterruptPolarity::ActiveHigh
+        && r#override.trigger == InterruptTriggerMode::EdgeTriggered
+    {
+        return;
+    }
+    topology.irq_overrides[irq] = Some(r#override);
 }
 
 pub fn topology() -> MutexGuard<'static, Topology> {
@@ -50,6 +67,16 @@ pub fn dump() {
             "\t\tController#{}@{}",
             int_controller.id, int_controller.gsi_base
         );
+    }
+
+    debug!("\tIRQ Overrides:");
+    for irq in 0..16 {
+        if let Some(r#override) = topology.irq_overrides[irq] {
+            debug!(
+                "\t\tIRQ {irq} -> GSI {} ({:?}:{:?})",
+                r#override.gsi, r#override.trigger, r#override.polarity
+            );
+        }
     }
 }
 
