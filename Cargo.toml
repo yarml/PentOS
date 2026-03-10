@@ -16,7 +16,7 @@ members = [
     "macros/klib-macros",
     "build-system/chef",
     "build-system/builder",
-    "test",
+    "test", "lib/keys",
 ]
 resolver = "3"
 

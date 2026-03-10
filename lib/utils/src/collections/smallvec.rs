@@ -126,6 +126,28 @@ impl<T> SmallVecBuf<T> {
     }
 }
 
+impl<T, const N: usize, const M: usize> From<[T; M]> for SmallVec<T, N> {
+    fn from(value: [T; M]) -> Self {
+        assert!(N >= M);
+        let mut result = Self::new();
+        for e in value {
+            unsafe { result.push(e).unwrap_err_unchecked() };
+        }
+        result
+    }
+}
+
+impl<T: Clone, const N: usize> From<&[T]> for SmallVec<T, N> {
+    fn from(value: &[T]) -> Self {
+        assert!(N >= value.len());
+        let mut result = Self::new();
+        for e in value {
+            unsafe { result.push(e.clone()).unwrap_err_unchecked() };
+        }
+        result
+    }
+}
+
 impl<'a, T, const N: usize> IntoIterator for &'a SmallVec<T, N> {
     type Item = &'a T;
     type IntoIter = Iter<'a, T>;
