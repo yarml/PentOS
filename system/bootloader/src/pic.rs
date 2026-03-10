@@ -1,42 +1,37 @@
-use x64::io::{
-    Port, self,
-};
-
-const MASTER_CMD: Port<u8> = Port::new(0x20);
-const MASTER_DATA: Port<u8> = Port::new(0x21);
-
-const SLAVE_CMD: Port<u8> = Port::new(0xA0);
-const SLAVE_DATA: Port<u8> = Port::new(0xA1);
+use x64::io::{self, Port};
 
 // Intact code from HeliumOS
 pub fn disable() {
-    unsafe {
-        // SAFETY: None of these have any side effect on memory
+    // SAFETY: no other system in the kernel uses these ports
+    let mut master_cmd: Port<u8> = unsafe { Port::new(0x20) };
+    let mut master_data: Port<u8> = unsafe { Port::new(0x21) };
 
-        // Config mode
-        MASTER_CMD.write(0x11);
-        SLAVE_CMD.write(0x11);
-        io::wait();
+    let mut slave_cmd: Port<u8> = unsafe { Port::new(0xA0) };
+    let mut slave_data: Port<u8> = unsafe { Port::new(0xA1) };
 
-        // Offset master and slave to 0x20 and 0x28 respectively
-        MASTER_DATA.write(0x20);
-        SLAVE_DATA.write(0x28);
-        io::wait();
+    // Config mode
+    master_cmd.write(0x11);
+    slave_cmd.write(0x11);
+    io::wait();
 
-        // Configure master slave relationship
-        MASTER_DATA.write(4);
-        SLAVE_DATA.write(2);
-        io::wait();
+    // Offset master and slave to 0x20 and 0x28 respectively
+    master_data.write(0x20);
+    slave_data.write(0x28);
+    io::wait();
 
-        // Use 8086 Mode
-        MASTER_DATA.write(1);
-        SLAVE_DATA.write(1);
-        io::wait();
+    // Configure master slave relationship
+    master_data.write(4);
+    slave_data.write(2);
+    io::wait();
 
-        // Mask everything
-        MASTER_DATA.write(0xFF);
-        SLAVE_DATA.write(0xFF);
+    // Use 8086 Mode
+    master_data.write(1);
+    slave_data.write(1);
+    io::wait();
 
-        io::wait();
-    }
+    // Mask everything
+    master_data.write(0xFF);
+    slave_data.write(0xFF);
+
+    io::wait();
 }

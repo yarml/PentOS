@@ -176,10 +176,8 @@ fn wakeup_hart(
             LocalApic::send_ipi(startup_ipi);
             // Linux does only 10us, me just follow, but me want to be creative, so me make it exponential
             // but cap it at 50ms
-            unsafe {
-                // SAFETY: other harts still sleeping, can't call pit::sleep_us in parallel
-                timers::sleep_us(usize::min(10 * (100 * attempt + 1), 50 * 1000))
-            };
+
+            timers::sleep_us(usize::min(10 * (100 * attempt + 1), 50 * 1000));
 
             if status_flag.load(Ordering::Relaxed) != STATUS_WAIT {
                 break 'success true;

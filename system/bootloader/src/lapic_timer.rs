@@ -44,10 +44,7 @@ fn calib_timers() -> usize {
         hint::spin_loop();
     }
     LocalApic::set_timer_initial(0xFFFF_FFFF);
-    unsafe {
-        // SAFETY: locking for one sleep at a time
-        timers::sleep_us(10_000)
-    };
+    timers::sleep_us(10_000);
     let remaining = LocalApic::get_timer();
 
     SLEEP_USED.store(false, Ordering::Relaxed);

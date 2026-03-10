@@ -6,7 +6,13 @@ pub struct Port<N> {
 }
 
 impl<N> Port<N> {
-    pub const fn new(port: u16) -> Self {
+    /// # Safety
+    /// Must ensure no other instance of Port uses this port
+    /// Port effectively acts as &mut T, even for read operations, since those
+    /// can have side effects
+    ///
+    /// Port also should not be 0x80 as that is used within the io::wait implementation only
+    pub const unsafe fn new(port: u16) -> Self {
         Self {
             port,
             _phantom: PhantomData,
@@ -15,9 +21,7 @@ impl<N> Port<N> {
 }
 
 impl Port<u8> {
-    /// # Safety
-    /// IO port reading could have side effects
-    pub unsafe fn read(&self) -> u8 {
+    pub fn read(&mut self) -> u8 {
         let mut value;
         unsafe {
             asm! {
@@ -28,9 +32,7 @@ impl Port<u8> {
         }
         value
     }
-    /// # Safety
-    /// IO writing reading could have side effects
-    pub unsafe fn write(&self, value: u8) {
+    pub fn write(&mut self, value: u8) {
         unsafe {
             asm! {
                 "out dx, al",
@@ -42,9 +44,7 @@ impl Port<u8> {
 }
 
 impl Port<u16> {
-    /// # Safety
-    /// IO port reading could have side effects
-    pub unsafe fn read(&self) -> u16 {
+    pub fn read(&mut self) -> u16 {
         let mut value;
         unsafe {
             asm! {
@@ -55,9 +55,7 @@ impl Port<u16> {
         }
         value
     }
-    /// # Safety
-    /// IO port writing could have side effects
-    pub unsafe fn write(&self, value: u16) {
+    pub fn write(&mut self, value: u16) {
         unsafe {
             asm! {
                 "out dx, ax",
@@ -69,9 +67,7 @@ impl Port<u16> {
 }
 
 impl Port<u32> {
-    /// # Safety
-    /// IO port reading could have side effects
-    pub unsafe fn read(&self) -> u32 {
+    pub fn read(&mut self) -> u32 {
         let mut value;
         unsafe {
             asm! {
@@ -82,9 +78,7 @@ impl Port<u32> {
         }
         value
     }
-    /// # Safety
-    /// IO port writing could have side effects
-    pub unsafe fn write(&self, value: u32) {
+    pub fn write(&mut self, value: u32) {
         unsafe {
             asm! {
                 "out dx, eax",
@@ -97,9 +91,10 @@ impl Port<u32> {
 
 pub fn wait() {
     // https://wiki.osdev.org/Inline_Assembly/Examples#IO_WAIT
-    let tmp = Port::<u8>::new(0x80);
-    unsafe {
-        // SAFETY: This should be an unused port?
-        tmp.write(0)
+    let mut tmp = unsafe {
+        // SAFETY: we get special treatment to use port 0x80
+        Port::<u8>::new(0x80)
     };
+
+    tmp.write(0);
 }

@@ -16,16 +16,16 @@ const PM_TIMER_FREQ_HZ: usize = 3_579_545;
 ///
 /// # Safety
 /// `info.port` must be the valid I/O port of the ACPI PM timer.
+/// And must be called from one hart at a time.
 pub unsafe fn sleep_us(t: usize, info: &PmTimerInfo) {
-    let port = Port::<u32>::new(info.port);
+    let mut port = unsafe { Port::<u32>::new(info.port) };
     let mask: u32 = if info.is_32bit {
         0xFFFF_FFFF
     } else {
         0x00FF_FFFF
     };
 
-    let read_pm = || unsafe {
-        // SAFETY: PM timer is readonly with no side effects
+    let mut read_pm = || {
         port.read() & mask
     };
     let ticks_needed = ((t * PM_TIMER_FREQ_HZ) / 1_000_000) + 1;

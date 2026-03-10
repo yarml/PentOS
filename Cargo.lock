@@ -892,6 +892,7 @@ version = "0.1.0"
 dependencies = [
  "boot-protocol",
  "config",
+ "keys",
  "klib-macros",
  "log",
  "log-debugcon",

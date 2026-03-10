@@ -14,14 +14,14 @@ pub fn init_pm(pm_timer_info: Option<PmTimerInfo>) {
     PM_INFO.init(|| pm_timer_info);
 }
 
-/// # Safety
-/// Must be called by one hart at a time.
-pub unsafe fn sleep_us(t: usize) {
+/// # Note
+/// If called from more than one hart at a time, the sleep time will be very innacurate for the second hart
+pub fn sleep_us(t: usize) {
     let Some(pm_timer_info) = PM_INFO.poll() else {
-        return unsafe { pit::sleep_us(t) };
+        return pit::sleep_us(t);
     };
     let Some(pm_timer_info) = pm_timer_info else {
-        return unsafe { pit::sleep_us(t) };
+        return pit::sleep_us(t);
     };
 
     unsafe { pm::sleep_us(t, pm_timer_info) };

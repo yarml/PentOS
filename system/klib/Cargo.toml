@@ -16,6 +16,7 @@ config.workspace = true
 log.workspace = true
 log-debugcon.workspace = true
 system.workspace = true
+keys.workspace = true
 
 [features]
 test = []

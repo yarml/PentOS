@@ -72,7 +72,7 @@ async fn test_task(i: usize) {
             fb.draw_box((i + 1) * 10, 10, 10, 10, color);
         });
         state = !state;
-        sleep((i + 1) * 500).await
+        sleep((i + 1) * 50).await
     }
 }
 

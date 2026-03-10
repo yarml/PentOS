@@ -29,14 +29,12 @@ impl Key {
 }
 
 impl Key {
-    pub fn press_sequence(&self) -> Option<SmallVec<u8, MAX_SEQUENCE>> {
+    pub fn press_sequence(&self) -> SmallVec<u8, MAX_SEQUENCE> {
         match self {
-            Key::Simple { scancode } => Some(SmallVec::from([*scancode])),
-            Key::Extended { scancode } => Some(SmallVec::from([0xE0, *scancode])),
-            Key::PrintScreen => Some(SmallVec::from([0xE0, 0x12, 0xE0, 0x7C])),
-            Key::Pause => Some(SmallVec::from([
-                0xE1, 0x14, 0x77, 0xE1, 0xF0, 0x14, 0xF0, 0x77,
-            ])),
+            Key::Simple { scancode } => SmallVec::from([*scancode]),
+            Key::Extended { scancode } => SmallVec::from([0xE0, *scancode]),
+            Key::PrintScreen => SmallVec::from([0xE0, 0x12, 0xE0, 0x7C]),
+            Key::Pause => SmallVec::from([0xE1, 0x14, 0x77, 0xE1, 0xF0, 0x14, 0xF0, 0x77]),
         }
     }
     pub fn release_sequence(&self) -> Option<SmallVec<u8, MAX_SEQUENCE>> {
@@ -46,6 +44,10 @@ impl Key {
             Key::PrintScreen => Some(SmallVec::from([0xE0, 0xF0, 0x7C, 0xE0, 0xF0, 0x12])),
             Key::Pause => None,
         }
+    }
+
+    pub fn can_release(&self) -> bool {
+        self.release_sequence().is_some()
     }
 }
 

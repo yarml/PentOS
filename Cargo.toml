@@ -62,6 +62,7 @@ spinlocks = { path = "lib/spinlocks" }
 acpi = { path = "lib/acpi" }
 utils = { path = "lib/utils" }
 log-debugcon = { path = "lib/log-debugcon" }
+keys = { path = "lib/keys"}
 
 [workspace.metadata.chef]
 ovmf-version = "edk2-stable202511-r1"
