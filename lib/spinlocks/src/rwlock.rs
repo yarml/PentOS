@@ -1,3 +1,18 @@
+//! Lock word encoding:
+//! a single `usize` represents the full lock state:
+//!
+//!   0              : unlocked
+//!   1..=MAX_READERS: that many readers currently hold a read guard
+//!   WRITER_BIT     : one writer holds a write guard (no readers allowed)
+//!   WRITER_BIT + n : one writer holds a write guard, n pending readers are
+//!                    queued via `deferred_write` and are waiting to be woken
+//!                    (n counts deferred-write guards currently alive, each of
+//!                    which represents one future reader)
+//!
+//! WRITER_BIT is the highest bit. Reader counts occupy the lower bits.
+//! Reader count can therefore reach WRITER_BIT - 1 before overflowing into the
+//! writer bit, which is large and safe to treat as unreachable.
+
 use core::{
     cell::UnsafeCell,
     hint,
@@ -6,63 +21,67 @@ use core::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-type AtomicWord = AtomicUsize;
-type Word = usize;
+const WRITER_BIT: usize = 1 << (usize::BITS - 1);
+
+// Maximum number of simultaneous readers. Attempting to acquire a read guard
+// beyond this limit will spin as though we're attempting to lock a Mutex for reading.
+const MAX_READERS: usize = WRITER_BIT - 1;
 
 pub struct SpinRwLock<T: ?Sized> {
-    lock: AtomicWord,
+    lock: AtomicUsize,
     data: UnsafeCell<T>,
 }
 
+/// Holds a `&T`. Multiple read guards may coexist.
 pub struct SpinRwLockReadGuard<'lock, T: 'lock + ?Sized> {
-    lock: &'lock AtomicWord,
+    lock: &'lock AtomicUsize,
     data: &'lock T,
 }
 
+/// Holds an `&mut T`. No other guard may coexist.
 pub struct SpinRwLockWriteGuard<'lock, T: 'lock + ?Sized> {
-    lock: &'lock AtomicWord,
+    lock: &'lock AtomicUsize,
     data: &'lock mut T,
 }
 
+/// A *deferred* write guard. Like a read guard it increments the reader count,
+/// which prevents new write guards from being acquired, but it does NOT yet give
+/// access to `&mut T`. Once all other readers have released their guards you
+/// can atomically upgrade this into a full `RwLockWriteGuard` via `write()` /
+/// `try_write()`.
+///
+/// The raw `*mut T` is kept instead of `&mut T` because we must not assert
+/// exclusive ownership until the upgrade succeeds.
 pub struct SpinRwLockDeferredGuard<'lock, T: 'lock + ?Sized> {
-    lock: &'lock AtomicWord,
-    data: *mut T, // Keeping a mutable pointer to be able to change to writer, not keeping a &mut T to respect aliasing rules
-}
-
-// LSB 2 bits of lock stores the state
-pub enum RwLockState {
-    Open,
-    ReadOnly,
-    WriteOnly,
-    Locked,
+    lock: &'lock AtomicUsize,
+    data: *mut T,
 }
 
 /// # Safety
-/// Borrow checker will stop moves across thread boundaries if there is any reader
-/// or writer. So `T: Send` should allow `RwLock<T>: Send`
+/// `T: Send` is sufficient: the borrow checker prevents moving a locked
+/// `RwLock` across hart boundaries.
 unsafe impl<T: ?Sized + Send> Send for SpinRwLock<T> {}
 
 /// # Safety
-/// Requiring T: Send in addition to T: Sync because RwLock can give mutable
-/// references to T.
+/// `T: Send + Sync` is required because `RwLock` can produce `&mut T`.
 unsafe impl<T: ?Sized + Send + Sync> Sync for SpinRwLock<T> {}
 
 /// # Safety
-/// `RwLockReadGuard<T>` is equivalent to &T
+/// `RwLockReadGuard<T>` is equivalent to `&T`.
 unsafe impl<T: ?Sized + Sync> Send for SpinRwLockReadGuard<'_, T> {}
 /// # Safety
-/// `RwLockReadGuard<T>` is equivalent to &T
+/// `RwLockReadGuard<T>` is equivalent to `&T`.
 unsafe impl<T: ?Sized + Sync> Sync for SpinRwLockReadGuard<'_, T> {}
 
 /// # Safety
-/// `RwLockWriteuard<T>` is equivalent to &mut T
-/// `&RwLockWriteuard<T>` is equivalent to &&mut T, which is equivalent to &T
+/// `RwLockWriteGuard<T>` is equivalent to `&mut T`.
+/// `&RwLockWriteGuard<T>` is equivalent to `&&mut T`, i.e. `&T`.
 unsafe impl<T: ?Sized + Send + Sync> Send for SpinRwLockWriteGuard<'_, T> {}
 unsafe impl<T: ?Sized + Send + Sync> Sync for SpinRwLockWriteGuard<'_, T> {}
 
 /// # Safety
-/// Alothough RwLockDeferredGuard is like RwLockReadGuard, it can be converted
-/// to a RwLockWriteGuard, as such it has the same T: Send + Sync conditions.
+/// `RwLockDeferredGuard` can be upgraded to `RwLockWriteGuard`, so it requires
+/// the same bounds as `RwLockWriteGuard`.
 unsafe impl<T: ?Sized + Send + Sync> Send for SpinRwLockDeferredGuard<'_, T> {}
 unsafe impl<T: ?Sized + Send + Sync> Sync for SpinRwLockDeferredGuard<'_, T> {}
 
@@ -75,34 +94,36 @@ impl<T> SpinRwLock<T> {
     }
 }
 
-impl<T: ?Sized> SpinRwLock<T> {
-    pub fn reader_count(&self) -> Word {
-        reader_count_from(self.lock.load(Ordering::Relaxed))
-    }
-    pub fn state(&self) -> RwLockState {
-        // No panic: 2 bits taken always gives valid RwLockState
-        state_from(self.lock.load(Ordering::Relaxed))
+impl<T: Default> Default for SpinRwLock<T> {
+    fn default() -> Self {
+        Self::new(T::default())
     }
 }
 
 impl<T: ?Sized> SpinRwLock<T> {
+    pub fn reader_count(&self) -> usize {
+        let word = self.lock.load(Ordering::Relaxed);
+        word & !WRITER_BIT
+    }
+
+    pub fn is_write_locked(&self) -> bool {
+        self.lock.load(Ordering::Relaxed) & WRITER_BIT != 0
+    }
+}
+
+impl<T: ?Sized> SpinRwLock<T> {
+    /// Try to acquire a read guard without spinning.
+    ///
+    /// Succeeds when no writer holds the lock. The uncontended path is
+    /// a single `fetch_add` followed by a cheap branch.
     pub fn try_read(&self) -> Option<SpinRwLockReadGuard<'_, T>> {
-        if self
-            .lock
-            .fetch_update(Ordering::Acquire, Ordering::Relaxed, |lock| {
-                let state = state_from(lock);
-                let readers = reader_count_from(lock);
-                if matches!(state, RwLockState::Open | RwLockState::ReadOnly) {
-                    Some(make_lock(state, readers + 1))
-                } else {
-                    None
-                }
-            })
-            .is_ok()
-        {
+        let prev = self.lock.fetch_add(1, Ordering::Acquire);
+
+        if prev & WRITER_BIT == 0 && prev < MAX_READERS {
             let data = unsafe {
-                // SAFETY: Pointer is valid since we host the data
-                // Aliasing rules are checked on runtime
+                // SAFETY: WRITER_BIT was clear, so no `&mut T` exists.
+                // Our reader count increment serialises us with any writer
+                // that tries to set WRITER_BIT after us.
                 &*self.data.get()
             };
             Some(SpinRwLockReadGuard {
@@ -110,226 +131,222 @@ impl<T: ?Sized> SpinRwLock<T> {
                 data,
             })
         } else {
+            // A writer is present (or the reader count is astronomically large).
+            self.lock.fetch_sub(1, Ordering::Release);
             None
         }
     }
+
+    /// Try to acquire a write guard without spinning.
+    ///
+    /// Succeeds only when the lock word is exactly 0 (no readers, no writer).
     pub fn try_write(&self) -> Option<SpinRwLockWriteGuard<'_, T>> {
-        if self
-            .lock
-            .fetch_update(Ordering::Acquire, Ordering::Relaxed, |lock| {
-                let state = state_from(lock);
-                let readers = reader_count_from(lock);
-                if matches!(state, RwLockState::Open | RwLockState::WriteOnly) && readers == 0 {
-                    Some(make_lock(RwLockState::Locked, 0))
-                } else {
-                    None
+        self.lock
+            .compare_exchange(0, WRITER_BIT, Ordering::Acquire, Ordering::Relaxed)
+            .ok()
+            .map(|_| {
+                let data = unsafe {
+                    // SAFETY: CAS from 0 means no readers and no other writer.
+                    &mut *self.data.get()
+                };
+                SpinRwLockWriteGuard {
+                    lock: &self.lock,
+                    data,
                 }
             })
-            .is_ok()
-        {
-            let data = unsafe {
-                // SAFETY: Pointer is valid since we host the data
-                // Aliasing rules are checked on runtime
-                &mut *self.data.get()
-            };
-            Some(SpinRwLockWriteGuard {
-                lock: &self.lock,
-                data,
-            })
-        } else {
-            None
-        }
     }
+
+    /// Try to acquire a deferred-write guard without spinning.
+    ///
+    /// A deferred-write guard increments the reader count (like a read guard)
+    /// and can later be upgraded to a full write guard once all concurrent
+    /// readers have released. Acquiring one blocks any new *writers* from
+    /// entering, but does not block ongoing or new *readers*.
+    ///
+    /// Fails if a writer already holds the lock.
     pub fn try_deferred_write(&self) -> Option<SpinRwLockDeferredGuard<'_, T>> {
-        if self
-            .lock
-            .fetch_update(Ordering::Acquire, Ordering::Relaxed, |lock| {
-                let state = state_from(lock);
-                let readers = reader_count_from(lock);
-                if matches!(state, RwLockState::Open) {
-                    Some(make_lock(RwLockState::WriteOnly, readers + 1))
-                } else {
-                    None
-                }
-            })
-            .is_ok()
-        {
-            let data = self.data.get();
+        // Same optimistic fetch_add strategy as try_read.
+        let prev = self.lock.fetch_add(1, Ordering::Acquire);
+
+        if prev & WRITER_BIT == 0 && prev < MAX_READERS {
             Some(SpinRwLockDeferredGuard {
                 lock: &self.lock,
-                data,
+                data: self.data.get(),
             })
         } else {
+            self.lock.fetch_sub(1, Ordering::Release);
             None
         }
     }
-}
 
-impl<T: ?Sized> SpinRwLock<T> {
+    /// Spin until a read guard is available.
     pub fn read(&self) -> SpinRwLockReadGuard<'_, T> {
         loop {
             if let Some(guard) = self.try_read() {
                 return guard;
             }
-            hint::spin_loop();
+            while self.lock.load(Ordering::Relaxed) & WRITER_BIT != 0 {
+                hint::spin_loop();
+            }
         }
     }
+
+    /// Spin until a write guard is available.
     pub fn write(&self) -> SpinRwLockWriteGuard<'_, T> {
         loop {
             if let Some(guard) = self.try_write() {
                 return guard;
             }
-            hint::spin_loop();
+            while self.lock.load(Ordering::Relaxed) != 0 {
+                hint::spin_loop();
+            }
         }
     }
+
+    /// Spin until a deferred-write guard is available.
     pub fn deferred_write(&self) -> SpinRwLockDeferredGuard<'_, T> {
         loop {
             if let Some(guard) = self.try_deferred_write() {
                 return guard;
             }
-            hint::spin_loop();
+            while self.lock.load(Ordering::Relaxed) & WRITER_BIT != 0 {
+                hint::spin_loop();
+            }
         }
     }
 }
 
-impl<T: Default> Default for SpinRwLock<T> {
-    fn default() -> Self {
-        Self::new(T::default())
-    }
-}
-
 impl<'lock, T: ?Sized> SpinRwLockDeferredGuard<'lock, T> {
-    #[must_use = "check the guard was upgraded or not, otherwise it will drop"]
-    pub fn try_write(self) -> Result<SpinRwLockWriteGuard<'lock, T>, SpinRwLockDeferredGuard<'lock, T>> {
+    /// Attempt to upgrade to a write guard in one step.
+    ///
+    /// Succeeds only if this is the *sole* remaining reader (i.e. the reader
+    /// count, which includes this guard's own +1, equals exactly 1).  When
+    /// successful the guard is consumed and WRITER_BIT is set atomically.
+    ///
+    /// Returns `Err(self)` if other readers are still active, leaving the
+    /// deferred guard alive so the caller can retry.
+    #[must_use = "if Err, the deferred guard is returned and must not be forgotten"]
+    pub fn try_write(self) -> Result<SpinRwLockWriteGuard<'lock, T>, Self> {
         let mut mself = ManuallyDrop::new(self);
-        if mself
+        // We hold exactly one reader slot. The CAS succeeds iff the count is 1
+        // and WRITER_BIT is clear, meaning we are the only reader.
+        // We swap in WRITER_BIT (reader count 0, writer present).
+        mself
             .lock
-            .fetch_update(Ordering::Acquire, Ordering::Relaxed, |lock| {
-                let readers = reader_count_from(lock);
-                if readers == 0 {
-                    Some(make_lock(RwLockState::Locked, 0))
-                } else {
-                    None
+            .compare_exchange(1, WRITER_BIT, Ordering::Acquire, Ordering::Relaxed)
+            .map(|_| {
+                let data = unsafe {
+                    // SAFETY: CAS confirmed we were the sole reader; WRITER_BIT
+                    // is now set, blocking all other acquisitions.
+                    &mut *mself.data
+                };
+                SpinRwLockWriteGuard {
+                    lock: mself.lock,
+                    data,
                 }
             })
-            .is_ok()
-        {
-            let data = unsafe { &mut *mself.data };
-            let lock = mself.lock;
-            Ok(SpinRwLockWriteGuard { lock, data })
-        } else {
-            Err(ManuallyDrop::into_inner(mself))
-        }
+            .map_err(|_| ManuallyDrop::into_inner(mself))
     }
-}
 
-impl<'lock, T: ?Sized> SpinRwLockDeferredGuard<'lock, T> {
     pub fn write(mut self) -> SpinRwLockWriteGuard<'lock, T> {
         loop {
             match self.try_write() {
-                Ok(write_guard) => return write_guard,
-                Err(deferred_guard) => self = deferred_guard,
+                Ok(guard) => return guard,
+                Err(deferred) => {
+                    self = deferred;
+                    while self.lock.load(Ordering::Relaxed) & !WRITER_BIT > 1 {
+                        hint::spin_loop();
+                    }
+                }
             }
-            hint::spin_loop();
         }
     }
 }
 
 impl<'lock, T: ?Sized> SpinRwLockWriteGuard<'lock, T> {
+    /// Downgrade the write guard to a read guard without releasing the lock.
+    ///
+    /// Atomically clears WRITER_BIT and sets the reader count to 1, so no
+    /// window exists during which the lock appears to be free.
     pub fn read(self) -> SpinRwLockReadGuard<'lock, T> {
         let mself = ManuallyDrop::new(self);
-        unsafe {
-            // SAFETY: We always return Some in the set function.
-            mself
-                .lock
-                .fetch_update(Ordering::Acquire, Ordering::Relaxed, |_| {
-                    Some(make_lock(RwLockState::Open, 1))
-                })
-                .unwrap_unchecked();
-        }
-        let lock = mself.lock;
+        mself.lock.store(1, Ordering::Release);
         let data = unsafe {
-            // SAFETY: No write guard can race a mutable access to T since we already set the reader count to 1
+            // SAFETY: We just set reader count to 1; the old &mut T becomes &T.
             &*(mself.data as *const T)
         };
-        SpinRwLockReadGuard { lock, data }
+        SpinRwLockReadGuard {
+            lock: mself.lock,
+            data,
+        }
     }
-    // Wouldn't make sense to convert a write guard to a deferred guard, since it will
-    // be an exclusive reader inhibiting any further readers from entering the lock
-    // The write guard already displays that behaviour.
 }
 
 impl<'lock, T: ?Sized> SpinRwLockReadGuard<'lock, T> {
+    /// Reinterpret the inner reference as type `Q`.
+    ///
     /// # Safety
-    /// Must guarentee that T and Q have the same size and are bit compatible
+    /// `T` and `Q` must have the same size and be bit-compatible.
     pub unsafe fn reinterpret<Q>(self) -> SpinRwLockReadGuard<'lock, Q> {
         let mself = ManuallyDrop::new(self);
         let lock = mself.lock;
-        let data = unsafe {
-            // SAFETY: Guarenteed if T and Q have the same size and are bit compatible
-            core::mem::transmute_copy(&mself.data)
-        };
+        let data = unsafe { core::mem::transmute_copy(&mself.data) };
         SpinRwLockReadGuard { lock, data }
     }
 }
 
 impl<'lock, T: ?Sized> SpinRwLockWriteGuard<'lock, T> {
+    /// Reinterpret the inner reference as type `Q`.
+    ///
     /// # Safety
-    /// Must guarentee that T and Q have the same size and are bit compatible
+    /// `T` and `Q` must have the same size and be bit-compatible.
     pub unsafe fn reinterpret<Q>(self) -> SpinRwLockWriteGuard<'lock, Q> {
         let mself = ManuallyDrop::new(self);
         let lock = mself.lock;
-        let data = unsafe {
-            // SAFETY: Guarenteed if T and Q have the same size and are bit compatible
-            core::mem::transmute_copy(&mself.data)
-        };
+        let data = unsafe { core::mem::transmute_copy(&mself.data) };
         SpinRwLockWriteGuard { lock, data }
     }
 }
 
 impl<'lock, T: ?Sized> SpinRwLockDeferredGuard<'lock, T> {
+    /// Reinterpret the inner pointer as type `Q`.
+    ///
     /// # Safety
-    /// Must guarentee that T and Q have the same size and are bit compatible
+    /// `T` and `Q` must have the same size and be bit-compatible.
     pub unsafe fn reinterpret<Q>(self) -> SpinRwLockDeferredGuard<'lock, Q> {
         let mself = ManuallyDrop::new(self);
         let lock = mself.lock;
-        let data = unsafe {
-            // SAFETY: Guarenteed if T and Q have the same size and are bit compatible
-            core::mem::transmute_copy(&mself.data)
-        };
+        let data = unsafe { core::mem::transmute_copy(&mself.data) };
         SpinRwLockDeferredGuard { lock, data }
     }
 }
 
 impl<T: ?Sized> Deref for SpinRwLockReadGuard<'_, T> {
     type Target = T;
-
-    fn deref(&self) -> &Self::Target {
+    fn deref(&self) -> &T {
         self.data
     }
 }
 
 impl<T: ?Sized> Deref for SpinRwLockWriteGuard<'_, T> {
     type Target = T;
-
-    fn deref(&self) -> &Self::Target {
+    fn deref(&self) -> &T {
         self.data
     }
 }
 
 impl<T: ?Sized> DerefMut for SpinRwLockWriteGuard<'_, T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
+    fn deref_mut(&mut self) -> &mut T {
         self.data
     }
 }
 
 impl<T: ?Sized> Deref for SpinRwLockDeferredGuard<'_, T> {
     type Target = T;
-
-    fn deref(&self) -> &Self::Target {
+    fn deref(&self) -> &T {
         unsafe {
-            // SAFETY: Data is hosted within a RwLock, so pointer is valid
-            // Aliasing rules are runtime guarenteed with said lock
+            // SAFETY: The lock word has at least our own reader count, so no
+            // writer can hold `&mut T` concurrently.
             &*self.data
         }
     }
@@ -337,77 +354,18 @@ impl<T: ?Sized> Deref for SpinRwLockDeferredGuard<'_, T> {
 
 impl<T: ?Sized> Drop for SpinRwLockReadGuard<'_, T> {
     fn drop(&mut self) {
-        unsafe {
-            // SAFETY: Always retuning Some from the set function.
-            self.lock
-                .fetch_update(Ordering::Release, Ordering::Relaxed, |lock| {
-                    let state = state_from(lock);
-                    let readers = reader_count_from(lock);
-                    Some(make_lock(state, readers - 1))
-                })
-                .unwrap_unchecked();
-        }
+        self.lock.fetch_sub(1, Ordering::Release);
     }
 }
 
 impl<T: ?Sized> Drop for SpinRwLockWriteGuard<'_, T> {
     fn drop(&mut self) {
-        unsafe {
-            // SAFETY: Always retuning Some from the set function.
-            self.lock
-                .fetch_update(Ordering::Release, Ordering::Relaxed, |_| {
-                    Some(make_lock(RwLockState::Open, 0))
-                })
-                .unwrap_unchecked();
-        }
+        self.lock.fetch_and(!WRITER_BIT, Ordering::Release);
     }
 }
 
 impl<T: ?Sized> Drop for SpinRwLockDeferredGuard<'_, T> {
     fn drop(&mut self) {
-        unsafe {
-            // SAFETY: Always retuning Some from the set function.
-            self.lock
-                .fetch_update(Ordering::Release, Ordering::Relaxed, |lock| {
-                    let readers = reader_count_from(lock);
-                    Some(make_lock(RwLockState::Open, readers - 1))
-                })
-                .unwrap_unchecked();
-        }
+        self.lock.fetch_sub(1, Ordering::Release);
     }
-}
-
-// TODO: make a proc macro for this
-impl TryFrom<Word> for RwLockState {
-    type Error = Word;
-
-    fn try_from(value: Word) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Self::Open),
-            1 => Ok(Self::ReadOnly),
-            2 => Ok(Self::WriteOnly),
-            3 => Ok(Self::Locked),
-            other => Err(other),
-        }
-    }
-}
-impl From<RwLockState> for Word {
-    fn from(value: RwLockState) -> Self {
-        match value {
-            RwLockState::Open => 0,
-            RwLockState::ReadOnly => 1,
-            RwLockState::WriteOnly => 2,
-            RwLockState::Locked => 3,
-        }
-    }
-}
-
-fn state_from(lock: Word) -> RwLockState {
-    RwLockState::try_from(lock & 0x3).unwrap()
-}
-const fn reader_count_from(lock: Word) -> Word {
-    lock >> 2
-}
-fn make_lock(state: RwLockState, readers: Word) -> Word {
-    Word::from(state) | readers << 2
 }
