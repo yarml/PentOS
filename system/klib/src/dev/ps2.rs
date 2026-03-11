@@ -15,6 +15,7 @@ use {
     x64::interrupts,
 };
 
+use log::warn;
 pub(crate) use ps2_impl::{init, on_key_event};
 
 static LAST_UPDATE_TIMESTAMP: AtomicUsize = AtomicUsize::new(0);
@@ -44,7 +45,8 @@ impl Future for KeyUpdateFuture {
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         match Pin::new(&mut self.stream).poll_next(cx) {
-            Poll::Ready(KeyEventItem::Event(ev)) => Poll::Ready(ev),
+            Poll::Ready(Some(ev)) => Poll::Ready(ev),
+            Poll::Ready(None) => unreachable!("KeyEventStream never gives finishes"),
             _ => Poll::Pending,
         }
     }
@@ -55,27 +57,21 @@ pub struct KeyEventStream {
     registered: bool,
 }
 
-pub enum KeyEventItem {
-    Event(KeyEvent),
-    /// Some events were missed because this consumer was too slow.
-    /// The inner value is the number of missed events.
-    Lagged(usize),
-}
-
 impl Stream for KeyEventStream {
-    type Item = KeyEventItem;
+    type Item = KeyEvent;
 
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Item> {
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         // Try to read before registering the waker, in case events arrived
         // between the last poll and now.
         match self.cursor.read(&*KEY_EVENT_QUEUE.lock()) {
             ReadResult::Event(event) => {
                 self.registered = false;
-                return Poll::Ready(KeyEventItem::Event(event));
+                return Poll::Ready(Some(event));
             }
-            ReadResult::Lagged(missed) => {
+            ReadResult::Lagged { missed, val } => {
+                warn!("missed {missed} keyboard events");
                 self.registered = false;
-                return Poll::Ready(KeyEventItem::Lagged(missed));
+                return Poll::Ready(Some(val));
             }
             ReadResult::Pending => {}
         }

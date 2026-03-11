@@ -8,7 +8,7 @@ use {
         bootinfo::bootinfo,
         dev::{
             framebuffer,
-            ps2::{KeyEventItem, KeyEventStream, key_event_stream, keyboard_update},
+            ps2::{KeyEventStream, key_event_stream, keyboard_update},
         },
         task::{self, sleep::sleep},
     },
@@ -91,10 +91,10 @@ async fn kbd2_task(hart_count: usize) {
             };
             fb.draw_box(hart_count * 10, 20, 10, 10, color);
         });
-        let kv = KeyEventStream::next(&mut stream).await;
-        if let KeyEventItem::Event(ev) = kv
-            && ev.is_pressed()
-        {
+        let kv = KeyEventStream::next(&mut stream)
+            .await
+            .expect("KeyboardEventStream does not finish");
+        if kv.is_pressed() {
             state = !state;
         }
     }
