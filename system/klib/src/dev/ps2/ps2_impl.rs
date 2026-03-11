@@ -67,11 +67,7 @@ pub(crate) fn on_key_event() {
         return;
     }
 
-    if !event.is_tap() {
-        keyboard_update_wake();
-    }
-
-    // debug!("key event: {:?}", event);
+    keyboard_update_wake(event);
 }
 
 // Helpers

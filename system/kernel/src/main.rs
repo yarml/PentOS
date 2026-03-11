@@ -6,11 +6,15 @@ mod version;
 use {
     klib::{
         bootinfo::bootinfo,
-        dev::{framebuffer, ps2::keyboard_update},
+        dev::{
+            framebuffer,
+            ps2::{KeyEventItem, KeyEventStream, key_event_stream, keyboard_update},
+        },
         task::{self, sleep::sleep},
     },
     log::info,
     system::framebuffer::PixelColor,
+    task::stream::Stream,
     version::VERSION,
     x64::interrupts,
 };
@@ -24,6 +28,7 @@ async fn kmain() {
     let hartcount = bootinfo().topology.harts.len();
 
     task::spawn(kbd_task());
+    task::spawn(kbd2_task(hartcount));
     for i in 0..hartcount {
         task::spawn(test_task(i));
     }
@@ -36,11 +41,7 @@ async fn test_task(i: usize) {
     loop {
         interrupts::with_disabled(|| {
             let mut fb = framebuffer::lock();
-            let color = if state {
-                color
-            } else {
-                PixelColor(0, 0, 0)
-            };
+            let color = if state { color } else { PixelColor(0, 0, 0) };
             fb.draw_box((i + 1) * 10, 10, 10, 10, color);
         });
         state = !state;
@@ -70,8 +71,32 @@ async fn kbd_task() {
             };
             fb.draw_box(10, 20, 10, 10, color);
         });
-        keyboard_update().await;
-        state = !state;
+        let ev = keyboard_update().await;
+        if ev.is_released() {
+            state = !state;
+        }
+    }
+}
+
+async fn kbd2_task(hart_count: usize) {
+    let mut state = true;
+    let mut stream = key_event_stream();
+    loop {
+        interrupts::with_disabled(|| {
+            let mut fb = framebuffer::lock();
+            let color = if state {
+                PixelColor(255, 255, 0)
+            } else {
+                PixelColor(0, 0, 0)
+            };
+            fb.draw_box(hart_count * 10, 20, 10, 10, color);
+        });
+        let kv = KeyEventStream::next(&mut stream).await;
+        if let KeyEventItem::Event(ev) = kv
+            && ev.is_pressed()
+        {
+            state = !state;
+        }
     }
 }
 

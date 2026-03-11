@@ -1,3 +1,5 @@
+pub mod stream;
+
 mod executor;
 mod task_impl;
 mod urgent_task;
