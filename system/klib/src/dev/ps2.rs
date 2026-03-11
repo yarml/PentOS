@@ -1,110 +1,59 @@
+mod ps2_impl;
+
 use {
-    config::dev::ps2::KB_BAD_RESPONSE_MAX_RETRIES,
-    keys::{FeedResult, StateMachine},
-    log::{debug, warn},
-    spinlocks::mutex::Mutex,
-    x64::{
-        interrupts,
-        io::{self, Port},
+    crate::dev::timer,
+    alloc::vec::Vec,
+    core::{
+        pin::Pin,
+        sync::atomic::{AtomicUsize, Ordering},
+        task::{Context, Poll, Waker},
     },
+    spinlocks::mutex::Mutex,
+    x64::interrupts,
 };
 
-const CMD_READ_CONFIG: u8 = 0x20;
-const CMD_WRITE_CONFIG: u8 = 0x60;
+pub(crate) use ps2_impl::{init, on_key_event};
 
-const KB_CMD_SET_SCAN_CODE_SET: u8 = 0xF0;
-const KB_RESPONSE_ACK: u8 = 0xFA;
-const KB_RESPONSE_RESEND: u8 = 0xFE;
+static LAST_UPDATE_TIMESTAMP: AtomicUsize = AtomicUsize::new(0);
 
-const CONFIG_TRANSLATION_BIT: u8 = 1 << 6;
-const CONFIG_IRQ1_BIT: u8 = 1 << 0;
+static KEYBOARD_UPDATE_WAKERS: Mutex<Vec<Waker>> = Mutex::new(Vec::new());
 
-static DATA_PORT: Mutex<Port<u8>> = Mutex::new(unsafe { Port::new(0x60) });
-static CMD_PORT: Mutex<Port<u8>> = Mutex::new(unsafe { Port::new(0x64) });
-
-static STATE_MACHINE: Mutex<StateMachine> = Mutex::new(StateMachine::new());
-
-pub(crate) fn init() {
-    let mut cmd_port = CMD_PORT.lock();
-    let mut data_port = DATA_PORT.lock();
-
-    write_cmd(&mut cmd_port, CMD_READ_CONFIG);
-    let mut config = read_data(&mut cmd_port, &mut data_port);
-    config &= !CONFIG_TRANSLATION_BIT;
-    config |= CONFIG_IRQ1_BIT;
-    write_cmd(&mut cmd_port, CMD_WRITE_CONFIG);
-    write_data_(&mut cmd_port, &mut data_port, config);
-
-    send_kbd(&mut cmd_port, &mut data_port, KB_CMD_SET_SCAN_CODE_SET);
-    send_kbd(&mut cmd_port, &mut data_port, 0x02);
+pub fn keyboard_update() -> KeyUpdateFuture {
+    KeyUpdateFuture {
+        start_timestamp: timer::get_timestamp(),
+    }
 }
 
-pub(crate) fn on_key_event() {
-    let feed_result = interrupts::with_disabled(|| {
-        let mut data_port = DATA_PORT.lock();
-        let mut state_machine = STATE_MACHINE.lock();
+pub struct KeyUpdateFuture {
+    start_timestamp: usize,
+}
 
-        state_machine.feed(data_port.read())
+impl Future for KeyUpdateFuture {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        if LAST_UPDATE_TIMESTAMP.load(Ordering::Relaxed) > self.start_timestamp {
+            Poll::Ready(())
+        } else {
+            interrupts::with_disabled(|| {
+                let mut wakers = KEYBOARD_UPDATE_WAKERS.lock();
+                if wakers.iter().all(|w| !w.will_wake(cx.waker())) {
+                    wakers.push(cx.waker().clone());
+                }
+            });
+            Poll::Pending
+        }
+    }
+}
+
+fn keyboard_update_wake() {
+    let wakers = interrupts::with_disabled(|| {
+        let current_time = timer::get_timestamp();
+        LAST_UPDATE_TIMESTAMP.store(current_time, Ordering::Relaxed);
+        let mut wakers = KEYBOARD_UPDATE_WAKERS.lock();
+        core::mem::take(&mut *wakers)
     });
-
-    let event = match feed_result {
-        FeedResult::Incomplete => return,
-        FeedResult::Invalid => {
-            warn!("invalid byte sequence from PS/2 keyboard");
-            return;
-        }
-        FeedResult::Output(event) => event,
-    };
-
-    debug!("key event: {:?}", event);
-}
-
-fn write_cmd(cmd_port: &mut Port<u8>, cmd: u8) {
-    wait_write_ready(cmd_port);
-    cmd_port.write(cmd)
-}
-
-fn send_kbd(cmd_port: &mut Port<u8>, data_port: &mut Port<u8>, kb_command: u8) {
-    let mut bad_response_count = 0;
-    loop {
-        write_data_(cmd_port, data_port, kb_command);
-        let resp = read_data(cmd_port, data_port);
-        if resp == KB_RESPONSE_ACK {
-            return;
-        }
-        if resp == KB_RESPONSE_RESEND {
-            continue;
-        }
-        warn!("unexpected keyboard response: {resp:#x}");
-        bad_response_count += 1;
-
-        if bad_response_count >= KB_BAD_RESPONSE_MAX_RETRIES {
-            warn!("giving up on keyboard command");
-            return;
-        }
-
-        io::wait();
+    for waker in wakers {
+        waker.wake();
     }
-}
-
-fn wait_write_ready(cmd_port: &mut Port<u8>) {
-    while cmd_port.read() & 0x2 != 0 {
-        io::wait();
-    }
-}
-
-fn wait_read_ready(cmd_port: &mut Port<u8>) {
-    while cmd_port.read() & 0x1 == 0 {
-        io::wait();
-    }
-}
-
-fn read_data(cmd_port: &mut Port<u8>, data_port: &mut Port<u8>) -> u8 {
-    wait_read_ready(cmd_port);
-    data_port.read()
-}
-
-fn write_data_(cmd_port: &mut Port<u8>, data_port: &mut Port<u8>, data: u8) {
-    wait_write_ready(cmd_port);
-    data_port.write(data)
 }

@@ -57,7 +57,7 @@ impl KeySeq {
 
 struct State {
     transitions: HashMap<u8, usize>,
-    output: Option<(String, bool)>,
+    output: Option<(String, bool, bool)>,
 }
 
 impl State {
@@ -69,7 +69,13 @@ impl State {
     }
 }
 
-fn insert_sequence(states: &mut Vec<State>, seq: &[u8], key_name: &str, is_press: bool) {
+fn insert_sequence(
+    states: &mut Vec<State>,
+    seq: &[u8],
+    key_name: &str,
+    is_press: bool,
+    is_tap: bool,
+) {
     let mut current = 0;
     for &byte in seq {
         let next = if let Some(&next) = states[current].transitions.get(&byte) {
@@ -82,45 +88,59 @@ fn insert_sequence(states: &mut Vec<State>, seq: &[u8], key_name: &str, is_press
         };
         current = next;
     }
-    states[current].output = Some((key_name.to_string(), is_press));
+    states[current].output = Some((key_name.to_string(), is_press, is_tap));
 }
 
-fn generate_keys(keys: &[(String, KeySeq)]) -> TokenStream {
+fn generate_keys(keys: &[(usize, String, KeySeq)]) -> TokenStream {
     let consts: Vec<TokenStream> = keys
         .iter()
-        .map(|(name, seq)| {
+        .map(|(id, name, _)| {
             let ident = format_ident!("KEY_{}", name);
-            let constructor = match seq {
-                KeySeq::Simple(s) => quote! { Key::simple(#s) },
-                KeySeq::Extended(s) => quote! { Key::extended(#s) },
-                KeySeq::PrintScreen => quote! { Key::print_screen() },
-                KeySeq::Pause => quote! { Key::pause() },
-            };
-            quote! { pub const #ident: Key = #constructor; }
+            quote! { pub const #ident: Key = Key::of_id(#id); }
         })
         .collect();
 
-    let key_idents: Vec<_> = keys
+    let match_cases: Vec<TokenStream> = keys
         .iter()
-        .map(|(name, _)| format_ident!("KEY_{}", name))
+        .map(|(id, name, _)| {
+            let ident = format_ident!("KEY_{}", name);
+            quote! { #id => stringify!(#ident) }
+        })
         .collect();
+
+    let keys_count: usize = keys.len();
 
     quote! {
         #(#consts)*
 
-        pub const KEY_LIST: &[Key] = &[
-            #(#key_idents),*
-        ];
+        pub const KEYS_COUNT: usize = #keys_count;
+
+        impl core::fmt::Debug for Key {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                let name = match self.id {
+                    #(#match_cases),*,
+                    _ => unreachable!()
+                };
+                write!(f, "{}", name)
+            }
+        }
     }
 }
 
-fn generate_state_machine(keys: &[(String, KeySeq)]) -> TokenStream {
+fn generate_state_machine(keys: &[(usize, String, KeySeq)]) -> TokenStream {
     let mut states: Vec<State> = vec![State::new()];
 
-    for (name, seq) in keys {
-        insert_sequence(&mut states, &seq.press_sequence(), name, true);
-        if let Some(release) = seq.release_sequence() {
-            insert_sequence(&mut states, &release, name, false);
+    for (_, name, seq) in keys {
+        let release_seq = seq.release_sequence();
+        insert_sequence(
+            &mut states,
+            &seq.press_sequence(),
+            name,
+            true,
+            release_seq.is_none(),
+        );
+        if let Some(release) = release_seq {
+            insert_sequence(&mut states, &release, name, false, false);
         }
     }
 
@@ -146,9 +166,11 @@ fn generate_state_machine(keys: &[(String, KeySeq)]) -> TokenStream {
     let outputs: Vec<TokenStream> = states
         .iter()
         .map(|state| {
-            if let Some((key_name, is_press)) = &state.output {
+            if let Some((key_name, is_press, is_tap)) = &state.output {
                 let key_ident = format_ident!("KEY_{}", key_name);
-                if *is_press {
+                if *is_tap {
+                    quote! { Some(KeyEvent::Tap(#key_ident)) }
+                } else if *is_press {
                     quote! { Some(KeyEvent::Pressed(#key_ident)) }
                 } else {
                     quote! { Some(KeyEvent::Released(#key_ident)) }
@@ -179,10 +201,11 @@ fn main() {
     let content = fs::read_to_string(&keys_toml).expect("Failed to read keys.toml");
     let keys_file: KeysFile = toml::from_str(&content).expect("Failed to parse keys.toml");
 
-    let keys: Vec<(String, KeySeq)> = keys_file
+    let keys: Vec<(usize, String, KeySeq)> = keys_file
         .key
         .into_iter()
-        .map(|def| {
+        .enumerate()
+        .map(|(id, def)| {
             let seq = match def.ty {
                 KeyType::Simple => {
                     KeySeq::Simple(def.scancode.expect("simple key requires scancode"))
@@ -193,7 +216,7 @@ fn main() {
                 KeyType::PrintScreen => KeySeq::PrintScreen,
                 KeyType::Pause => KeySeq::Pause,
             };
-            (def.name, seq)
+            (id, def.name, seq)
         })
         .collect();
 

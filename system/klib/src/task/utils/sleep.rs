@@ -73,7 +73,7 @@ impl PartialEq for SleepingWaker {
 impl Eq for SleepingWaker {}
 
 /// Scheduled as urgent task at timer_interrupt
-pub fn wake() {
+pub(crate) fn wake() {
     let current = get_timestamp();
     interrupts::with_disabled(|| {
         let mut wakers = WAKERS.lock();

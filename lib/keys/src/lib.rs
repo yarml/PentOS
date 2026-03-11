@@ -1,53 +1,16 @@
 #![no_std]
 
-use utils::collections::smallvec::SmallVec;
-
 pub const MAX_SEQUENCE: usize = 8;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Key {
-    Simple { scancode: u8 },
-    Extended { scancode: u8 },
-    PrintScreen,
-    Pause,
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct Key {
+    pub id: usize,
 }
 
 impl Key {
-    pub const fn simple(scancode: u8) -> Self {
-        Self::Simple { scancode }
-    }
-    pub const fn extended(scancode: u8) -> Self {
-        Self::Extended { scancode }
-    }
-
-    pub const fn print_screen() -> Self {
-        Self::PrintScreen
-    }
-    pub const fn pause() -> Self {
-        Self::Pause
-    }
-}
-
-impl Key {
-    pub fn press_sequence(&self) -> SmallVec<u8, MAX_SEQUENCE> {
-        match self {
-            Key::Simple { scancode } => SmallVec::from([*scancode]),
-            Key::Extended { scancode } => SmallVec::from([0xE0, *scancode]),
-            Key::PrintScreen => SmallVec::from([0xE0, 0x12, 0xE0, 0x7C]),
-            Key::Pause => SmallVec::from([0xE1, 0x14, 0x77, 0xE1, 0xF0, 0x14, 0xF0, 0x77]),
-        }
-    }
-    pub fn release_sequence(&self) -> Option<SmallVec<u8, MAX_SEQUENCE>> {
-        match self {
-            Key::Simple { scancode } => Some(SmallVec::from([0xF0, *scancode])),
-            Key::Extended { scancode } => Some(SmallVec::from([0xE0, 0xF0, *scancode])),
-            Key::PrintScreen => Some(SmallVec::from([0xE0, 0xF0, 0x7C, 0xE0, 0xF0, 0x12])),
-            Key::Pause => None,
-        }
-    }
-
-    pub fn can_release(&self) -> bool {
-        self.release_sequence().is_some()
+    const fn of_id(id: usize) -> Self {
+        assert!(id < KEYS_COUNT);
+        Self { id }
     }
 }
 
@@ -58,12 +21,35 @@ pub struct StateMachine {
 pub enum KeyEvent {
     Pressed(Key),
     Released(Key),
+    Tap(Key), // Keys which only have a press, but don't have a release emit this instead
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FeedResult {
     Incomplete,
     Invalid,
     Output(KeyEvent),
+}
+
+impl KeyEvent {
+    pub fn key(&self) -> Key {
+        match *self {
+            KeyEvent::Pressed(k) => k,
+            KeyEvent::Released(k) => k,
+            KeyEvent::Tap(k) => k,
+        }
+    }
+
+    pub fn is_pressed(&self) -> bool {
+        matches!(*self, KeyEvent::Pressed(_))
+    }
+
+    pub fn is_released(&self) -> bool {
+        matches!(*self, KeyEvent::Released(_))
+    }
+
+    pub fn is_tap(&self) -> bool {
+        matches!(*self, KeyEvent::Tap(_))
+    }
 }
 
 impl StateMachine {

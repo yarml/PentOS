@@ -33,7 +33,9 @@ impl Future for Suspender {
             self.get_mut().registered = true;
             interrupts::with_disabled(|| {
                 let mut wakers = WAKERS.lock();
-                wakers.push(cx.waker().clone());
+                if wakers.iter().all(|w| !w.will_wake(cx.waker())) {
+                    wakers.push(cx.waker().clone());
+                }
             });
             Poll::Pending
         }
@@ -42,11 +44,12 @@ impl Future for Suspender {
 
 static WAKERS: Mutex<Vec<Waker>> = Mutex::new(Vec::new());
 
-pub fn wake() {
-    interrupts::with_disabled(|| {
+pub(crate) fn wake() {
+    let wakers = interrupts::with_disabled(|| {
         let mut wakers = WAKERS.lock();
-        while let Some(waker) = wakers.pop() {
-            waker.wake();
-        }
-    })
+        core::mem::take(&mut *wakers)
+    });
+    for waker in wakers {
+        waker.wake();
+    }
 }
