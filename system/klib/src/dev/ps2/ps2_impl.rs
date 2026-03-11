@@ -4,7 +4,7 @@ use {
     core::sync::atomic::{AtomicBool, Ordering},
     keys::{FeedResult, KEYS_COUNT, StateMachine},
     log::warn,
-    spinlocks::mutex::Mutex,
+    spinlocks::mutex::SpinMutex,
     x64::{
         interrupts,
         io::{self, Port},
@@ -21,10 +21,10 @@ const KB_RESPONSE_RESEND: u8 = 0xFE;
 const CONFIG_TRANSLATION_BIT: u8 = 1 << 6;
 const CONFIG_IRQ1_BIT: u8 = 1 << 0;
 
-static DATA_PORT: Mutex<Port<u8>> = Mutex::new(unsafe { Port::new(0x60) });
-static CMD_PORT: Mutex<Port<u8>> = Mutex::new(unsafe { Port::new(0x64) });
+static DATA_PORT: SpinMutex<Port<u8>> = SpinMutex::new(unsafe { Port::new(0x60) });
+static CMD_PORT: SpinMutex<Port<u8>> = SpinMutex::new(unsafe { Port::new(0x64) });
 
-static STATE_MACHINE: Mutex<StateMachine> = Mutex::new(StateMachine::new());
+static STATE_MACHINE: SpinMutex<StateMachine> = SpinMutex::new(StateMachine::new());
 static KEYS_PRESS_MAP: [AtomicBool; KEYS_COUNT] = [const { AtomicBool::new(false) }; KEYS_COUNT];
 
 pub(crate) fn init() {

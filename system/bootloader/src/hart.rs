@@ -12,7 +12,7 @@ use {
         sync::atomic::{AtomicU8, AtomicU32, AtomicU64, AtomicUsize, Ordering},
     },
     log::error,
-    spinlocks::{mutex::Mutex, once::Once},
+    spinlocks::{mutex::SpinMutex, once::SpinOnce},
     x64::{
         control::{CR0, CR4},
         interrupts,
@@ -58,12 +58,12 @@ const STATUS_ERROR: u8 = 3;
 // end sync
 
 // Data passed to hart accessed in Rust
-static AP_KERNEL_STACK_SET: Mutex<Option<KernelStackSet>> = Mutex::new(None);
+static AP_KERNEL_STACK_SET: SpinMutex<Option<KernelStackSet>> = SpinMutex::new(None);
 
 /// Counts actually working and initialized harts.
 static HART_ACTIVE: AtomicUsize = AtomicUsize::new(1); // BSP already in
 
-static AP_BOOT_ENTRYPOINT: Once<KernelInitFn> = Once::new();
+static AP_BOOT_ENTRYPOINT: SpinOnce<KernelInitFn> = SpinOnce::new();
 
 /// # Safety
 /// Must guarentee that IA32_APIC_BASE is mapped up to 4KiB to config/vmem:LOCAL_APIC_REGION

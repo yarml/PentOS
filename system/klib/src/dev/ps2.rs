@@ -10,19 +10,19 @@ use {
         task::{Context, Poll, Waker},
     },
     keys::KeyEvent,
-    spinlocks::mutex::Mutex,
+    spinlocks::mutex::SpinMutex,
     utils::collections::broadcast_queue::{BroadcastCursor, BroadcastQueue, ReadResult},
     x64::interrupts,
 };
 
-use log::warn;
 pub(crate) use ps2_impl::{init, on_key_event};
+use {log::warn, spinlocks::rwlock::SpinRwLock};
 
 static LAST_UPDATE_TIMESTAMP: AtomicUsize = AtomicUsize::new(0);
 
-static KEY_EVENT_QUEUE: Mutex<BroadcastQueue<KeyEvent, KEY_EVENT_QUEUE_SIZE>> =
-    Mutex::new(BroadcastQueue::new());
-static KEY_EVENT_WAKERS: Mutex<Vec<Waker>> = Mutex::new(Vec::new());
+static KEY_EVENT_QUEUE: SpinRwLock<BroadcastQueue<KeyEvent, KEY_EVENT_QUEUE_SIZE>> =
+    SpinRwLock::new(BroadcastQueue::new());
+static KEY_EVENT_WAKERS: SpinMutex<Vec<Waker>> = SpinMutex::new(Vec::new());
 
 pub fn keyboard_update() -> KeyUpdateFuture {
     KeyUpdateFuture {
@@ -30,8 +30,10 @@ pub fn keyboard_update() -> KeyUpdateFuture {
     }
 }
 pub fn key_event_stream() -> KeyEventStream {
+    let cursor = interrupts::with_disabled(|| KEY_EVENT_QUEUE.read().subscribe());
+
     KeyEventStream {
-        cursor: KEY_EVENT_QUEUE.lock().subscribe(),
+        cursor,
         registered: false,
     }
 }
@@ -63,7 +65,10 @@ impl Stream for KeyEventStream {
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         // Try to read before registering the waker, in case events arrived
         // between the last poll and now.
-        match self.cursor.read(&*KEY_EVENT_QUEUE.lock()) {
+
+        let read_result = interrupts::with_disabled(|| self.cursor.read(&*KEY_EVENT_QUEUE.read()));
+
+        match read_result {
             ReadResult::Event(event) => {
                 self.registered = false;
                 return Poll::Ready(Some(event));
@@ -96,7 +101,7 @@ fn keyboard_update_wake(event: KeyEvent) {
         let current_time = timer::get_timestamp();
         LAST_UPDATE_TIMESTAMP.store(current_time, Ordering::Relaxed);
 
-        KEY_EVENT_QUEUE.lock().push(event);
+        KEY_EVENT_QUEUE.write().push(event);
 
         core::mem::take(&mut *KEY_EVENT_WAKERS.lock())
     });

@@ -1,6 +1,6 @@
 use {
     core::sync::atomic::{AtomicBool, Ordering},
-    spinlocks::once::Once,
+    spinlocks::once::SpinOnce,
     uefi::{
         Identify,
         boot::{self, SearchType},
@@ -12,8 +12,8 @@ use {
     },
 };
 
-static IMAGE_BASE: Once<PhysAddr> = Once::new();
-static IMAGE_SIZE: Once<MemorySize> = Once::new();
+static IMAGE_BASE: SpinOnce<PhysAddr> = SpinOnce::new();
+static IMAGE_SIZE: SpinOnce<MemorySize> = SpinOnce::new();
 
 pub fn init() {
     static LOADED: AtomicBool = AtomicBool::new(false);

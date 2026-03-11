@@ -1,7 +1,7 @@
 use {
     boot_protocol::features::{FeatureSet, Vendor},
     core::arch::x86_64::{__cpuid, __cpuid_count, CpuidResult},
-    spinlocks::once::Once,
+    spinlocks::once::SpinOnce,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -143,7 +143,7 @@ fn intel_amd_detect(vendor: Vendor, max_basic: usize, max_extended: usize) -> Fe
     })
 }
 
-static BSP_FEATURES: Once<FeatureSet> = Once::new();
+static BSP_FEATURES: SpinOnce<FeatureSet> = SpinOnce::new();
 
 pub fn bsp_featureset_init() -> FeatureSet {
     let features_detect = FeatureDetect::detect();

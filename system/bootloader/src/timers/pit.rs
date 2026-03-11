@@ -1,7 +1,7 @@
-use {core::hint, spinlocks::mutex::Mutex, x64::io::Port};
+use {core::hint, spinlocks::mutex::SpinMutex, x64::io::Port};
 
-static CH0_DATA: Mutex<Port<u8>> = Mutex::new(unsafe { Port::new(0x40) });
-static CMD: Mutex<Port<u8>> = Mutex::new(unsafe { Port::new(0x43) });
+static CH0_DATA: SpinMutex<Port<u8>> = SpinMutex::new(unsafe { Port::new(0x40) });
+static CMD: SpinMutex<Port<u8>> = SpinMutex::new(unsafe { Port::new(0x43) });
 
 /// Sleep with a precision of 5us and accuracy > 99% (not counting hardware accuracy) for AT LEAST t us
 /// Unless t is too large, in which case it will sleep for the maximum time.

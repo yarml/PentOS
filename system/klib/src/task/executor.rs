@@ -9,25 +9,25 @@ use {
         pin::Pin,
         task::{Context, Poll, Waker},
     },
-    spinlocks::mutex::Mutex,
+    spinlocks::mutex::SpinMutex,
     utils::collections::lock_free_queue::LockFreeQueue,
     x64::interrupts,
 };
 
 pub(super) struct Executor {
     urgent_queue: LockFreeQueue<UrgentTask, MAX_URGENT_TASK_COUNT>,
-    queue: Mutex<VecDeque<TaskId>>,
-    tasks: Mutex<BTreeMap<TaskId, Task>>,
-    waker_cache: Mutex<BTreeMap<TaskId, Waker>>,
+    queue: SpinMutex<VecDeque<TaskId>>,
+    tasks: SpinMutex<BTreeMap<TaskId, Task>>,
+    waker_cache: SpinMutex<BTreeMap<TaskId, Waker>>,
 }
 
 impl Executor {
     pub(super) fn new() -> Self {
         Executor {
             urgent_queue: LockFreeQueue::new(),
-            queue: Mutex::new(VecDeque::new()),
-            tasks: Mutex::new(BTreeMap::new()),
-            waker_cache: Mutex::new(BTreeMap::new()),
+            queue: SpinMutex::new(VecDeque::new()),
+            tasks: SpinMutex::new(BTreeMap::new()),
+            waker_cache: SpinMutex::new(BTreeMap::new()),
         }
     }
 

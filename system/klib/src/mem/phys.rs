@@ -10,7 +10,7 @@ use {
         pmem::{LOWMEM, MIDMEM},
         vmem::PHYSICAL_MAPPING_REGION,
     },
-    spinlocks::mutex::Mutex,
+    spinlocks::mutex::SpinMutex,
     x64::mem::{
         addr::{Address, PhysAddr},
         frame::{
@@ -23,7 +23,7 @@ use {
 pub mod lowmem;
 pub mod midmem;
 
-pub static LOWMEM_ALLOCATOR: Mutex<LowMemAllocator> = Mutex::new(LowMemAllocator::new());
+pub static LOWMEM_ALLOCATOR: SpinMutex<LowMemAllocator> = SpinMutex::new(LowMemAllocator::new());
 pub static MIDMEM_ALLOCATOR: MidMemAllocator = MidMemAllocator::zero();
 
 /// # Safety

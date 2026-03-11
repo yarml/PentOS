@@ -9,22 +9,22 @@ use core::{
 type AtomicWord = AtomicUsize;
 type Word = usize;
 
-pub struct RwLock<T: ?Sized> {
+pub struct SpinRwLock<T: ?Sized> {
     lock: AtomicWord,
     data: UnsafeCell<T>,
 }
 
-pub struct RwLockReadGuard<'lock, T: 'lock + ?Sized> {
+pub struct SpinRwLockReadGuard<'lock, T: 'lock + ?Sized> {
     lock: &'lock AtomicWord,
     data: &'lock T,
 }
 
-pub struct RwLockWriteGuard<'lock, T: 'lock + ?Sized> {
+pub struct SpinRwLockWriteGuard<'lock, T: 'lock + ?Sized> {
     lock: &'lock AtomicWord,
     data: &'lock mut T,
 }
 
-pub struct RwLockDeferredGuard<'lock, T: 'lock + ?Sized> {
+pub struct SpinRwLockDeferredGuard<'lock, T: 'lock + ?Sized> {
     lock: &'lock AtomicWord,
     data: *mut T, // Keeping a mutable pointer to be able to change to writer, not keeping a &mut T to respect aliasing rules
 }
@@ -40,33 +40,33 @@ pub enum RwLockState {
 /// # Safety
 /// Borrow checker will stop moves across thread boundaries if there is any reader
 /// or writer. So `T: Send` should allow `RwLock<T>: Send`
-unsafe impl<T: ?Sized + Send> Send for RwLock<T> {}
+unsafe impl<T: ?Sized + Send> Send for SpinRwLock<T> {}
 
 /// # Safety
 /// Requiring T: Send in addition to T: Sync because RwLock can give mutable
 /// references to T.
-unsafe impl<T: ?Sized + Send + Sync> Sync for RwLock<T> {}
+unsafe impl<T: ?Sized + Send + Sync> Sync for SpinRwLock<T> {}
 
 /// # Safety
 /// `RwLockReadGuard<T>` is equivalent to &T
-unsafe impl<T: ?Sized + Sync> Send for RwLockReadGuard<'_, T> {}
+unsafe impl<T: ?Sized + Sync> Send for SpinRwLockReadGuard<'_, T> {}
 /// # Safety
 /// `RwLockReadGuard<T>` is equivalent to &T
-unsafe impl<T: ?Sized + Sync> Sync for RwLockReadGuard<'_, T> {}
+unsafe impl<T: ?Sized + Sync> Sync for SpinRwLockReadGuard<'_, T> {}
 
 /// # Safety
 /// `RwLockWriteuard<T>` is equivalent to &mut T
 /// `&RwLockWriteuard<T>` is equivalent to &&mut T, which is equivalent to &T
-unsafe impl<T: ?Sized + Send + Sync> Send for RwLockWriteGuard<'_, T> {}
-unsafe impl<T: ?Sized + Send + Sync> Sync for RwLockWriteGuard<'_, T> {}
+unsafe impl<T: ?Sized + Send + Sync> Send for SpinRwLockWriteGuard<'_, T> {}
+unsafe impl<T: ?Sized + Send + Sync> Sync for SpinRwLockWriteGuard<'_, T> {}
 
 /// # Safety
 /// Alothough RwLockDeferredGuard is like RwLockReadGuard, it can be converted
 /// to a RwLockWriteGuard, as such it has the same T: Send + Sync conditions.
-unsafe impl<T: ?Sized + Send + Sync> Send for RwLockDeferredGuard<'_, T> {}
-unsafe impl<T: ?Sized + Send + Sync> Sync for RwLockDeferredGuard<'_, T> {}
+unsafe impl<T: ?Sized + Send + Sync> Send for SpinRwLockDeferredGuard<'_, T> {}
+unsafe impl<T: ?Sized + Send + Sync> Sync for SpinRwLockDeferredGuard<'_, T> {}
 
-impl<T> RwLock<T> {
+impl<T> SpinRwLock<T> {
     pub const fn new(value: T) -> Self {
         Self {
             lock: AtomicUsize::new(0),
@@ -75,7 +75,7 @@ impl<T> RwLock<T> {
     }
 }
 
-impl<T: ?Sized> RwLock<T> {
+impl<T: ?Sized> SpinRwLock<T> {
     pub fn reader_count(&self) -> Word {
         reader_count_from(self.lock.load(Ordering::Relaxed))
     }
@@ -85,8 +85,8 @@ impl<T: ?Sized> RwLock<T> {
     }
 }
 
-impl<T: ?Sized> RwLock<T> {
-    pub fn try_read(&self) -> Option<RwLockReadGuard<'_, T>> {
+impl<T: ?Sized> SpinRwLock<T> {
+    pub fn try_read(&self) -> Option<SpinRwLockReadGuard<'_, T>> {
         if self
             .lock
             .fetch_update(Ordering::Acquire, Ordering::Relaxed, |lock| {
@@ -105,7 +105,7 @@ impl<T: ?Sized> RwLock<T> {
                 // Aliasing rules are checked on runtime
                 &*self.data.get()
             };
-            Some(RwLockReadGuard {
+            Some(SpinRwLockReadGuard {
                 lock: &self.lock,
                 data,
             })
@@ -113,7 +113,7 @@ impl<T: ?Sized> RwLock<T> {
             None
         }
     }
-    pub fn try_write(&self) -> Option<RwLockWriteGuard<'_, T>> {
+    pub fn try_write(&self) -> Option<SpinRwLockWriteGuard<'_, T>> {
         if self
             .lock
             .fetch_update(Ordering::Acquire, Ordering::Relaxed, |lock| {
@@ -132,7 +132,7 @@ impl<T: ?Sized> RwLock<T> {
                 // Aliasing rules are checked on runtime
                 &mut *self.data.get()
             };
-            Some(RwLockWriteGuard {
+            Some(SpinRwLockWriteGuard {
                 lock: &self.lock,
                 data,
             })
@@ -140,7 +140,7 @@ impl<T: ?Sized> RwLock<T> {
             None
         }
     }
-    pub fn try_deferred_write(&self) -> Option<RwLockDeferredGuard<'_, T>> {
+    pub fn try_deferred_write(&self) -> Option<SpinRwLockDeferredGuard<'_, T>> {
         if self
             .lock
             .fetch_update(Ordering::Acquire, Ordering::Relaxed, |lock| {
@@ -155,7 +155,7 @@ impl<T: ?Sized> RwLock<T> {
             .is_ok()
         {
             let data = self.data.get();
-            Some(RwLockDeferredGuard {
+            Some(SpinRwLockDeferredGuard {
                 lock: &self.lock,
                 data,
             })
@@ -165,8 +165,8 @@ impl<T: ?Sized> RwLock<T> {
     }
 }
 
-impl<T: ?Sized> RwLock<T> {
-    pub fn read(&self) -> RwLockReadGuard<'_, T> {
+impl<T: ?Sized> SpinRwLock<T> {
+    pub fn read(&self) -> SpinRwLockReadGuard<'_, T> {
         loop {
             if let Some(guard) = self.try_read() {
                 return guard;
@@ -174,7 +174,7 @@ impl<T: ?Sized> RwLock<T> {
             hint::spin_loop();
         }
     }
-    pub fn write(&self) -> RwLockWriteGuard<'_, T> {
+    pub fn write(&self) -> SpinRwLockWriteGuard<'_, T> {
         loop {
             if let Some(guard) = self.try_write() {
                 return guard;
@@ -182,7 +182,7 @@ impl<T: ?Sized> RwLock<T> {
             hint::spin_loop();
         }
     }
-    pub fn deferred_write(&self) -> RwLockDeferredGuard<'_, T> {
+    pub fn deferred_write(&self) -> SpinRwLockDeferredGuard<'_, T> {
         loop {
             if let Some(guard) = self.try_deferred_write() {
                 return guard;
@@ -192,15 +192,15 @@ impl<T: ?Sized> RwLock<T> {
     }
 }
 
-impl<T: Default> Default for RwLock<T> {
+impl<T: Default> Default for SpinRwLock<T> {
     fn default() -> Self {
         Self::new(T::default())
     }
 }
 
-impl<'lock, T: ?Sized> RwLockDeferredGuard<'lock, T> {
+impl<'lock, T: ?Sized> SpinRwLockDeferredGuard<'lock, T> {
     #[must_use = "check the guard was upgraded or not, otherwise it will drop"]
-    pub fn try_write(self) -> Result<RwLockWriteGuard<'lock, T>, RwLockDeferredGuard<'lock, T>> {
+    pub fn try_write(self) -> Result<SpinRwLockWriteGuard<'lock, T>, SpinRwLockDeferredGuard<'lock, T>> {
         let mut mself = ManuallyDrop::new(self);
         if mself
             .lock
@@ -216,15 +216,15 @@ impl<'lock, T: ?Sized> RwLockDeferredGuard<'lock, T> {
         {
             let data = unsafe { &mut *mself.data };
             let lock = mself.lock;
-            Ok(RwLockWriteGuard { lock, data })
+            Ok(SpinRwLockWriteGuard { lock, data })
         } else {
             Err(ManuallyDrop::into_inner(mself))
         }
     }
 }
 
-impl<'lock, T: ?Sized> RwLockDeferredGuard<'lock, T> {
-    pub fn write(mut self) -> RwLockWriteGuard<'lock, T> {
+impl<'lock, T: ?Sized> SpinRwLockDeferredGuard<'lock, T> {
+    pub fn write(mut self) -> SpinRwLockWriteGuard<'lock, T> {
         loop {
             match self.try_write() {
                 Ok(write_guard) => return write_guard,
@@ -235,8 +235,8 @@ impl<'lock, T: ?Sized> RwLockDeferredGuard<'lock, T> {
     }
 }
 
-impl<'lock, T: ?Sized> RwLockWriteGuard<'lock, T> {
-    pub fn read(self) -> RwLockReadGuard<'lock, T> {
+impl<'lock, T: ?Sized> SpinRwLockWriteGuard<'lock, T> {
+    pub fn read(self) -> SpinRwLockReadGuard<'lock, T> {
         let mself = ManuallyDrop::new(self);
         unsafe {
             // SAFETY: We always return Some in the set function.
@@ -252,56 +252,56 @@ impl<'lock, T: ?Sized> RwLockWriteGuard<'lock, T> {
             // SAFETY: No write guard can race a mutable access to T since we already set the reader count to 1
             &*(mself.data as *const T)
         };
-        RwLockReadGuard { lock, data }
+        SpinRwLockReadGuard { lock, data }
     }
     // Wouldn't make sense to convert a write guard to a deferred guard, since it will
     // be an exclusive reader inhibiting any further readers from entering the lock
     // The write guard already displays that behaviour.
 }
 
-impl<'lock, T: ?Sized> RwLockReadGuard<'lock, T> {
+impl<'lock, T: ?Sized> SpinRwLockReadGuard<'lock, T> {
     /// # Safety
     /// Must guarentee that T and Q have the same size and are bit compatible
-    pub unsafe fn reinterpret<Q>(self) -> RwLockReadGuard<'lock, Q> {
+    pub unsafe fn reinterpret<Q>(self) -> SpinRwLockReadGuard<'lock, Q> {
         let mself = ManuallyDrop::new(self);
         let lock = mself.lock;
         let data = unsafe {
             // SAFETY: Guarenteed if T and Q have the same size and are bit compatible
             core::mem::transmute_copy(&mself.data)
         };
-        RwLockReadGuard { lock, data }
+        SpinRwLockReadGuard { lock, data }
     }
 }
 
-impl<'lock, T: ?Sized> RwLockWriteGuard<'lock, T> {
+impl<'lock, T: ?Sized> SpinRwLockWriteGuard<'lock, T> {
     /// # Safety
     /// Must guarentee that T and Q have the same size and are bit compatible
-    pub unsafe fn reinterpret<Q>(self) -> RwLockWriteGuard<'lock, Q> {
+    pub unsafe fn reinterpret<Q>(self) -> SpinRwLockWriteGuard<'lock, Q> {
         let mself = ManuallyDrop::new(self);
         let lock = mself.lock;
         let data = unsafe {
             // SAFETY: Guarenteed if T and Q have the same size and are bit compatible
             core::mem::transmute_copy(&mself.data)
         };
-        RwLockWriteGuard { lock, data }
+        SpinRwLockWriteGuard { lock, data }
     }
 }
 
-impl<'lock, T: ?Sized> RwLockDeferredGuard<'lock, T> {
+impl<'lock, T: ?Sized> SpinRwLockDeferredGuard<'lock, T> {
     /// # Safety
     /// Must guarentee that T and Q have the same size and are bit compatible
-    pub unsafe fn reinterpret<Q>(self) -> RwLockDeferredGuard<'lock, Q> {
+    pub unsafe fn reinterpret<Q>(self) -> SpinRwLockDeferredGuard<'lock, Q> {
         let mself = ManuallyDrop::new(self);
         let lock = mself.lock;
         let data = unsafe {
             // SAFETY: Guarenteed if T and Q have the same size and are bit compatible
             core::mem::transmute_copy(&mself.data)
         };
-        RwLockDeferredGuard { lock, data }
+        SpinRwLockDeferredGuard { lock, data }
     }
 }
 
-impl<T: ?Sized> Deref for RwLockReadGuard<'_, T> {
+impl<T: ?Sized> Deref for SpinRwLockReadGuard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -309,7 +309,7 @@ impl<T: ?Sized> Deref for RwLockReadGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> Deref for RwLockWriteGuard<'_, T> {
+impl<T: ?Sized> Deref for SpinRwLockWriteGuard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -317,13 +317,13 @@ impl<T: ?Sized> Deref for RwLockWriteGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> DerefMut for RwLockWriteGuard<'_, T> {
+impl<T: ?Sized> DerefMut for SpinRwLockWriteGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.data
     }
 }
 
-impl<T: ?Sized> Deref for RwLockDeferredGuard<'_, T> {
+impl<T: ?Sized> Deref for SpinRwLockDeferredGuard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -335,7 +335,7 @@ impl<T: ?Sized> Deref for RwLockDeferredGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> Drop for RwLockReadGuard<'_, T> {
+impl<T: ?Sized> Drop for SpinRwLockReadGuard<'_, T> {
     fn drop(&mut self) {
         unsafe {
             // SAFETY: Always retuning Some from the set function.
@@ -350,7 +350,7 @@ impl<T: ?Sized> Drop for RwLockReadGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> Drop for RwLockWriteGuard<'_, T> {
+impl<T: ?Sized> Drop for SpinRwLockWriteGuard<'_, T> {
     fn drop(&mut self) {
         unsafe {
             // SAFETY: Always retuning Some from the set function.
@@ -363,7 +363,7 @@ impl<T: ?Sized> Drop for RwLockWriteGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> Drop for RwLockDeferredGuard<'_, T> {
+impl<T: ?Sized> Drop for SpinRwLockDeferredGuard<'_, T> {
     fn drop(&mut self) {
         unsafe {
             // SAFETY: Always retuning Some from the set function.

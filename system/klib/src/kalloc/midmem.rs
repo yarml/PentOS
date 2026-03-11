@@ -48,11 +48,11 @@ use {
     },
     large::LargeHeader,
     size::BucketSize,
-    spinlocks::mutex::{Mutex, MutexGuard},
+    spinlocks::mutex::{SpinMutex, SpinMutexGuard},
     x64::mem::frame::size::{Frame4KiB, FrameSize},
 };
 
-static BUCKETS: Mutex<[Bucket; BucketSize::COUNT]> = Mutex::new([
+static BUCKETS: SpinMutex<[Bucket; BucketSize::COUNT]> = SpinMutex::new([
     Bucket::new(BucketSize::B8),
     Bucket::new(BucketSize::B16),
     Bucket::new(BucketSize::B32),
@@ -129,6 +129,6 @@ fn effective_size(layout: Layout) -> usize {
 }
 
 #[inline]
-fn get_buckets() -> MutexGuard<'static, [Bucket; BucketSize::COUNT]> {
+fn get_buckets() -> SpinMutexGuard<'static, [Bucket; BucketSize::COUNT]> {
     BUCKETS.lock()
 }

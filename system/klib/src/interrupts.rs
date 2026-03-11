@@ -8,7 +8,7 @@ use {
         ioapic::handlers::ps2_kbd,
         lapic::handlers::{error_interrupt, spurious_interrupt, timer_interrupt},
     },
-    spinlocks::mutex::Mutex,
+    spinlocks::mutex::SpinMutex,
     system::{
         hart::HartInfo,
         tss::{DF_IST, NMI_IST},
@@ -27,7 +27,7 @@ const VECTOR_PS2_KEYBOARD: u8 = 0x23;
 /// We attach a general purpose interrupt handler from here up to & including 255
 const FREE_VECTOR_START: u8 = 0x24;
 
-static IDT: Mutex<InterruptDescriptorTable> = Mutex::new(InterruptDescriptorTable::new());
+static IDT: SpinMutex<InterruptDescriptorTable> = SpinMutex::new(InterruptDescriptorTable::new());
 
 pub(crate) fn setup() {
     let hartinfo = HartInfo::get();

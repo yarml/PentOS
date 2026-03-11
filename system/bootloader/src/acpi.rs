@@ -3,12 +3,12 @@ mod xsdt;
 
 use {
     acpi::table::{Madt, MadtEntryHeader, Rsdp},
-    spinlocks::once::Once,
+    spinlocks::once::SpinOnce,
     uefi::{system, table::cfg::ConfigTableEntry},
 };
 
 pub fn init() {
-    let rsdp: Once<Option<&Rsdp>> = Once::new();
+    let rsdp: SpinOnce<Option<&Rsdp>> = SpinOnce::new();
     system::with_config_table(|table| {
         rsdp.init(|| {
             table

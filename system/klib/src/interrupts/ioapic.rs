@@ -5,7 +5,7 @@ use {
     boot_protocol::topology::InterruptOverrride,
     config::topology::hart::MAX_INTCTL_COUNT,
     log::debug,
-    spinlocks::{mutex::Mutex, once::Once},
+    spinlocks::{mutex::SpinMutex, once::SpinOnce},
     system::ioapic,
     utils::collections::smallvec::{SmallVec, SmallVecBuf},
     x64::ioapic::{InputPolarity, IoApic, IoRedirection, TriggerMode},
@@ -13,10 +13,10 @@ use {
 
 const DEFAULT_PS2_KEYBOARD_IRQ: usize = 1;
 
-static INT_CONTROLLERS: Once<SmallVec<IoApicContainer, MAX_INTCTL_COUNT>> = Once::new();
+static INT_CONTROLLERS: SpinOnce<SmallVec<IoApicContainer, MAX_INTCTL_COUNT>> = SpinOnce::new();
 
 struct IoApicContainer {
-    ioapic: Mutex<IoApic>,
+    ioapic: SpinMutex<IoApic>,
     // id: usize,
     gsi_base: usize,
     count: usize,
@@ -53,7 +53,7 @@ pub(crate) fn init() {
         }
 
         let container = IoApicContainer {
-            ioapic: Mutex::new(ioapic),
+            ioapic: SpinMutex::new(ioapic),
             count,
             gsi_base,
             // id: controller.id,

@@ -1,9 +1,9 @@
-use {acpi::table::PmTimerInfo, log::debug, spinlocks::once::Once};
+use {acpi::table::PmTimerInfo, log::debug, spinlocks::once::SpinOnce};
 
 mod pit;
 mod pm;
 
-static PM_INFO: Once<Option<PmTimerInfo>> = Once::new();
+static PM_INFO: SpinOnce<Option<PmTimerInfo>> = SpinOnce::new();
 
 pub fn init_pm(pm_timer_info: Option<PmTimerInfo>) {
     if pm_timer_info.is_some() {

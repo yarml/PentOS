@@ -8,12 +8,12 @@ mod utils;
 use {
     crate::task::{executor::Executor, urgent_task::UrgentTask},
     core::pin::Pin,
-    spinlocks::once::Once,
+    spinlocks::once::SpinOnce,
 };
 
 pub use utils::*;
 
-static MAIN_EXECUTOR: Once<Executor> = Once::new();
+static MAIN_EXECUTOR: SpinOnce<Executor> = SpinOnce::new();
 
 pub(crate) fn init() {
     MAIN_EXECUTOR.init(Executor::new);

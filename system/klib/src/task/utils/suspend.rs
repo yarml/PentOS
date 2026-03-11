@@ -4,7 +4,7 @@ use {
         pin::Pin,
         task::{Context, Poll, Waker},
     },
-    spinlocks::mutex::Mutex,
+    spinlocks::mutex::SpinMutex,
     x64::interrupts,
 };
 
@@ -42,7 +42,7 @@ impl Future for Suspender {
     }
 }
 
-static WAKERS: Mutex<Vec<Waker>> = Mutex::new(Vec::new());
+static WAKERS: SpinMutex<Vec<Waker>> = SpinMutex::new(Vec::new());
 
 pub(crate) fn wake() {
     let wakers = interrupts::with_disabled(|| {

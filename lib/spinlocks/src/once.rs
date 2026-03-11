@@ -3,15 +3,15 @@ use {
     status::{AtomicStatus, Status},
 };
 
-pub struct Once<T> {
+pub struct SpinOnce<T> {
     status: AtomicStatus,
     data: UnsafeCell<MaybeUninit<T>>,
 }
 
-unsafe impl<T: Send> Send for Once<T> {}
-unsafe impl<T: Send + Sync> Sync for Once<T> {}
+unsafe impl<T: Send> Send for SpinOnce<T> {}
+unsafe impl<T: Send + Sync> Sync for SpinOnce<T> {}
 
-impl<T> Once<T> {
+impl<T> SpinOnce<T> {
     pub const fn new() -> Self {
         Self {
             status: AtomicStatus::new(Status::Uninit),
@@ -20,7 +20,7 @@ impl<T> Once<T> {
     }
 }
 
-impl<T> Once<T> {
+impl<T> SpinOnce<T> {
     pub fn init<F>(&self, data_fn: F) -> bool
     where
         F: FnOnce() -> T,
@@ -49,7 +49,7 @@ impl<T> Once<T> {
     }
 }
 
-impl<T> Once<T> {
+impl<T> SpinOnce<T> {
     pub fn poll(&self) -> Option<&T> {
         if self.status() == Status::Init {
             Some(unsafe {
@@ -85,7 +85,7 @@ impl<T> Once<T> {
     }
 }
 
-impl<T> Once<T> {
+impl<T> SpinOnce<T> {
     fn status(&self) -> Status {
         self.status.load(Ordering::Acquire)
     }
@@ -106,7 +106,7 @@ impl<T> Once<T> {
     }
 }
 
-impl<T> Default for Once<T> {
+impl<T> Default for SpinOnce<T> {
     fn default() -> Self {
         Self::new()
     }

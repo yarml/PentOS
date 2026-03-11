@@ -6,7 +6,7 @@ use {
         pin::Pin,
         task::{Context, Poll, Waker},
     },
-    spinlocks::mutex::Mutex,
+    spinlocks::mutex::SpinMutex,
     x64::interrupts,
 };
 
@@ -15,7 +15,7 @@ struct SleepingWaker {
     end_time: usize,
 }
 
-static WAKERS: Mutex<BinaryHeap<SleepingWaker>> = Mutex::new(BinaryHeap::new());
+static WAKERS: SpinMutex<BinaryHeap<SleepingWaker>> = SpinMutex::new(BinaryHeap::new());
 
 pub fn sleep(ms: usize) -> Sleeper {
     Sleeper::for_duration(ms)

@@ -12,7 +12,7 @@ use {
         sync::atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     elf::Elf,
-    spinlocks::{mutex::Mutex, once::Once},
+    spinlocks::{mutex::SpinMutex, once::SpinOnce},
     system::{
         hart::HartInfo,
         tss::{DF_IST, NMI_IST, ist_index},
@@ -30,7 +30,7 @@ use {
 };
 
 static AP_REMAINING: AtomicUsize = AtomicUsize::new(0);
-static KHI: Once<Mutex<KernelHartInfo>> = Once::new();
+static KHI: SpinOnce<SpinMutex<KernelHartInfo>> = SpinOnce::new();
 
 /// # Safety
 /// Needs to be called after all harts have started or failed to start
@@ -44,7 +44,7 @@ pub unsafe fn boot_kernel(kernel: &Elf<'static>, mut khi: KernelHartInfo) -> ! {
 
     let bsp_stack_set = khi.kernel_stacks.pop_set();
 
-    KHI.init(move || Mutex::new(khi));
+    KHI.init(move || SpinMutex::new(khi));
 
     AP_REMAINING.store(
         unsafe {

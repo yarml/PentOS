@@ -2,11 +2,11 @@ use {
     boot_protocol::topology::{Hart, InterruptController, InterruptOverrride, Topology},
     config::topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
     log::debug,
-    spinlocks::mutex::{Mutex, MutexGuard},
+    spinlocks::mutex::{SpinMutex, SpinMutexGuard},
     x64::ioapic::{InputPolarity, TriggerMode},
 };
 
-static SYSTEM_TOPOLOGY: Mutex<Topology> = Mutex::new(Topology::new());
+static SYSTEM_TOPOLOGY: SpinMutex<Topology> = SpinMutex::new(Topology::new());
 
 pub fn register_hart(hart: Hart) {
     let mut topology = SYSTEM_TOPOLOGY.lock();
@@ -36,7 +36,7 @@ pub fn registr_interrupt_source_override(irq: usize, r#override: InterruptOverrr
     topology.irq_overrides[irq] = Some(r#override);
 }
 
-pub fn topology() -> MutexGuard<'static, Topology> {
+pub fn topology() -> SpinMutexGuard<'static, Topology> {
     SYSTEM_TOPOLOGY.lock()
 }
 
