@@ -1,4 +1,5 @@
 use {
+    config::dev::ps2::KB_BAD_RESPONSE_MAX_RETRIES,
     keys::{FeedResult, StateMachine},
     log::{debug, warn},
     spinlocks::mutex::Mutex,
@@ -21,6 +22,8 @@ const CONFIG_IRQ1_BIT: u8 = 1 << 0;
 static DATA_PORT: Mutex<Port<u8>> = Mutex::new(unsafe { Port::new(0x60) });
 static CMD_PORT: Mutex<Port<u8>> = Mutex::new(unsafe { Port::new(0x64) });
 
+static STATE_MACHINE: Mutex<StateMachine> = Mutex::new(StateMachine::new());
+
 pub(crate) fn init() {
     let mut cmd_port = CMD_PORT.lock();
     let mut data_port = DATA_PORT.lock();
@@ -37,29 +40,23 @@ pub(crate) fn init() {
 }
 
 pub(crate) fn on_key_event() {
-    let Some(key_event) = interrupts::with_disabled(|| {
-        let mut cmd_port = CMD_PORT.lock();
+    let feed_result = interrupts::with_disabled(|| {
         let mut data_port = DATA_PORT.lock();
+        let mut state_machine = STATE_MACHINE.lock();
 
-        let mut state_machine = StateMachine::new();
-        let mut feed_result = FeedResult::Incomplete;
-        while feed_result == FeedResult::Incomplete {
-            feed_result = state_machine.feed(read_data(&mut cmd_port, &mut data_port));
-        }
+        state_machine.feed(data_port.read())
+    });
 
-        match feed_result {
-            FeedResult::Invalid => {
-                warn!("unknown sequence from PS/2 keyboard");
-                None
-            }
-            FeedResult::Output(key_event) => Some(key_event),
-            FeedResult::Incomplete => unreachable!(),
+    let event = match feed_result {
+        FeedResult::Incomplete => return,
+        FeedResult::Invalid => {
+            warn!("invalid byte sequence from PS/2 keyboard");
+            return;
         }
-    }) else {
-        return;
+        FeedResult::Output(event) => event,
     };
 
-    // debug!("key event: {:?}", key_event);
+    debug!("key event: {:?}", event);
 }
 
 fn write_cmd(cmd_port: &mut Port<u8>, cmd: u8) {
@@ -68,6 +65,7 @@ fn write_cmd(cmd_port: &mut Port<u8>, cmd: u8) {
 }
 
 fn send_kbd(cmd_port: &mut Port<u8>, data_port: &mut Port<u8>, kb_command: u8) {
+    let mut bad_response_count = 0;
     loop {
         write_data_(cmd_port, data_port, kb_command);
         let resp = read_data(cmd_port, data_port);
@@ -78,6 +76,13 @@ fn send_kbd(cmd_port: &mut Port<u8>, data_port: &mut Port<u8>, kb_command: u8) {
             continue;
         }
         warn!("unexpected keyboard response: {resp:#x}");
+        bad_response_count += 1;
+
+        if bad_response_count >= KB_BAD_RESPONSE_MAX_RETRIES {
+            warn!("giving up on keyboard command");
+            return;
+        }
+
         io::wait();
     }
 }

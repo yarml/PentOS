@@ -1,0 +1,1 @@
+pub const KB_BAD_RESPONSE_MAX_RETRIES: usize = 4;
