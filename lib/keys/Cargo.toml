@@ -7,3 +7,11 @@ authors.workspace = true
 
 [dependencies]
 utils.workspace = true
+
+[build-dependencies]
+proc-macro2.workspace = true
+quote.workspace = true
+serde.workspace = true
+prettyplease.workspace = true
+toml.workspace = true
+syn.workspace = true

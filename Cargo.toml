@@ -38,7 +38,8 @@ xz = "0.1.0"
 # Builder dependencies
 nasm-rs = "0.3.2"
 
-# Macro dependencies
+prettyplease = "0.2.37"
+toml = "0.9.8"
 syn = { version = "2.0.117", features = ["full"] }
 quote = "1.0.45"
 proc-macro2 = "1.0.106"

@@ -7,8 +7,11 @@ use {
         hint,
         sync::atomic::{AtomicBool, Ordering},
     },
-    log::{Level, Log},
+    log::Log,
 };
+
+#[cfg(not(debug_assertions))]
+use log::Level;
 
 static INIT: AtomicBool = AtomicBool::new(false);
 

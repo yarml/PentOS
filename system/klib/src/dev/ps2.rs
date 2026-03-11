@@ -1,7 +1,5 @@
-mod events;
-mod state_machine;
-
 use {
+    keys::{FeedResult, StateMachine},
     log::{debug, warn},
     spinlocks::mutex::Mutex,
     x64::{
@@ -39,15 +37,29 @@ pub(crate) fn init() {
 }
 
 pub(crate) fn on_key_event() {
-    let scancode = {
-        interrupts::with_disabled(|| {
-            let mut cmd_port = CMD_PORT.lock();
-            let mut data_port = DATA_PORT.lock();
-            read_data(&mut cmd_port, &mut data_port)
-        })
+    let Some(key_event) = interrupts::with_disabled(|| {
+        let mut cmd_port = CMD_PORT.lock();
+        let mut data_port = DATA_PORT.lock();
+
+        let mut state_machine = StateMachine::new();
+        let mut feed_result = FeedResult::Incomplete;
+        while feed_result == FeedResult::Incomplete {
+            feed_result = state_machine.feed(read_data(&mut cmd_port, &mut data_port));
+        }
+
+        match feed_result {
+            FeedResult::Invalid => {
+                warn!("unknown sequence from PS/2 keyboard");
+                None
+            }
+            FeedResult::Output(key_event) => Some(key_event),
+            FeedResult::Incomplete => unreachable!(),
+        }
+    }) else {
+        return;
     };
 
-    debug!("Scancode: {:#x}", scancode);
+    // debug!("key event: {:?}", key_event);
 }
 
 fn write_cmd(cmd_port: &mut Port<u8>, cmd: u8) {
