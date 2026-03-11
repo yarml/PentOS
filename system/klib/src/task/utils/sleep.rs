@@ -23,7 +23,6 @@ pub fn sleep(ms: usize) -> Sleeper {
 
 pub struct Sleeper {
     end_time: usize,
-    registered: bool,
 }
 
 impl Sleeper {
@@ -31,10 +30,7 @@ impl Sleeper {
         let ticks = ms.div_ceil(10);
         let current_time = get_timestamp();
         let end_time = current_time + ticks;
-        Self {
-            end_time,
-            registered: false,
-        }
+        Self { end_time }
     }
 }
 
@@ -47,15 +43,12 @@ impl Future for Sleeper {
             if current >= self.end_time {
                 Poll::Ready(())
             } else {
-                if !self.registered {
-                    let end_time = self.end_time;
-                    self.get_mut().registered = true;
-                    let mut wakers = WAKERS.lock();
-                    wakers.push(SleepingWaker {
-                        end_time,
-                        waker: cx.waker().clone(),
-                    });
-                }
+                let end_time = self.end_time;
+                let mut wakers = WAKERS.lock();
+                wakers.push(SleepingWaker {
+                    end_time,
+                    waker: cx.waker().clone(),
+                });
                 Poll::Pending
             }
         })

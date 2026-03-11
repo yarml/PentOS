@@ -131,7 +131,6 @@ impl Executor {
                 queue.is_empty()
             });
 
-            interrupts::disable();
             if queue_empty && self.urgent_queue.is_empty() {
                 interrupts::enable_and_halt();
             } else {

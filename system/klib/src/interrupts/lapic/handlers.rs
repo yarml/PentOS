@@ -12,9 +12,7 @@ pub extern "x86-interrupt" fn timer_interrupt(_frame: InterruptStackFrame) {
     LocalApic::end_of_interrupt();
 }
 
-pub extern "x86-interrupt" fn spurious_interrupt(_frame: InterruptStackFrame) {
-    todo!("LAPIC SPURIOUS INTERRUPT")
-}
+pub extern "x86-interrupt" fn spurious_interrupt(_frame: InterruptStackFrame) {}
 
 pub extern "x86-interrupt" fn error_interrupt(_frame: InterruptStackFrame) {
     todo!("LAPIC ERROR INTERRUPT")
