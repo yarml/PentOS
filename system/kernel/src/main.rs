@@ -5,7 +5,6 @@ mod version;
 
 use {
     klib::{
-        bootinfo::bootinfo,
         dev::{
             framebuffer,
             ps2::{KeyEventStream, key_event_stream, keyboard_update},
@@ -16,7 +15,6 @@ use {
     system::framebuffer::PixelColor,
     task::stream::Stream,
     version::VERSION,
-    x64::interrupts,
 };
 
 klib::use_klib!(kmain);
@@ -25,25 +23,24 @@ klib::use_klib!(kmain);
 
 async fn kmain() {
     info!("PentOS v{VERSION}");
-    let hartcount = bootinfo().topology.harts.len();
 
     task::spawn(kbd_task());
-    task::spawn(kbd2_task(hartcount));
-    for i in 0..hartcount {
+    task::spawn(kbd2_task());
+    task::spawn(refresh_task());
+    for i in 0..20 {
         task::spawn(test_task(i));
     }
-    task::spawn(refresh_task());
 }
 
 async fn test_task(i: usize) {
     let color = get_color(i);
     let mut state = true;
     loop {
-        interrupts::with_disabled(|| {
-            let mut fb = framebuffer::lock();
+        {
+            let mut fb = framebuffer::lock().await;
             let color = if state { color } else { PixelColor(0, 0, 0) };
-            fb.draw_box((i + 1) * 10, 10, 10, 10, color);
-        });
+            fb.draw_box((i + 2) * 10, 10, 10, 10, color);
+        }
         state = !state;
         sleep((i + 1) * 50).await
     }
@@ -51,46 +48,49 @@ async fn test_task(i: usize) {
 
 async fn refresh_task() {
     loop {
-        interrupts::with_disabled(|| {
-            let mut fb = framebuffer::lock();
+        {
+            let mut fb = framebuffer::lock().await;
             fb.refresh();
-        });
+        }
         sleep(20).await; // Target 50FPS
     }
 }
 
 async fn kbd_task() {
     let mut state = true;
+    let mut stream = key_event_stream();
     loop {
-        interrupts::with_disabled(|| {
-            let mut fb = framebuffer::lock();
+        {
+            let mut fb = framebuffer::lock().await;
             let color = if state {
                 PixelColor(255, 255, 0)
             } else {
                 PixelColor(0, 0, 0)
             };
             fb.draw_box(10, 20, 10, 10, color);
-        });
-        let ev = keyboard_update().await;
-        if ev.is_released() {
+        }
+        let kv = KeyEventStream::next(&mut stream)
+            .await
+            .expect("KeyboardEventStream does not finish");
+        if kv.is_released() {
             state = !state;
         }
     }
 }
 
-async fn kbd2_task(hart_count: usize) {
+async fn kbd2_task() {
     let mut state = true;
     let mut stream = key_event_stream();
     loop {
-        interrupts::with_disabled(|| {
-            let mut fb = framebuffer::lock();
+        {
+            let mut fb = framebuffer::lock().await;
             let color = if state {
                 PixelColor(255, 255, 0)
             } else {
                 PixelColor(0, 0, 0)
             };
-            fb.draw_box(hart_count * 10, 20, 10, 10, color);
-        });
+            fb.draw_box(21 * 10, 20, 10, 10, color);
+        }
         let kv = KeyEventStream::next(&mut stream)
             .await
             .expect("KeyboardEventStream does not finish");

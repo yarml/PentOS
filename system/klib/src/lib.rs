@@ -12,10 +12,12 @@ extern crate alloc;
 pub mod bootinfo;
 pub mod dev;
 pub mod hart;
+pub mod sync;
 pub mod task;
 
 mod interrupts;
 mod kalloc;
+mod logger;
 mod mem;
 mod panic;
 
@@ -59,7 +61,7 @@ pub unsafe fn init(kmain: impl Future<Output = ()> + Send + 'static) -> ! {
         task::run();
     }
 
-    log_debugcon::init();
+    logger::init();
     info!("KLib initialization...");
 
     unsafe {

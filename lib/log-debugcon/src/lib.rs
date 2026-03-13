@@ -20,12 +20,17 @@ pub fn init() {
     log::set_max_level(log::STATIC_MAX_LEVEL);
     INIT.store(true, Ordering::Relaxed);
 }
+
 pub fn master_unlock() {
     LOGGER.lock.store(false, Ordering::Relaxed);
 }
 
 pub fn initialized() -> bool {
     INIT.load(Ordering::Relaxed)
+}
+
+pub fn log_record_prefixed(record: &log::Record, prefix: &str) {
+    LOGGER.log_prefixed(record, prefix);
 }
 
 static LOGGER: Logger = Logger {
@@ -55,7 +60,6 @@ impl Write for DebugConWriter {
         for &byte in s.as_bytes() {
             unsafe { asm!("out dx, al", in("dx") Self::IO_PORT, in("al") byte) };
         }
-
         Ok(())
     }
 
@@ -63,7 +67,6 @@ impl Write for DebugConWriter {
         for byte in (c as u32).to_ne_bytes() {
             unsafe { asm!("out dx, al", in("dx") Self::IO_PORT, in("al") byte) };
         }
-
         Ok(())
     }
 }
@@ -95,16 +98,8 @@ impl<W: Write> Write for LogEntry<'_, W> {
     }
 }
 
-impl Log for Logger {
-    fn enabled(&self, _metadata: &log::Metadata) -> bool {
-        true
-    }
-
-    fn log(&self, record: &log::Record) {
-        #[cfg(not(debug_assertions))]
-        if record.level() >= Level::Debug {
-            return;
-        }
+impl Logger {
+    fn acquire(&self) -> bool {
         let master_unlock = self.master_unlock.load(Ordering::Relaxed);
         if !master_unlock {
             while self
@@ -115,6 +110,22 @@ impl Log for Logger {
                 hint::spin_loop();
             }
         }
+        master_unlock
+    }
+
+    fn release(&self, master_unlock: bool) {
+        if !master_unlock {
+            self.lock.store(false, Ordering::Release);
+        }
+    }
+
+    fn log_prefixed(&self, record: &log::Record, prefix: &str) {
+        #[cfg(not(debug_assertions))]
+        if record.level() >= Level::Debug {
+            return;
+        }
+
+        let master_unlock = self.acquire();
 
         let mut entry = LogEntry {
             writer: &mut DebugConWriter,
@@ -122,11 +133,19 @@ impl Log for Logger {
             in_transaction: false,
         };
 
-        let _ = writeln!(entry, "{}", *record.args());
+        let _ = writeln!(entry, "{}{}", prefix, record.args());
 
-        if !master_unlock {
-            self.lock.store(false, Ordering::Release);
-        }
+        self.release(master_unlock);
+    }
+}
+
+impl Log for Logger {
+    fn enabled(&self, _metadata: &log::Metadata) -> bool {
+        true
+    }
+
+    fn log(&self, record: &log::Record) {
+        self.log_prefixed(record, "");
     }
 
     fn flush(&self) {

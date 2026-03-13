@@ -1,5 +1,5 @@
 qemu_cmd() {
-    echo /media/dev/qemu/build/qemu-system-x86_64 \
+    echo qemu-system-x86_64 \
         -debugcon stdio \
         -smp 12 \
         -m 8G \
