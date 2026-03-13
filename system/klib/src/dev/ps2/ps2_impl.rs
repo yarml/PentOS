@@ -25,7 +25,7 @@ static DATA_PORT: SpinMutex<Port<u8>> = SpinMutex::new(unsafe { Port::new(0x60) 
 static CMD_PORT: SpinMutex<Port<u8>> = SpinMutex::new(unsafe { Port::new(0x64) });
 
 static STATE_MACHINE: SpinMutex<StateMachine> = SpinMutex::new(StateMachine::new());
-static KEYS_PRESS_MAP: [AtomicBool; KEYS_COUNT] = [const { AtomicBool::new(false) }; KEYS_COUNT];
+pub static KEYS_PRESS_MAP: [AtomicBool; KEYS_COUNT] = [const { AtomicBool::new(false) }; KEYS_COUNT];
 
 pub(crate) fn init() {
     let mut cmd_port = CMD_PORT.lock();

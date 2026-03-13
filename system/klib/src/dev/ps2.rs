@@ -1,7 +1,11 @@
 mod ps2_impl;
 
+pub(crate) use ps2_impl::{init, on_key_event};
 use {
-    crate::{dev::timer, task::stream::Stream},
+    crate::{
+        dev::{ps2::ps2_impl::KEYS_PRESS_MAP, timer},
+        task::stream::Stream,
+    },
     alloc::vec::Vec,
     config::dev::ps2::KEY_EVENT_QUEUE_SIZE,
     core::{
@@ -9,14 +13,16 @@ use {
         sync::atomic::{AtomicUsize, Ordering},
         task::{Context, Poll, Waker},
     },
-    keys::KeyEvent,
-    spinlocks::mutex::SpinMutex,
+    keys::{Key, KeyEvent},
+    log::warn,
+    spinlocks::{mutex::SpinMutex, rwlock::SpinRwLock},
     utils::collections::broadcast_queue::{BroadcastCursor, BroadcastQueue, ReadResult},
     x64::interrupts,
 };
 
-pub(crate) use ps2_impl::{init, on_key_event};
-use {log::warn, spinlocks::rwlock::SpinRwLock};
+pub mod keys {
+    pub use keys::*;
+}
 
 static LAST_UPDATE_TIMESTAMP: AtomicUsize = AtomicUsize::new(0);
 
@@ -36,6 +42,10 @@ pub fn key_event_stream() -> KeyEventStream {
         cursor,
         registered: false,
     }
+}
+
+pub fn is_down(key: Key) -> bool {
+    KEYS_PRESS_MAP[key.id].load(Ordering::Relaxed)
 }
 
 pub struct KeyUpdateFuture {

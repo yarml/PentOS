@@ -113,6 +113,10 @@ impl Framebuffer {
         self.dirty.mark_rect(x, y, w, h);
     }
 
+    pub fn clear(&mut self) {
+        self.draw_box(0, 0, self.width, self.height, PixelColor(0, 0, 0));
+    }
+
     /// Flush only the dirty bounding rectangle from the WriteBack buffer into
     /// the WriteCombining framebuffer.
     ///
