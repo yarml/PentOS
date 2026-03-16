@@ -1,5 +1,3 @@
-#![feature(exit_status_error)]
-
 mod args;
 mod config;
 mod progress;
