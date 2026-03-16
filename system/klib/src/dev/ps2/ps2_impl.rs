@@ -1,5 +1,5 @@
 use {
-    crate::dev::ps2::keyboard_update_wake,
+    crate::{dev::ps2::keyboard_update_wake, task},
     config::dev::ps2::KB_BAD_RESPONSE_MAX_RETRIES,
     core::sync::atomic::{AtomicBool, Ordering},
     keys::{FeedResult, KEYS_COUNT, StateMachine},
@@ -43,7 +43,7 @@ pub(crate) fn init() {
     send_kbd(&mut cmd_port, &mut data_port, 0x02);
 }
 
-pub(crate) fn on_key_event() {
+pub(crate) fn on_scancode() {
     let feed_result = interrupts::with_disabled(|| {
         let mut data_port = DATA_PORT.lock();
         let mut state_machine = STATE_MACHINE.lock();
@@ -67,7 +67,8 @@ pub(crate) fn on_key_event() {
     if event.is_released() && !KEYS_PRESS_MAP[event.key().id].swap(false, Ordering::Relaxed) {
         return;
     }
-    keyboard_update_wake(event);
+
+    task::spawn(keyboard_update_wake(event));
 }
 
 // Helpers

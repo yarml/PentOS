@@ -1,5 +1,5 @@
 use {
-    crate::task::{sleep, suspend},
+    crate::task::{self, sleep, suspend},
     core::sync::atomic::{AtomicUsize, Ordering},
 };
 
@@ -11,6 +11,10 @@ pub fn get_timestamp() -> usize {
 
 pub(crate) fn on_tick() {
     TIMESTAMP.fetch_add(1, Ordering::Relaxed);
-    sleep::wake();
-    suspend::wake();
+    task::spawn(wake_all());
+}
+
+async fn wake_all() {
+    sleep::wake().await;
+    suspend::wake().await;
 }

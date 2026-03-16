@@ -1,13 +1,15 @@
 use {
-    crate::dev::timer::get_timestamp,
+    crate::{
+        dev::timer::get_timestamp,
+        sync::mutex::{AsyncMutex, AsyncMutexGuard},
+        task::futures::ManualFuture,
+    },
     alloc::collections::binary_heap::BinaryHeap,
     core::{
         cmp::Ordering,
         pin::Pin,
         task::{Context, Poll, Waker},
     },
-    spinlocks::mutex::SpinMutex,
-    x64::interrupts,
 };
 
 struct SleepingWaker {
@@ -15,7 +17,7 @@ struct SleepingWaker {
     end_time: usize,
 }
 
-static WAKERS: SpinMutex<BinaryHeap<SleepingWaker>> = SpinMutex::new(BinaryHeap::new());
+static WAKERS: AsyncMutex<BinaryHeap<SleepingWaker>> = AsyncMutex::new(BinaryHeap::new());
 
 pub fn sleep(ms: usize) -> Sleeper {
     Sleeper::for_duration(ms)
@@ -23,6 +25,7 @@ pub fn sleep(ms: usize) -> Sleeper {
 
 pub struct Sleeper {
     end_time: usize,
+    wakers: ManualFuture<AsyncMutexGuard<'static, BinaryHeap<SleepingWaker>>>,
 }
 
 impl Sleeper {
@@ -30,28 +33,35 @@ impl Sleeper {
         let ticks = ms.div_ceil(10);
         let current_time = get_timestamp();
         let end_time = current_time + ticks;
-        Self { end_time }
+        Self {
+            end_time,
+            wakers: ManualFuture::make(WAKERS.lock()),
+        }
     }
 }
 
 impl Future for Sleeper {
     type Output = ();
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        interrupts::with_disabled(|| {
-            let current = get_timestamp();
-            if current >= self.end_time {
-                Poll::Ready(())
-            } else {
-                let end_time = self.end_time;
-                let mut wakers = WAKERS.lock();
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let current = get_timestamp();
+        if current >= self.end_time {
+            Poll::Ready(())
+        } else {
+            if self.wakers.poll(cx).is_none() {
+                return Poll::Pending;
+            }
+            let mut wakers = self.wakers.remake(WAKERS.lock()).unwrap();
+
+            let end_time = self.end_time;
+            if wakers.iter().all(|w| !w.waker.will_wake(cx.waker())) {
                 wakers.push(SleepingWaker {
                     end_time,
                     waker: cx.waker().clone(),
                 });
-                Poll::Pending
             }
-        })
+            Poll::Pending
+        }
     }
 }
 
@@ -73,16 +83,14 @@ impl PartialEq for SleepingWaker {
 impl Eq for SleepingWaker {}
 
 /// Scheduled as urgent task at timer_interrupt
-pub(crate) fn wake() {
+pub(crate) async fn wake() {
     let current = get_timestamp();
-    interrupts::with_disabled(|| {
-        let mut wakers = WAKERS.lock();
-        while wakers
-            .peek()
-            .filter(|waker| current >= waker.end_time)
-            .is_some()
-        {
-            wakers.pop().unwrap().waker.wake();
-        }
-    })
+    let mut wakers = WAKERS.lock().await;
+    while wakers
+        .peek()
+        .filter(|waker| current >= waker.end_time)
+        .is_some()
+    {
+        wakers.pop().unwrap().waker.wake();
+    }
 }

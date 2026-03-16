@@ -60,7 +60,7 @@ async fn refresh_task() {
 
 async fn kbd_task() {
     let mut state = true;
-    let mut stream = key_event_stream();
+    let mut stream = key_event_stream().await;
     loop {
         {
             let mut fb = framebuffer::lock().await;
@@ -82,7 +82,7 @@ async fn kbd_task() {
 
 async fn kbd2_task() {
     let mut state = true;
-    let mut stream = key_event_stream();
+    let mut stream = key_event_stream().await;
     loop {
         {
             let mut fb = framebuffer::lock().await;

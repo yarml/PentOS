@@ -2,6 +2,7 @@ use {
     alloc::{collections::vec_deque::VecDeque, sync::Arc},
     core::{
         cell::UnsafeCell,
+        hint,
         ops::{Deref, DerefMut},
         pin::Pin,
         sync::atomic::{AtomicBool, AtomicU8, Ordering},
@@ -130,6 +131,21 @@ impl<T: ?Sized> AsyncMutex<T> {
                 }
             }
         })
+    }
+
+    pub fn lock_sync(&self) -> AsyncMutexGuard<'_, T> {
+        while self
+            .locked
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
+        {
+            hint::spin_loop();
+        }
+        let data = unsafe {
+            // SAFETY: invariant of self.queue, or the CAS
+            &mut *self.data.get()
+        };
+        AsyncMutexGuard { mutex: self, data }
     }
 }
 

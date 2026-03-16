@@ -1,10 +1,13 @@
 mod ps2_impl;
 
-pub(crate) use ps2_impl::{init, on_key_event};
+use crate::sync::mutex::AsyncMutexGuard;
+pub(crate) use ps2_impl::{init, on_scancode};
+
 use {
     crate::{
         dev::{ps2::ps2_impl::KEYS_PRESS_MAP, timer},
-        task::stream::Stream,
+        sync::mutex::AsyncMutex,
+        task::{futures::ManualFuture, stream::Stream},
     },
     alloc::vec::Vec,
     config::dev::ps2::KEY_EVENT_QUEUE_SIZE,
@@ -15,9 +18,7 @@ use {
     },
     keys::{Key, KeyEvent},
     log::warn,
-    spinlocks::{mutex::SpinMutex, rwlock::SpinRwLock},
     utils::collections::broadcast_queue::{BroadcastCursor, BroadcastQueue, ReadResult},
-    x64::interrupts,
 };
 
 pub mod keys {
@@ -26,20 +27,23 @@ pub mod keys {
 
 static LAST_UPDATE_TIMESTAMP: AtomicUsize = AtomicUsize::new(0);
 
-static KEY_EVENT_QUEUE: SpinRwLock<BroadcastQueue<KeyEvent, KEY_EVENT_QUEUE_SIZE>> =
-    SpinRwLock::new(BroadcastQueue::new());
-static KEY_EVENT_WAKERS: SpinMutex<Vec<Waker>> = SpinMutex::new(Vec::new());
+static KEY_EVENT_QUEUE: AsyncMutex<BroadcastQueue<KeyEvent, KEY_EVENT_QUEUE_SIZE>> =
+    AsyncMutex::new(BroadcastQueue::new());
+static KEY_EVENT_WAKERS: AsyncMutex<Vec<Waker>> = AsyncMutex::new(Vec::new());
 
-pub fn keyboard_update() -> KeyUpdateFuture {
+pub async fn keyboard_update() -> KeyUpdateFuture {
     KeyUpdateFuture {
-        stream: key_event_stream(),
+        stream: key_event_stream().await,
     }
 }
-pub fn key_event_stream() -> KeyEventStream {
-    let cursor = interrupts::with_disabled(|| KEY_EVENT_QUEUE.read().subscribe());
+pub async fn key_event_stream() -> KeyEventStream {
+    let event_queue = KEY_EVENT_QUEUE.lock().await;
+    let cursor = event_queue.subscribe();
 
     KeyEventStream {
         cursor,
+        event_queue: ManualFuture::make(KEY_EVENT_QUEUE.lock()),
+        wakers: ManualFuture::make(KEY_EVENT_WAKERS.lock()),
         registered: false,
     }
 }
@@ -66,6 +70,9 @@ impl Future for KeyUpdateFuture {
 
 pub struct KeyEventStream {
     cursor: BroadcastCursor,
+    event_queue:
+        ManualFuture<AsyncMutexGuard<'static, BroadcastQueue<KeyEvent, KEY_EVENT_QUEUE_SIZE>>>,
+    wakers: ManualFuture<AsyncMutexGuard<'static, Vec<Waker>>>,
     registered: bool,
 }
 
@@ -76,7 +83,11 @@ impl Stream for KeyEventStream {
         // Try to read before registering the waker, in case events arrived
         // between the last poll and now.
 
-        let read_result = interrupts::with_disabled(|| self.cursor.read(&*KEY_EVENT_QUEUE.read()));
+        if self.event_queue.poll(cx).is_none() {
+            return Poll::Pending;
+        }
+        let event_queue = self.event_queue.remake(KEY_EVENT_QUEUE.lock()).unwrap();
+        let read_result = self.cursor.read(&event_queue);
 
         match read_result {
             ReadResult::Event(event) => {
@@ -93,12 +104,13 @@ impl Stream for KeyEventStream {
 
         // No events available, register waker and return Pending.
         if !self.registered {
-            interrupts::with_disabled(|| {
-                let mut wakers = KEY_EVENT_WAKERS.lock();
-                if wakers.iter().all(|w| !w.will_wake(cx.waker())) {
-                    wakers.push(cx.waker().clone());
-                }
-            });
+            if self.wakers.poll(cx).is_none() {
+                return Poll::Pending;
+            }
+            let mut wakers = self.wakers.remake(KEY_EVENT_WAKERS.lock()).unwrap();
+            if wakers.iter().all(|w| !w.will_wake(cx.waker())) {
+                wakers.push(cx.waker().clone());
+            }
             self.registered = true;
         }
 
@@ -106,15 +118,12 @@ impl Stream for KeyEventStream {
     }
 }
 
-fn keyboard_update_wake(event: KeyEvent) {
-    let event_wakers = interrupts::with_disabled(|| {
-        let current_time = timer::get_timestamp();
-        LAST_UPDATE_TIMESTAMP.store(current_time, Ordering::Relaxed);
+async fn keyboard_update_wake(event: KeyEvent) {
+    let current_time = timer::get_timestamp();
+    LAST_UPDATE_TIMESTAMP.store(current_time, Ordering::Relaxed);
+    KEY_EVENT_QUEUE.lock().await.push(event);
 
-        KEY_EVENT_QUEUE.write().push(event);
-
-        core::mem::take(&mut *KEY_EVENT_WAKERS.lock())
-    });
+    let event_wakers = core::mem::take(&mut *KEY_EVENT_WAKERS.lock().await);
 
     for waker in event_wakers {
         waker.wake();
