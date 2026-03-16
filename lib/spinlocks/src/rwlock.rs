@@ -214,6 +214,37 @@ impl<T: ?Sized> SpinRwLock<T> {
             }
         }
     }
+
+    /// # Safety
+    /// lock writer bit must be free, and reader count must take this new reader into
+    /// considereation
+    pub unsafe fn force_read(&self) -> SpinRwLockReadGuard<'_, T> {
+        let data = unsafe { &*self.data.get() };
+        SpinRwLockReadGuard {
+            lock: &self.lock,
+            data,
+        }
+    }
+
+    /// # Safety
+    /// lock's writer bit must be set, and no concurrent write guard must be present
+    pub unsafe fn force_write(&self) -> SpinRwLockWriteGuard<'_, T> {
+        let data = unsafe { &mut *self.data.get() };
+        SpinRwLockWriteGuard {
+            lock: &self.lock,
+            data,
+        }
+    }
+
+    /// # Safety
+    /// lock writer bit must be free, and reader count must take this new reader into
+    /// considereation
+    pub unsafe fn force_deferred_write(&self) -> SpinRwLockDeferredGuard<'_, T> {
+        SpinRwLockDeferredGuard {
+            lock: &self.lock,
+            data: self.data.get(),
+        }
+    }
 }
 
 impl<'lock, T: ?Sized> SpinRwLockDeferredGuard<'lock, T> {

@@ -1,19 +1,23 @@
 use {
-    alloc::collections::vec_deque::VecDeque,
+    alloc::{collections::vec_deque::VecDeque, sync::Arc},
     core::{
         cell::UnsafeCell,
         ops::{Deref, DerefMut},
         pin::Pin,
-        sync::atomic::{AtomicBool, Ordering},
+        sync::atomic::{AtomicBool, AtomicU8, Ordering},
         task::{Context, Poll, Waker},
     },
     spinlocks::mutex::SpinMutex,
     x64::interrupts,
 };
 
+const QUEUE_STATE_QUEUED: u8 = 0;
+const QUEUE_STATE_WOKEN: u8 = 1;
+const QUEUE_STATE_CANCELLED: u8 = 2;
+
 pub struct AsyncMutex<T: ?Sized> {
     locked: AtomicBool,
-    waiters: SpinMutex<VecDeque<Waker>>,
+    waiters: SpinMutex<VecDeque<WakerSlot>>,
     data: UnsafeCell<T>,
 }
 
@@ -36,7 +40,12 @@ pub struct AsyncMutexGuard<'mutex, T: 'mutex + ?Sized> {
 /// task to skip the queue and hold the lock before everyone else.
 pub struct AsyncMutexLockFuture<'mutex, T: 'mutex + ?Sized> {
     mutex: &'mutex AsyncMutex<T>,
-    queued: bool,
+    queue_state: Option<Arc<AtomicU8>>,
+}
+
+struct WakerSlot {
+    waker: Waker,
+    queue_state: Arc<AtomicU8>,
 }
 
 /// # Safety
@@ -85,8 +94,42 @@ impl<T: ?Sized> AsyncMutex<T> {
     pub fn lock(&self) -> AsyncMutexLockFuture<'_, T> {
         AsyncMutexLockFuture {
             mutex: self,
-            queued: false,
+            queue_state: None,
         }
+    }
+
+    pub fn wake_next(&self) {
+        interrupts::with_disabled(|| {
+            let mark_unlocked = || {
+                self.locked.store(false, Ordering::Release);
+            };
+            let mut waiters = self.waiters.lock();
+            if waiters.is_empty() {
+                mark_unlocked();
+            } else {
+                loop {
+                    let slot = waiters.pop_front();
+                    if slot.is_none() {
+                        mark_unlocked();
+                        break;
+                    }
+                    let slot = slot.unwrap();
+                    if slot
+                        .queue_state
+                        .compare_exchange(
+                            QUEUE_STATE_QUEUED,
+                            QUEUE_STATE_WOKEN,
+                            Ordering::Release,
+                            Ordering::Relaxed,
+                        )
+                        .is_ok()
+                    {
+                        slot.waker.wake();
+                        break;
+                    }
+                }
+            }
+        })
     }
 }
 
@@ -97,8 +140,12 @@ impl<'mutex, T: ?Sized> Future for AsyncMutexLockFuture<'mutex, T> {
         let this = self.get_mut();
         interrupts::with_disabled(|| {
             let mut waiters = this.mutex.waiters.lock();
+            let queue_state = this
+                .queue_state
+                .as_ref()
+                .map(|qs| qs.load(Ordering::Acquire));
 
-            if this.queued
+            if queue_state == Some(QUEUE_STATE_WOKEN)
                 || (waiters.is_empty()
                     && this
                         .mutex
@@ -116,10 +163,29 @@ impl<'mutex, T: ?Sized> Future for AsyncMutexLockFuture<'mutex, T> {
                 });
             }
 
-            this.queued = true;
-            waiters.push_back(cx.waker().clone());
+            let queue_state = Arc::new(AtomicU8::new(QUEUE_STATE_QUEUED));
+            this.queue_state = Some(queue_state.clone());
+            waiters.push_back(WakerSlot {
+                waker: cx.waker().clone(),
+                queue_state,
+            });
             Poll::Pending
         })
+    }
+}
+
+impl<'mutex, T: ?Sized> Drop for AsyncMutexLockFuture<'mutex, T> {
+    fn drop(&mut self) {
+        if let Some(queue_state) = self.queue_state.clone()
+            && queue_state
+                .compare_exchange(
+                    QUEUE_STATE_QUEUED,
+                    QUEUE_STATE_CANCELLED,
+                    Ordering::Release,
+                    Ordering::Relaxed,
+                )
+                .is_ok()
+        {}
     }
 }
 
@@ -139,17 +205,6 @@ impl<T: ?Sized> DerefMut for AsyncMutexGuard<'_, T> {
 
 impl<T: ?Sized> Drop for AsyncMutexGuard<'_, T> {
     fn drop(&mut self) {
-        interrupts::with_disabled(|| {
-            let mut waiters = self.mutex.waiters.lock();
-            if waiters.is_empty() {
-                self.mutex.locked.store(false, Ordering::Release);
-            } else {
-                // It already is true, we're setting it again to tru just for the Release ordering
-                // In case we have waiters, we never set locked to false, we directly pass it
-                // to the next task waiting for it.
-                self.mutex.locked.store(true, Ordering::Release);
-                waiters.pop_front().unwrap().wake();
-            }
-        });
+        self.mutex.wake_next();
     }
 }

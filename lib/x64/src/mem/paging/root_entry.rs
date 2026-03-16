@@ -1,5 +1,5 @@
 use {
-    super::{PagingReferenceEntry, pat::ReferencePatIndex, pcid::Pcid},
+    super::{pat::ReferencePatIndex, pcid::Pcid},
     crate::mem::{
         addr::{Address, PhysAddr},
         frame::{
@@ -7,6 +7,7 @@ use {
             size::{Frame4KiB, FrameSize},
         },
         page::size::{Page4KiB, Page512GiB},
+        paging::PagingRawEntry,
     },
     core::{arch::asm, ops::Deref},
 };
@@ -65,7 +66,7 @@ impl PagingRootEntry {
     /// # Safety
     /// Must ensure that this entry is pointing to a valid sub table
     /// and that the memory location is not mutably aliased
-    pub unsafe fn target<'a>(&self) -> &'a [PagingReferenceEntry<Page512GiB>; 512] {
+    pub unsafe fn target<'a>(&self) -> &'a [PagingRawEntry<Page512GiB>; 512] {
         unsafe {
             // SAFETY: ensured by caller
             self.target_frame()
@@ -77,7 +78,7 @@ impl PagingRootEntry {
     /// # Safety
     /// Must ensure that this entry is pointing to a valid sub table
     /// and that the memory location is not aliased
-    pub unsafe fn target_mut<'a>(&self) -> &'a mut [PagingReferenceEntry<Page512GiB>; 512] {
+    pub unsafe fn target_mut<'a>(&self) -> &'a mut [PagingRawEntry<Page512GiB>; 512] {
         unsafe {
             // SAFETY: ensured by caller
             self.target_frame()

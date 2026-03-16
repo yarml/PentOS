@@ -31,7 +31,7 @@ pub fn map<PS: PageSizeMap, const ALLOCATOR_CAP: usize>(
     mtype: PatMemoryType,
 ) {
     let pml4t = unsafe { map_root.target_mut() };
-    let pml4e = pml4t[page.order_index::<Page512GiB>()].as_raw();
+    let pml4e = &mut pml4t[page.order_index::<Page512GiB>()];
 
     let pdpt = page_target_or_new(pml4e, allocator);
     let pdpe = &mut pdpt[page.order_index::<Page1GiB>()];

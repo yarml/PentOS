@@ -7,7 +7,8 @@ use {
     klib::{
         dev::{
             framebuffer,
-            ps2::{KeyEventStream, key_event_stream, keyboard_update},
+            ps2::{KeyEventStream, key_event_stream},
+            timer::get_timestamp,
         },
         task::{self, sleep::sleep},
     },
@@ -26,6 +27,7 @@ async fn kmain() {
 
     task::spawn(kbd_task());
     task::spawn(kbd2_task());
+    task::spawn(timestamp_task());
     task::spawn(refresh_task());
     for i in 0..20 {
         task::spawn(test_task(i));
@@ -97,6 +99,26 @@ async fn kbd2_task() {
         if kv.is_pressed() {
             state = !state;
         }
+    }
+}
+
+async fn timestamp_task() {
+    loop {
+        let time = get_timestamp();
+        {
+            let mut fb = framebuffer::lock().await;
+            for i in 0..64 {
+                let bit = (time >> i) & 1 == 1;
+                let color = if bit {
+                    PixelColor(0, 0, 255)
+                } else {
+                    PixelColor(255, 0, 0)
+                };
+
+                fb.draw_box((64 - i) * 20, 30, 10, 10, color);
+            }
+        }
+        sleep(10).await
     }
 }
 

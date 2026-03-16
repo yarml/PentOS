@@ -14,20 +14,12 @@ pub struct TaskId(usize);
 
 pub(super) struct Task {
     id: TaskId,
-    state: TaskState,
     future: Pin<Box<dyn Future<Output = ()> + Send>>,
 }
 
 pub(super) struct TaskWaker {
     task_id: TaskId,
     executor: Pin<&'static Executor>,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum TaskState {
-    Scheduled,
-    Running,
-    Pending,
 }
 
 impl Deref for TaskId {
@@ -44,7 +36,6 @@ impl Task {
         Self {
             id: TaskId(NEXT_ID.fetch_add(1, Ordering::Relaxed)),
             future: Box::pin(future),
-            state: TaskState::Scheduled,
         }
     }
     pub fn poll(&mut self, cx: &mut Context) -> Poll<()> {
@@ -53,13 +44,6 @@ impl Task {
 
     pub fn id(&self) -> TaskId {
         self.id
-    }
-
-    pub fn state(&self) -> TaskState {
-        self.state
-    }
-    pub fn set_state(&mut self, new_state: TaskState) {
-        self.state = new_state
     }
 }
 

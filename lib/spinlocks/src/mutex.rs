@@ -80,6 +80,20 @@ impl<T: ?Sized> SpinMutex<T> {
         }
     }
 
+    /// # Safety
+    /// lock must be set to true, and no concurrent mutex guard must exist
+    pub unsafe fn force_lock(&self) -> SpinMutexGuard<'_, T> {
+        let data = unsafe {
+            // SAFETY: We host the data, so we know it is in a valid memory location
+            // The lock also guarentees exclusivity of the unique reference
+            self.data.get().as_mut_unchecked()
+        };
+        SpinMutexGuard {
+            lock: &self.lock,
+            data,
+        }
+    }
+
     pub fn is_locked(&self) -> bool {
         self.lock.load(Ordering::Relaxed)
     }

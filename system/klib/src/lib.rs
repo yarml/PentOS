@@ -62,11 +62,11 @@ pub unsafe fn init(kmain: impl Future<Output = ()> + Send + 'static) -> ! {
     }
 
     logger::init();
-    info!("KLib initialization...");
+    info!("Kernel initialization...");
 
     unsafe {
         // SAFETY: Called once in the BSP and no other allocator can be called before this initialization ends
-        mem::phys::init()
+        mem::init();
     };
 
     interrupts::setup();
