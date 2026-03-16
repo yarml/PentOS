@@ -14,11 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
       - name: Install Dependencies
         run: sudo apt-get update && sudo apt-get install nasm
       - name: Cache Cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.cargo/registry
@@ -26,7 +26,7 @@ jobs:
             ./target
           key: ${{ runner.os }}-cargo-lint
       - name: Cache Toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.rustup/toolchains
@@ -40,9 +40,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
       - name: Cache Cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.cargo/registry
@@ -50,7 +50,7 @@ jobs:
             ./target
           key: ${{ runner.os }}-cargo-test
       - name: Cache Toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.rustup/toolchains

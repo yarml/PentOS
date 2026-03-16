@@ -20,11 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
       - name: Install Dependencies
         run: sudo apt-get update && sudo apt-get install nasm
       - name: Cache Cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.cargo/registry
@@ -32,7 +32,7 @@ jobs:
             ./target
           key: ${{ runner.os }}-cargo-doc
       - name: Cache Toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.rustup/toolchains
@@ -42,7 +42,7 @@ jobs:
       - name: Generate Docs
         run: make doc
       - name: Upload Docs (ZIP)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: docs
           path: target/doc

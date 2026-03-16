@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
       - name: Install Dependencies
         run: sudo apt-get update && sudo apt-get install nasm
       - name: Cache Cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.cargo/registry
@@ -25,7 +25,7 @@ jobs:
             ./target
           key: ${{ runner.os }}-cargo-build-bootloader
       - name: Cache Toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.rustup/toolchains
@@ -35,14 +35,14 @@ jobs:
       - name: Build Bootloader (Release)
         run: make build-release-bootloader
       - name: Upload Bootloader (Release)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: bootloader-release
           path: target/uefi/release/bootloader.efi
       - name: Build Bootloader (Debug)
         run: make build-debug-bootloader
       - name: Upload Bootloader (Debug)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: bootloader-debug
           path: target/uefi/debug/bootloader.efi
@@ -51,11 +51,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
       - name: Install Dependencies
         run: sudo apt-get update && sudo apt-get install nasm
       - name: Cache Cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.cargo/registry
@@ -63,7 +63,7 @@ jobs:
             ./target
           key: ${{ runner.os }}-cargo-build-kernel
       - name: Cache Toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.rustup/toolchains
@@ -73,14 +73,14 @@ jobs:
       - name: Build Kernel (Release)
         run: make build-release-kernel
       - name: Upload Kernel (Release)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: kernel-release
           path: target/kernel/release/kernel
       - name: Build Kernel (Debug)
         run: make build-debug-kernel
       - name: Upload Kernel (Debug)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: kernel-debug
           path: target/kernel/debug/kernel
@@ -90,11 +90,11 @@ jobs:
     needs: [build-bootloader, build-kernel]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
       - name: Install Dependencies
         run: sudo apt-get update && sudo apt-get install nasm mtools parted
       - name: Cache Cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.cargo/registry
@@ -102,7 +102,7 @@ jobs:
             ./target
           key: ${{ runner.os }}-cargo-build-img
       - name: Cache Toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: |
             ~/.rustup/toolchains
@@ -112,14 +112,14 @@ jobs:
       - name: Build Release Image
         run: make img-release
       - name: Upload Release Image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: pentos-release.img
           path: run/release/pentos.img
       - name: Build Debug Image
         run: make img-debug
       - name: Upload Debug Image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: pentos-debug.img
           path: run/debug/pentos.img
