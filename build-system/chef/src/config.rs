@@ -1,3 +1,5 @@
+pub mod resolution;
+
 use {serde::Deserialize, serde_json::Value};
 
 #[derive(Deserialize)]

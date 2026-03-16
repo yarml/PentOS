@@ -5,12 +5,12 @@ endif
 .PHONY: nothing
 nothing:
 
-packages_names := $(shell cargo chef packages name)
-packages_paths := $(shell cargo chef packages path)
+packages_names := $(shell bash scripts/chef.sh packages name)
+packages_paths := $(shell bash scripts/chef.sh packages path)
 packages := $(join $(packages_names),$(addprefix :, $(packages_paths)))
 
-kernel_destination := $(shell cargo chef config install-kernel)
-bootloader_destination := $(shell cargo chef config install-bootloader)
+kernel_destination := $(shell bash scripts/chef.sh config install-kernel)
+bootloader_destination := $(shell bash scripts/chef.sh config install-bootloader)
 
 ovmf_target := run/ovmf/vars.fd run/ovmf/code.fd
 
@@ -42,7 +42,7 @@ $(foreach package,$(packages), \
 )
 
 $(ovmf_target):
-	cargo chef ovmf
+	bash scripts/chef.sh ovmf
 
 .PHONY: image-debug image-release
 image-debug: $(ovmf_target) build-debug-bootloader build-debug-kernel

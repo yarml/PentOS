@@ -3,8 +3,6 @@
 #![feature(const_trait_impl)]
 #![feature(allocator_api)]
 #![feature(slice_ptr_get)]
-#![feature(ptr_metadata)]
-#![feature(negative_impls)]
 #![feature(abi_x86_interrupt)]
 
 extern crate alloc;

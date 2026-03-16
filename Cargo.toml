@@ -39,7 +39,7 @@ xz = "0.1.0"
 nasm-rs = "0.3.2"
 
 prettyplease = "0.2.37"
-toml = "1.0.6+spec-1.1.0"
+toml = "1.0.6"
 syn = { version = "2.0.117", features = ["full"] }
 quote = "1.0.45"
 proc-macro2 = "1.0.106"
@@ -73,3 +73,7 @@ ovmf-codefd-path-template = "$$-bin/x64/code.fd"
 
 install-bootloader = "/boot/efi/pentos.efi"
 install-kernel = "/boot/efi/pentos.kernel"
+
+qemu-numcores = "12"
+qemu-mem = "8G"
+qemu-resolution = "1920x1080"

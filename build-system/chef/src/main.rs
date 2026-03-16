@@ -3,7 +3,7 @@ mod config;
 mod progress;
 
 use {
-    crate::args::PackagesCommand,
+    crate::{args::PackagesCommand, config::resolution::Resolution},
     args::{ChefArgs, ChefCommand},
     cargo_metadata::{Metadata, MetadataCommand},
     clap::Parser,
@@ -79,11 +79,36 @@ fn ovmf(config: &ChefConfig) {
 }
 
 fn printconfig(raw_config: &Value, name: &str) {
-    if let Some(config) = raw_config[name].as_str() {
-        print!("{config}");
-        exit(0);
-    } else {
-        exit(1);
+    let cfg = match name {
+        "qemu-xres" | "qemu-yres" | "qemu-vgamem_mb" => {
+            let Some(raw_resolution) = raw_config["qemu-resolution"].as_str() else {
+                eprintln!("qemu-resolution not specified in build configuration");
+                exit(1);
+            };
+            let Ok(resolution) = Resolution::try_from(raw_resolution) else {
+                eprintln!("invalid qemu-resolution in build configuration");
+                exit(1);
+            };
+
+            if name == "qemu-xres" {
+                Some(format!("{}", resolution.xres))
+            } else if name == "qemu-yres" {
+                Some(format!("{}", resolution.yres))
+            } else if name == "qemu-vgamem_mb" {
+                let vgamem_mb = (resolution.xres * resolution.yres * 4).div_ceil(1024 * 1024);
+                Some(format!("{}", vgamem_mb))
+            } else {
+                unreachable!()
+            }
+        }
+        _ => raw_config[name].as_str().map(|v| v.to_string()),
+    };
+    match cfg {
+        Some(cfg) => {
+            print!("{cfg}");
+            exit(0);
+        }
+        None => exit(1),
     }
 }
 
