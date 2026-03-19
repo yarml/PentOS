@@ -33,14 +33,14 @@ jobs:
       - name: Setup Build System
         run: make
       - name: Build Bootloader (Release)
-        run: make build-release-bootloader
+        run: make build-bootloader-release
       - name: Upload Bootloader (Release)
         uses: actions/upload-artifact@v7.0.0
         with:
           name: bootloader-release
           path: target/uefi/release/bootloader.efi
       - name: Build Bootloader (Debug)
-        run: make build-debug-bootloader
+        run: make build-bootloader-debug
       - name: Upload Bootloader (Debug)
         uses: actions/upload-artifact@v7.0.0
         with:
@@ -71,14 +71,14 @@ jobs:
       - name: Setup Build System
         run: make
       - name: Build Kernel (Release)
-        run: make build-release-kernel
+        run: make build-kernel-release
       - name: Upload Kernel (Release)
         uses: actions/upload-artifact@v7.0.0
         with:
           name: kernel-release
           path: target/kernel/release/kernel
       - name: Build Kernel (Debug)
-        run: make build-debug-kernel
+        run: make build-kernel-debug
       - name: Upload Kernel (Debug)
         uses: actions/upload-artifact@v7.0.0
         with:
