@@ -16,7 +16,10 @@ members = [
     "macros/klib-macros",
     "build-system/chef",
     "build-system/builder",
-    "test", "lib/keys",
+    "test",
+    "lib/keys",
+    "user/lib/runtime",
+    "user/core/init",
 ]
 resolver = "3"
 
@@ -63,7 +66,10 @@ spinlocks = { path = "lib/spinlocks" }
 acpi = { path = "lib/acpi" }
 utils = { path = "lib/utils" }
 log-debugcon = { path = "lib/log-debugcon" }
-keys = { path = "lib/keys"}
+keys = { path = "lib/keys" }
+
+# user space crates
+runtime = { path = "user/lib/runtime" }
 
 [workspace.metadata.chef]
 ovmf-version = "edk2-stable202511-r1"

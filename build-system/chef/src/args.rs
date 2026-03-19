@@ -22,4 +22,5 @@ pub enum ChefCommand {
 pub enum PackagesCommand {
     Name,
     Path,
+    Userbin,
 }

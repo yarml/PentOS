@@ -46,20 +46,22 @@ Run `make` once to bootstrap the build system and download OVMF:
 make
 ```
 
-### Building the bootloader and kernel
+### Building the bootloader, kernel, & user binaries
 ```sh
 # Debug build
-make build-debug-bootloader
-make build-debug-kernel
+make build-bootloader-debug
+make build-kernel-debug
+make build-userbin-debug
 
 # Release build
-make build-release-bootloader
-make build-release-kernel
+make build-bootloader-release
+make build-userbin-release
 ```
 
 Output locations:
 - Bootloader: `target/uefi/{debug,release}/bootloader.efi`
 - Kernel: `target/kernel/{debug,release}/kernel`
+- user binaries `target/user/{debug,release}/*`
 
 ## Running in QEMU
 These targets build everything automatically before launching QEMU.
@@ -81,6 +83,13 @@ The configuration Qemu uses for these commands can be found at the root `Cargo.t
 - Resolution set to 1920x1080
 
 ## Creating Disk Images
+### Flat
+These will create normal directories containing the system
+```sh
+make flat-release   # run/release/flat
+make flat-debug     # run/debug/flat
+```
+
 ### Raw `.img`
 Requires `mtools` and `parted`.
 

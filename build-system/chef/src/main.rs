@@ -32,6 +32,33 @@ fn packages_paths(root: &Metadata) {
     exit(0);
 }
 
+fn packages_userbin_names(root: &Metadata) {
+    for package in &root.workspace_members {
+        let package = &root[package];
+        let mut path = package.manifest_path.clone();
+        path.pop(); // Cargo.toml
+        let Some(name) = path.file_name().map(String::from) else {
+            continue;
+        };
+        path.pop();
+        let Some(package) = path.file_name().map(String::from) else {
+            continue;
+        };
+        path.pop();
+        let Some(userdir) = path.file_name().map(String::from) else {
+            continue;
+        };
+        if package == "lib" {
+            continue;
+        }
+        if userdir != "user" {
+            continue;
+        }
+
+        println!("{}/{}", package, name);
+    }
+}
+
 fn ovmf(config: &ChefConfig) {
     let source = config
         .ovmf_source_template
@@ -126,6 +153,7 @@ fn main() {
         ChefCommand::Packages { command } => match command {
             PackagesCommand::Name => packages_names(&root),
             PackagesCommand::Path => packages_paths(&root),
+            PackagesCommand::Userbin => packages_userbin_names(&root),
         },
         ChefCommand::Config { name } => {
             printconfig(raw_config, &name);

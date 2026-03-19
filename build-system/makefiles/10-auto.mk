@@ -20,3 +20,20 @@ $(foreach package,$(packages), \
 		package_build_recipe,$(word 1,$(subst :, ,$(package))),$(word 2,$(subst :, ,$(package))) \
 	)) \
 )
+
+.PHONY: build-userbin-release build-userbin-debug
+define package_userbin_recipe =
+.PHONY: build-userbin-$(1)-release build-userbin-$(1)-debug
+
+build-userbin-$(1)-release: build-$(notdir $(1))-release
+build-userbin-$(1)-debug: build-$(notdir $(1))-debug
+
+build-userbin-release: build-userbin-$(1)-release
+build-userbin-debug: build-userbin-$(1)-debug
+endef
+
+$(foreach package,$(packages_userbin), \
+	$(eval $(call \
+		package_userbin_recipe,$(package) \
+	)) \
+)

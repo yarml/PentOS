@@ -10,15 +10,23 @@ flat-boot-release: build-bootloader-release build-kernel-release
 	cp target/kernel/release/kernel run/release/flat/boot/pentos.kernel
 
 .PHONY: flat-main-debug flat-main-release
-flat-main-debug: build-kernel-debug
+flat-main-debug: build-kernel-debug build-userbin-debug
 	mkdir -p run/debug/flat/main/sys
 	mkdir -p run/debug/flat/main/pkg/bin
 	cp target/kernel/debug/kernel run/debug/flat/main/sys/kernel
+	$(foreach package,$(packages_userbin), \
+		mkdir -p run/debug/flat/main/pkg/bin/$(dir $(package)) &&\
+		cp target/user/debug/$(notdir $(package)) run/debug/flat/main/pkg/bin/$(dir $(package)) \
+	)
 
-flat-main-release: build-kernel-release
+flat-main-release: build-kernel-release build-userbin-release
 	mkdir -p run/release/flat/main/sys
 	mkdir -p run/release/flat/main/pkg/bin
 	cp target/kernel/release/kernel run/release/flat/main/sys/kernel
+	$(foreach package,$(packages_userbin), \
+		mkdir -p run/release/flat/main/pkg/bin/$(dir $(package)) &&\
+		cp target/user/release/$(notdir $(package)) run/release/flat/main/pkg/bin/$(dir $(package)) \
+	)
 
 .PHONY: flat-debug flat-release
 flat-debug: flat-boot-debug flat-main-debug

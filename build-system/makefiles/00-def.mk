@@ -2,6 +2,8 @@ packages_names := $(shell bash scripts/chef.sh packages name)
 packages_paths := $(shell bash scripts/chef.sh packages path)
 packages := $(join $(packages_names),$(addprefix :, $(packages_paths)))
 
+packages_userbin := $(shell bash scripts/chef.sh packages userbin)
+
 kernel_destination := $(shell bash scripts/chef.sh config install-kernel)
 bootloader_destination := $(shell bash scripts/chef.sh config install-bootloader)
 
