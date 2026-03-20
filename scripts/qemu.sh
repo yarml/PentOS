@@ -6,7 +6,7 @@ qemu_cmd() {
         -full-screen \
         -cpu qemu64-v1,pdpe1gb,pcid,invpcid,fsgsbase,x2apic \
         -drive if=pflash,format=raw,readonly=on,file=run/ovmf/code.fd \
-        -drive if=pflash,format=raw,readonly=on,file=run/ovmf/vars.fd \
-        -drive format=raw,file=fat:rw:$1/flat/boot \
+        -drive if=pflash,format=raw,file=run/ovmf/vars.fd \
+        -drive format=raw,file=$1/img/pentos.img \
         -device VGA,vgamem_mb=$(bash scripts/chef.sh config qemu-vgamem_mb),xres=$(bash scripts/chef.sh config qemu-xres),yres=$(bash scripts/chef.sh config qemu-yres)
 }

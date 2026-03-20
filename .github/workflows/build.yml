@@ -115,11 +115,11 @@ jobs:
         uses: actions/upload-artifact@v7.0.0
         with:
           name: pentos-release.img
-          path: run/release/pentos.img
+          path: run/release/img/pentos.img
       - name: Build Debug Image
         run: make img-debug
       - name: Upload Debug Image
         uses: actions/upload-artifact@v7.0.0
         with:
           name: pentos-debug.img
-          path: run/debug/pentos.img
+          path: run/debug/img/pentos.img

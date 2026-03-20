@@ -32,8 +32,4 @@ build-userbin-release: build-userbin-$(1)-release
 build-userbin-debug: build-userbin-$(1)-debug
 endef
 
-$(foreach package,$(packages_userbin), \
-	$(eval $(call \
-		package_userbin_recipe,$(package) \
-	)) \
-)
+$(foreach package,$(packages_userbin), $(eval $(call package_userbin_recipe,$(package))))

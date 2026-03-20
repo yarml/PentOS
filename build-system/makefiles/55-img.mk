@@ -1,22 +1,44 @@
-.PHONY: img-release img-debug
-img-release: flat-release
-	mkdir -p run/release/partitions
-	dd if=/dev/zero of=run/release/pentos.img bs=1M count=$(DISK_IMG_SIZE_MB)
-	parted -s run/release/pentos.img mklabel gpt
-	parted -s run/release/pentos.img mkpart BOOT fat32 1MiB $(BOOT_PART_END_MIB)MiB
-	parted -s run/release/pentos.img set 1 esp on
-	dd if=/dev/zero of=run/release/partitions/boot.img bs=1M count=$(BOOT_IMG_SIZE_MB)
-	mkfs.fat -F 32 -n BOOT run/release/partitions/boot.img
-	mtools -c mcopy -i run/release/partitions/boot.img -s run/release/flat/boot/* ::
-	dd if=run/release/partitions/boot.img of=run/release/pentos.img bs=1M seek=1 conv=notrunc
+define make_disk_img
+	mkdir -p $(1)/img
+	dd if=/dev/zero of=$(1)/img/pentos.img bs=1M count=$(DISK_IMG_SIZE_MB)
+	bash scripts/gensysimg.sh $(1)/img $(BOOT_IMG_SIZE_MB) $(MAIN_IMG_SIZE_MB)
+endef
 
-img-debug: flat-debug
-	mkdir -p run/debug/partitions
-	dd if=/dev/zero of=run/debug/pentos.img bs=1M count=$(DISK_IMG_SIZE_MB)
-	parted -s run/debug/pentos.img mklabel gpt
-	parted -s run/debug/pentos.img mkpart BOOT fat32 1MiB $(BOOT_PART_END_MIB)MiB
-	parted -s run/debug/pentos.img set 1 esp on
-	dd if=/dev/zero of=run/debug/partitions/boot.img bs=1M count=$(BOOT_IMG_SIZE_MB)
-	mkfs.fat -F 32 -n BOOT run/debug/partitions/boot.img
-	mtools -c mcopy -i run/debug/partitions/boot.img -s run/debug/flat/boot/* ::
-	dd if=run/debug/partitions/boot.img of=run/debug/pentos.img bs=1M seek=1 conv=notrunc
+run/release/img/boot.img: $(FLAT_BOOT_RELEASE_FILES)
+	mkdir -p $(dir $@)
+	dd if=/dev/zero of=$@ bs=1M count=$(BOOT_IMG_SIZE_MB)
+	mkfs.fat -F 32 -n BOOT $@
+	mtools -c mcopy -i $@ -s run/release/flat/boot/* ::
+
+run/debug/img/boot.img: $(FLAT_BOOT_DEBUG_FILES)
+	mkdir -p $(dir $@)
+	dd if=/dev/zero of=$@ bs=1M count=$(BOOT_IMG_SIZE_MB)
+	mkfs.fat -F 32 -n BOOT $@
+	mtools -c mcopy -i $@ -s run/debug/flat/boot/* ::
+
+run/release/img/main.img: $(FLAT_MAIN_RELEASE_FILES)
+	mkdir -p $(dir $@)
+	dd if=/dev/zero of=$@ bs=1M count=$(MAIN_IMG_SIZE_MB)
+	mkfs.ext4 $@
+	bash scripts/popext4fs.sh run/release/flat/main $@
+
+run/debug/img/main.img: $(FLAT_MAIN_DEBUG_FILES)
+	mkdir -p $(dir $@)
+	dd if=/dev/zero of=$@ bs=1M count=$(MAIN_IMG_SIZE_MB)
+	mkfs.ext4 $@
+	bash scripts/popext4fs.sh run/debug/flat/main $@
+
+run/release/img/pentos.img: run/release/img/boot.img run/release/img/main.img
+	$(call make_disk_img,run/release)
+
+run/debug/img/pentos.img: run/debug/img/boot.img run/debug/img/main.img
+	$(call make_disk_img,run/debug)
+
+.PHONY: img-boot-release img-boot-debug img-main-release img-main-debug img-release img-debug
+
+img-boot-release: run/release/img/boot.img
+img-boot-debug: run/debug/img/boot.img
+img-main-release: run/release/img/main.img
+img-main-debug: run/debug/img/main.img
+img-release: run/release/img/pentos.img
+img-debug: run/debug/img/pentos.img
