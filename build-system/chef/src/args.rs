@@ -9,6 +9,7 @@ pub struct ChefArgs {
 #[derive(Debug, Subcommand)]
 pub enum ChefCommand {
     Ovmf,
+    Font,
     Packages {
         #[command(subcommand)]
         command: PackagesCommand,

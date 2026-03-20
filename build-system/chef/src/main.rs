@@ -8,6 +8,7 @@ use {
     cargo_metadata::{Metadata, MetadataCommand},
     clap::Parser,
     config::ChefConfig,
+    flate2::bufread::GzDecoder,
     serde_json::Value,
     std::{fs, io::Read, process::exit},
     tar::Archive,
@@ -105,6 +106,42 @@ fn ovmf(config: &ChefConfig) {
     }
 }
 
+fn font(config: &ChefConfig) {
+    let source = config
+        .font_source_template
+        .replace("$$", &config.font_version);
+    let archive_font_path = config
+        .font_path_template
+        .replace("$$", &config.font_version);
+    print_action!(0, "Setting up", "font",);
+    print_action!(1, "Downloading", "font ({source})",);
+
+    let font_tarball = reqwest::blocking::get(&source)
+        .expect("Couldn't download font tarball")
+        .bytes()
+        .expect("Couldn't read font tarball");
+    print_action!(1, "Decompressing", "font");
+    let mut decompressor = GzDecoder::new(font_tarball.as_ref());
+    let mut decompressed = Vec::new();
+    decompressor
+        .read_to_end(&mut decompressed)
+        .expect("Couldn't decompress font tarball");
+    let mut archive = Archive::new(decompressed.as_slice());
+
+    let root_path = "run";
+    let font_path = format!("{root_path}/font.psf");
+    fs::create_dir_all(root_path).unwrap();
+    for entry in archive.entries().expect("Couldn't read font tarball") {
+        let mut entry = entry.unwrap();
+        let path = entry.path().unwrap().to_str().unwrap().to_string();
+        if path == archive_font_path {
+            print_action!(1, "Installing", "font ({font_path})");
+            let mut file = fs::File::create(&font_path).unwrap();
+            std::io::copy(&mut entry, &mut file).unwrap();
+        }
+    }
+}
+
 fn printconfig(raw_config: &Value, name: &str) {
     let cfg = match name {
         "qemu-xres" | "qemu-yres" | "qemu-vgamem_mb" => {
@@ -149,6 +186,9 @@ fn main() {
     match args.command {
         ChefCommand::Ovmf => {
             ovmf(&config);
+        }
+        ChefCommand::Font => {
+            font(&config);
         }
         ChefCommand::Packages { command } => match command {
             PackagesCommand::Name => packages_names(&root),

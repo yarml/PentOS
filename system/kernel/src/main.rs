@@ -4,9 +4,10 @@
 mod version;
 
 use {
+    console_font::{FontStateMachine, GLYPH_WIDTH, GLYPHS, GlyphResult},
     klib::{
         dev::{
-            framebuffer,
+            framebuffer::{self, Framebuffer},
             ps2::{KeyEventStream, key_event_stream},
             timer::get_timestamp,
         },
@@ -31,6 +32,18 @@ async fn kmain() {
     task::spawn(refresh_task());
     for i in 0..20 {
         task::spawn(test_task(i));
+    }
+
+    {
+        let mut fb = framebuffer::lock().await;
+        draw_str(
+            &mut fb,
+            "Hello World! :) <> ^        UTF-8 works???",
+            10,
+            50,
+            PixelColor(255, 255, 255),
+            PixelColor(0, 0, 0),
+        );
     }
 }
 
@@ -150,4 +163,38 @@ fn get_color(i: usize) -> PixelColor {
     }
 
     PixelColor(red, green, blue)
+}
+
+pub fn draw_str(fb: &mut Framebuffer, s: &str, x: usize, y: usize, fg: PixelColor, bg: PixelColor) {
+    let mut machine = FontStateMachine::new();
+    let mut cursor_x = x;
+
+    for byte in s.bytes() {
+        match machine.feed(byte) {
+            GlyphResult::Incomplete => {}
+            GlyphResult::Found(glyph_index) | GlyphResult::Fallback(glyph_index) => {
+                draw_glyph(fb, glyph_index, cursor_x, y, fg, bg);
+                cursor_x += GLYPH_WIDTH;
+            }
+        }
+    }
+}
+
+fn draw_glyph(
+    fb: &mut Framebuffer,
+    glyph_index: u16,
+    x: usize,
+    y: usize,
+    fg: PixelColor,
+    bg: PixelColor,
+) {
+    let glyph = &GLYPHS[glyph_index as usize];
+    for (row, glyph_line) in glyph.iter().enumerate() {
+        for col in 0..GLYPH_WIDTH {
+            let byte_index = col / 8;
+            let bit_index = 7 - (col % 8); // MSB first
+            let set = (glyph_line[byte_index] >> bit_index) & 1 != 0;
+            fb.set_pixel(x + col, y + row, if set { fg } else { bg });
+        }
+    }
 }

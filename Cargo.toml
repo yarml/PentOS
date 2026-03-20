@@ -13,11 +13,12 @@ members = [
     "lib/acpi",
     "lib/log-debugcon",
     "lib/utils",
+    "lib/keys",
+    "lib/console-font",
     "macros/klib-macros",
     "build-system/chef",
     "build-system/builder",
     "test",
-    "lib/keys",
     "user/lib/runtime",
     "user/core/init",
 ]
@@ -37,6 +38,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 tar = "0.4.44"
 xz = "0.1.0"
+flate2 = "1.1.9"
 
 # Builder dependencies
 nasm-rs = "0.3.2"
@@ -50,7 +52,7 @@ proc-macro2 = "1.0.106"
 # Bootloader dependencies
 uefi = { version = "0.36.1" }
 
-# Loggin system
+# Logging system
 # TODO: self-host this
 log = "0.4.29"
 
@@ -67,6 +69,7 @@ acpi = { path = "lib/acpi" }
 utils = { path = "lib/utils" }
 log-debugcon = { path = "lib/log-debugcon" }
 keys = { path = "lib/keys" }
+console-font = { path = "lib/console-font" }
 
 # user space crates
 runtime = { path = "user/lib/runtime" }
@@ -76,6 +79,10 @@ ovmf-version = "edk2-stable202511-r1"
 ovmf-source-template = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/$$/$$-bin.tar.xz"
 ovmf-varsfd-path-template = "$$-bin/x64/vars.fd"
 ovmf-codefd-path-template = "$$-bin/x64/code.fd"
+
+font-version = "1.11.6"
+font-source-template = "https://github.com/sunaku/tamzen-font/archive/refs/tags/Tamzen-$$.tar.gz"
+font-path-template = "tamzen-font-Tamzen-$$/psf/TamzenForPowerline10x20.psf"
 
 install-bootloader = "/boot/efi/pentos.efi"
 install-kernel = "/boot/efi/pentos.kernel"

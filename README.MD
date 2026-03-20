@@ -28,7 +28,7 @@ The following tools must be installed manually before building:
 |-|-|
 | `qemu-system-x86_64` | Required for quickly running PentOS on a VM (`make run-*` & `make debug`). |
 | `gdb`, `tmux`, & `socat` | Required for debugging the kernel (alongside Qemu) (`make debug`). |
-| `mtools` & `parted` | Required to create raw `.img` disk images (`make img-*`). |
+| `mtools`, `e2fsprogs`, & `sfdisk` | Required to create raw `.img` disk images (`make img-*`). |
 | `VBoxManage` | Required to convert images to `.vmdk` or `.iso` format (`make vmdk-*` / `make iso-*`). |
 
 ## Automatic dependencies

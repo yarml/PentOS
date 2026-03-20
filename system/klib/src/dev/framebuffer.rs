@@ -3,11 +3,12 @@ mod fb_impl;
 use {
     crate::{
         bootinfo,
-        dev::framebuffer::fb_impl::Framebuffer,
         sync::mutex::{AsyncMutex, AsyncMutexGuard},
     },
     spinlocks::once::SpinOnce,
 };
+
+pub use fb_impl::Framebuffer;
 
 static MAIN_FRAMEBUFFER: SpinOnce<AsyncMutex<Framebuffer>> = SpinOnce::new();
 

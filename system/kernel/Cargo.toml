@@ -13,5 +13,7 @@ log.workspace = true
 
 system.workspace = true
 
+console-font.workspace = true
+
 [build-dependencies]
 builder.workspace = true

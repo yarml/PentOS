@@ -1,0 +1,14 @@
+[package]
+name = "console-font"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+
+[build-dependencies]
+proc-macro2.workspace = true
+quote.workspace = true
+syn.workspace = true
+prettyplease.workspace = true

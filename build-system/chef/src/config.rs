@@ -12,6 +12,13 @@ pub struct ChefConfig {
     pub ovmf_varsfd_path_template: String,
     #[serde(rename = "ovmf-codefd-path-template")]
     pub ovmf_codefd_path_template: String,
+
+    #[serde(rename = "font-version")]
+    pub font_version: String,
+    #[serde(rename = "font-source-template")]
+    pub font_source_template: String,
+    #[serde(rename = "font-path-template")]
+    pub font_path_template: String,
 }
 
 impl ChefConfig {

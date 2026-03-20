@@ -9,6 +9,8 @@ bootloader_destination := $(shell bash scripts/chef.sh config install-bootloader
 
 ovmf_target := run/ovmf/vars.fd run/ovmf/code.fd
 
+font_target := run/font.psf
+
 BOOTLOADER_RELEASE := target/uefi/release/bootloader.efi
 KERNEL_RELEASE := target/kernel/release/kernel
 BOOTLOADER_DEBUG := target/uefi/debug/bootloader.efi
