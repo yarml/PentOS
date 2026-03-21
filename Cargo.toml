@@ -15,6 +15,8 @@ members = [
     "lib/utils",
     "lib/keys",
     "lib/console-font",
+    "fs/block",
+    "lib/io",
     "macros/klib-macros",
     "build-system/chef",
     "build-system/builder",
@@ -70,6 +72,8 @@ utils = { path = "lib/utils" }
 log-debugcon = { path = "lib/log-debugcon" }
 keys = { path = "lib/keys" }
 console-font = { path = "lib/console-font" }
+io = { path = "lib/io" }
+block = { path = "fs/block" }
 
 # user space crates
 runtime = { path = "user/lib/runtime" }
