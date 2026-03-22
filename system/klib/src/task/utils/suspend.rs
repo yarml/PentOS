@@ -1,13 +1,11 @@
 use {
-    crate::{
-        sync::mutex::{AsyncMutex, AsyncMutexGuard},
-        task::futures::ManualFuture,
-    },
+    crate::task::futures::ManualFuture,
     alloc::vec::Vec,
     core::{
         pin::Pin,
         task::{Context, Poll, Waker},
     },
+    sync::{AsyncMutex, AsyncMutexGuard},
 };
 
 pub fn suspend() -> Suspender {

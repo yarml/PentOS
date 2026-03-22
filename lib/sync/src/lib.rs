@@ -1,8 +1,12 @@
+#![no_std]
+extern crate alloc;
+
 use {
     alloc::{collections::vec_deque::VecDeque, sync::Arc},
     core::{
         cell::UnsafeCell,
         hint,
+        marker::PhantomData,
         ops::{Deref, DerefMut},
         pin::Pin,
         sync::atomic::{AtomicBool, AtomicU8, Ordering},
@@ -12,20 +16,45 @@ use {
     x64::interrupts,
 };
 
+pub trait CriticalSection {
+    fn with<R>(f: impl FnOnce() -> R) -> R;
+}
+
+pub struct NoCriticalSection;
+impl CriticalSection for NoCriticalSection {
+    fn with<R>(f: impl FnOnce() -> R) -> R {
+        f()
+    }
+}
+
+pub struct InterruptDisabled;
+impl CriticalSection for InterruptDisabled {
+    fn with<R>(f: impl FnOnce() -> R) -> R {
+        x64::interrupts::with_disabled(f)
+    }
+}
+
+#[cfg(target_os = "none")]
+pub type DefaultCriticalSection = InterruptDisabled;
+
+#[cfg(not(target_os = "none"))]
+pub type DefaultCriticalSection = NoCriticalSection;
+
 const QUEUE_STATE_QUEUED: u8 = 0;
 const QUEUE_STATE_WOKEN: u8 = 1;
 const QUEUE_STATE_CANCELLED: u8 = 2;
 
-pub struct AsyncMutex<T: ?Sized> {
+pub struct AsyncMutex<T: ?Sized, CS: CriticalSection = DefaultCriticalSection> {
     locked: AtomicBool,
     waiters: SpinMutex<VecDeque<WakerSlot>>,
+    _phantom: PhantomData<CS>,
     data: UnsafeCell<T>,
 }
 
 /// Returned by [`AsyncMutex::lock`]. Holds the mutex until dropped, then
 /// wakes the next waiter in line.
-pub struct AsyncMutexGuard<'mutex, T: 'mutex + ?Sized> {
-    mutex: &'mutex AsyncMutex<T>,
+pub struct AsyncMutexGuard<'mutex, T: 'mutex + ?Sized, CS: CriticalSection = DefaultCriticalSection> {
+    mutex: &'mutex AsyncMutex<T, CS>,
     data: &'mutex mut T,
 }
 
@@ -39,8 +68,9 @@ pub struct AsyncMutexGuard<'mutex, T: 'mutex + ?Sized> {
 /// because the waker queue is FIFO and the guard drops only one waker at a
 /// time) and the guard also does not mark the mutex as unlocked for a
 /// task to skip the queue and hold the lock before everyone else.
-pub struct AsyncMutexLockFuture<'mutex, T: 'mutex + ?Sized> {
-    mutex: &'mutex AsyncMutex<T>,
+pub struct AsyncMutexLockFuture<'mutex, T: 'mutex + ?Sized, CS: CriticalSection = DefaultCriticalSection>
+{
+    mutex: &'mutex AsyncMutex<T, CS>,
     queue_state: Option<Arc<AtomicU8>>,
 }
 
@@ -52,47 +82,48 @@ struct WakerSlot {
 /// # Safety
 /// `T: Send` is sufficient for the same reason as `Mutex<T>`: the borrow
 /// checker prevents moving a locked `AsyncMutex` across hart boundaries.
-unsafe impl<T: ?Sized + Send> Send for AsyncMutex<T> {}
+unsafe impl<T: ?Sized + Send, CS: CriticalSection> Send for AsyncMutex<T, CS> {}
 
 /// # Safety
 /// `T: Send` is required (not just `Sync`) because `AsyncMutex` can produce
 /// `&mut T`.
-unsafe impl<T: ?Sized + Send> Sync for AsyncMutex<T> {}
+unsafe impl<T: ?Sized + Send, CS: CriticalSection> Sync for AsyncMutex<T, CS> {}
 
 /// # Safety
 /// `AsyncMutexGuard<T>` is morally `&mut T`: sending it to another hart is safe
 /// when `T: Send`.
-unsafe impl<T: ?Sized + Send> Send for AsyncMutexGuard<'_, T> {}
+unsafe impl<T: ?Sized + Send, CS: CriticalSection> Send for AsyncMutexGuard<'_, T, CS> {}
 
 /// # Safety
 /// `&AsyncMutexGuard<T>` is morally `&&mut T`, i.e. `&T`.  Sharing requires
 /// `T: Sync`.
-unsafe impl<T: ?Sized + Sync> Sync for AsyncMutexGuard<'_, T> {}
+unsafe impl<T: ?Sized + Sync, CS: CriticalSection> Sync for AsyncMutexGuard<'_, T, CS> {}
 
 /// # Safety
 /// The future holds only a shared reference to the mutex and a `bool`; both
 /// are safe to send.
-unsafe impl<T: ?Sized + Send> Send for AsyncMutexLockFuture<'_, T> {}
-unsafe impl<T: ?Sized + Send> Sync for AsyncMutexLockFuture<'_, T> {}
+unsafe impl<T: ?Sized + Send, CS: CriticalSection> Send for AsyncMutexLockFuture<'_, T, CS> {}
+unsafe impl<T: ?Sized + Send, CS: CriticalSection> Sync for AsyncMutexLockFuture<'_, T, CS> {}
 
-impl<T> AsyncMutex<T> {
+impl<T, CS: CriticalSection> AsyncMutex<T, CS> {
     pub const fn new(data: T) -> Self {
         Self {
             waiters: SpinMutex::new(VecDeque::new()),
             data: UnsafeCell::new(data),
             locked: AtomicBool::new(false),
+            _phantom: PhantomData,
         }
     }
 }
 
-impl<T: Default> Default for AsyncMutex<T> {
+impl<T: Default, CS: CriticalSection> Default for AsyncMutex<T, CS> {
     fn default() -> Self {
         Self::new(T::default())
     }
 }
 
-impl<T: ?Sized> AsyncMutex<T> {
-    pub fn lock(&self) -> AsyncMutexLockFuture<'_, T> {
+impl<T: ?Sized, CS: CriticalSection> AsyncMutex<T, CS> {
+    pub fn lock(&self) -> AsyncMutexLockFuture<'_, T, CS> {
         AsyncMutexLockFuture {
             mutex: self,
             queue_state: None,
@@ -100,7 +131,7 @@ impl<T: ?Sized> AsyncMutex<T> {
     }
 
     pub fn wake_next(&self) {
-        interrupts::with_disabled(|| {
+        CS::with(|| {
             let mark_unlocked = || {
                 self.locked.store(false, Ordering::Release);
             };
@@ -133,7 +164,7 @@ impl<T: ?Sized> AsyncMutex<T> {
         })
     }
 
-    pub fn lock_sync(&self) -> AsyncMutexGuard<'_, T> {
+    pub fn lock_sync(&self) -> AsyncMutexGuard<'_, T, CS> {
         while self
             .locked
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
@@ -149,8 +180,8 @@ impl<T: ?Sized> AsyncMutex<T> {
     }
 }
 
-impl<'mutex, T: ?Sized> Future for AsyncMutexLockFuture<'mutex, T> {
-    type Output = AsyncMutexGuard<'mutex, T>;
+impl<'mutex, T: ?Sized, CS: CriticalSection> Future for AsyncMutexLockFuture<'mutex, T, CS> {
+    type Output = AsyncMutexGuard<'mutex, T, CS>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
@@ -190,7 +221,7 @@ impl<'mutex, T: ?Sized> Future for AsyncMutexLockFuture<'mutex, T> {
     }
 }
 
-impl<'mutex, T: ?Sized> Drop for AsyncMutexLockFuture<'mutex, T> {
+impl<'mutex, T: ?Sized, CS: CriticalSection> Drop for AsyncMutexLockFuture<'mutex, T, CS> {
     fn drop(&mut self) {
         if let Some(queue_state) = self.queue_state.clone()
             && queue_state
@@ -205,7 +236,7 @@ impl<'mutex, T: ?Sized> Drop for AsyncMutexLockFuture<'mutex, T> {
     }
 }
 
-impl<T: ?Sized> Deref for AsyncMutexGuard<'_, T> {
+impl<T: ?Sized, CS: CriticalSection> Deref for AsyncMutexGuard<'_, T, CS> {
     type Target = T;
 
     fn deref(&self) -> &T {
@@ -213,13 +244,13 @@ impl<T: ?Sized> Deref for AsyncMutexGuard<'_, T> {
     }
 }
 
-impl<T: ?Sized> DerefMut for AsyncMutexGuard<'_, T> {
+impl<T: ?Sized, CS: CriticalSection> DerefMut for AsyncMutexGuard<'_, T, CS> {
     fn deref_mut(&mut self) -> &mut T {
         self.data
     }
 }
 
-impl<T: ?Sized> Drop for AsyncMutexGuard<'_, T> {
+impl<T: ?Sized, CS: CriticalSection> Drop for AsyncMutexGuard<'_, T, CS> {
     fn drop(&mut self) {
         self.mutex.wake_next();
     }

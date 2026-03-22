@@ -1,12 +1,10 @@
 mod ps2_impl;
 
-use crate::sync::mutex::AsyncMutexGuard;
 pub(crate) use ps2_impl::{init, on_scancode};
 
 use {
     crate::{
         dev::{ps2::ps2_impl::KEYS_PRESS_MAP, timer},
-        sync::mutex::AsyncMutex,
         task::{futures::ManualFuture, stream::Stream},
     },
     alloc::vec::Vec,
@@ -18,6 +16,7 @@ use {
     },
     keys::{Key, KeyEvent},
     log::warn,
+    sync::{AsyncMutex, AsyncMutexGuard},
     utils::collections::broadcast_queue::{BroadcastCursor, BroadcastQueue, ReadResult},
 };
 

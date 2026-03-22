@@ -1,4 +1,5 @@
-target/
+/target/
+/.build/
 run/
-
+.fuse*
 __pycache__

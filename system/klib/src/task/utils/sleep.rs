@@ -1,15 +1,12 @@
 use {
-    crate::{
-        dev::timer::get_timestamp,
-        sync::mutex::{AsyncMutex, AsyncMutexGuard},
-        task::futures::ManualFuture,
-    },
+    crate::{dev::timer::get_timestamp, task::futures::ManualFuture},
     alloc::collections::binary_heap::BinaryHeap,
     core::{
         cmp::Ordering,
         pin::Pin,
         task::{Context, Poll, Waker},
     },
+    sync::{AsyncMutex, AsyncMutexGuard},
 };
 
 struct SleepingWaker {

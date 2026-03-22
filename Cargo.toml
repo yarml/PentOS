@@ -8,6 +8,9 @@ members = [
     "system/system",
     "system/boot-protocol",
     "lib/x64",
+    "lib/io",
+    "lib/sync",
+    "lib/crypto",
     "lib/elf",
     "lib/spinlocks",
     "lib/acpi",
@@ -21,6 +24,9 @@ members = [
     "build-system/chef",
     "build-system/builder",
     "test",
+    "fs/block",
+    "fs/block-cache",
+    "fs/gpt",
     "user/lib/runtime",
     "user/core/init",
 ]
@@ -41,6 +47,8 @@ serde_json = "1.0.149"
 tar = "0.4.44"
 xz = "0.1.0"
 flate2 = "1.1.9"
+md5 = "0.8.0"
+getrandom = "0.4.2"
 
 # Builder dependencies
 nasm-rs = "0.3.2"
@@ -73,6 +81,10 @@ log-debugcon = { path = "lib/log-debugcon" }
 keys = { path = "lib/keys" }
 console-font = { path = "lib/console-font" }
 io = { path = "lib/io" }
+crypto = { path = "lib/crypto" }
+sync = { path = "lib/sync" }
+block-cache = { path = "fs/block-cache" }
+gpt = { path = "fs/gpt" }
 block = { path = "fs/block" }
 
 # user space crates

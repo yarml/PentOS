@@ -1,21 +1,32 @@
 #![no_std]
+extern crate alloc;
 
-use io::IoResult;
+use {alloc::boxed::Box, core::pin::Pin, io::IoResult};
 
-// The fundamental abstraction: something that reads and writes
-// fixed-size sectors at arbitrary LBAs.
-pub trait BlockDevice {
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct BlockDeviceSize {
     /// Logical block size in bytes. Must be a power of 2 & >= 512.
-    fn sector_size(&self) -> usize;
-
+    pub sector_size: usize,
     /// Total number of addressable sectors on this device.
-    fn sector_count(&self) -> u64;
+    pub sector_count: u64,
+}
 
-    /// Read exactly one sector at `lba` into `buf`.
-    /// `buf.len()` must equal `self.sector_size()`.
-    fn read_sector(&mut self, lba: u64, buf: &mut [u8]) -> IoResult<()>;
+pub trait BlockDevice {
+    fn size(&self) -> BlockDeviceSize;
 
-    /// Write exactly one sector at `lba` from `buf`.
-    /// `buf.len()` must equal `self.sector_size()`.
-    fn write_sector(&mut self, lba: u64, buf: &[u8]) -> IoResult<()>;
+    /// Read sectors at `lba` into `buf`.
+    /// `buf.len()` must be a multiple of `self.sector_size()`.
+    fn read_sectors<'a>(
+        &'a mut self,
+        lba: u64,
+        buf: &'a mut [u8],
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>>;
+
+    /// Write sectors at `lba` from `buf`.
+    /// `buf.len()` must be a multiple of `self.sector_size()`.
+    fn write_sectors<'a>(
+        &'a mut self,
+        lba: u64,
+        buf: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>>;
 }

@@ -1,9 +1,9 @@
 mod fb_impl;
 
 use {
+    sync::{AsyncMutex, AsyncMutexGuard},
     crate::{
         bootinfo,
-        sync::mutex::{AsyncMutex, AsyncMutexGuard},
     },
     spinlocks::once::SpinOnce,
 };
