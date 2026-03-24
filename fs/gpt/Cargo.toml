@@ -9,6 +9,7 @@ authors.workspace = true
 block.workspace = true
 io.workspace = true
 crypto.workspace = true
+sync.workspace = true
 
 [target.'cfg(not(target_os = "none"))'.dependencies]
 getrandom = "0.3"
