@@ -109,9 +109,10 @@ impl GptDisk {
             return Err(IoError::InvalidInput);
         }
 
-        if partlist.iter().any(|entry| {
-            entry.pages().contains(&pg_start) || entry.pages().contains(&pg_end)
-        }) {
+        if partlist
+            .iter()
+            .any(|entry| entry.pages().contains(&pg_start) || entry.pages().contains(&pg_end))
+        {
             return Err(IoError::AlreadyExists);
         }
 
@@ -300,23 +301,15 @@ impl GptDisk {
         device.write_pages(1, &p_header_buf).await?;
         device.write_pages(last_pg, &b_header_buf).await?;
         device
-            .zero_pages(
-                *p_partlist_pg.start(),
-                p_partlist_pg.clone().count() as u64,
-            )
+            .zero_pages(*p_partlist_pg.start(), p_partlist_pg.clone().count() as u64)
             .await?;
         device
-            .zero_pages(
-                *b_partlist_pg.start(),
-                b_partlist_pg.clone().count() as u64,
-            )
+            .zero_pages(*b_partlist_pg.start(), b_partlist_pg.clone().count() as u64)
             .await?;
 
         if options.full_zero {
             let range = (p_partlist_pg.end() + 1)..*b_partlist_pg.start();
-            device
-                .zero_pages(range.start, range.count() as u64)
-                .await?;
+            device.zero_pages(range.start, range.count() as u64).await?;
         }
 
         let p_partlist_buf = device.make_buf(p_partlist_pg.count());
@@ -432,12 +425,8 @@ impl GptDisk {
                 )
                 .await?;
 
-            self.device
-                .write_pages(b_cache.pg, &b_cache.header)
-                .await?;
-            self.device
-                .write_pages(p_cache.pg, &p_cache.header)
-                .await?;
+            self.device.write_pages(b_cache.pg, &b_cache.header).await?;
+            self.device.write_pages(p_cache.pg, &p_cache.header).await?;
         }
         self.device.flush().await
     }
@@ -448,8 +437,7 @@ impl GptOpenPartition {
         let page_count = (buf.len() / self.device.dimensions().page_size) as u64;
         let last_pg = pg + page_count - 1;
         let pg = self.get_absolute_pg(pg).ok_or(IoError::OutOfBounds)?;
-        self.get_absolute_pg(last_pg)
-            .ok_or(IoError::OutOfBounds)?;
+        self.get_absolute_pg(last_pg).ok_or(IoError::OutOfBounds)?;
 
         self.device.read_pages(pg, buf).await
     }
@@ -457,8 +445,7 @@ impl GptOpenPartition {
         let page_count = (buf.len() / self.device.dimensions().page_size) as u64;
         let last_pg = pg + page_count - 1;
         let pg = self.get_absolute_pg(pg).ok_or(IoError::OutOfBounds)?;
-        self.get_absolute_pg(last_pg)
-            .ok_or(IoError::OutOfBounds)?;
+        self.get_absolute_pg(last_pg).ok_or(IoError::OutOfBounds)?;
 
         self.device.write_pages(pg, buf).await
     }
@@ -474,9 +461,8 @@ impl BlockDevice for GptOpenPartition {
     fn dimensions(&self) -> BlockDeviceDimensions {
         let device_dimensions = self.device.dimensions();
         BlockDeviceDimensions {
-            page_size: device_dimensions.page_size,
             page_count: self.end_pg - self.start_pg + 1,
-            optimal_transfer_size: device_dimensions.optimal_transfer_size
+            ..device_dimensions
         }
     }
 

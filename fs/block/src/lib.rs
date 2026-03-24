@@ -9,10 +9,13 @@ use {
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct BlockDeviceDimensions {
-    /// Block size in bytes. Whether physical or logical depends on the device.
+    /// Logical block size in bytes.
     pub page_size: usize,
     /// Total number of addressable pages on this device.
     pub page_count: u64,
+
+    /// Frame size of the physical media
+    pub frame_size: Option<usize>,
 
     pub optimal_transfer_size: Option<usize>,
 }

@@ -1,4 +1,7 @@
-use {crate::guid::Guid, alloc::string::String, block::BlockDeviceDimensions, core::ops::RangeInclusive};
+use {
+    crate::guid::Guid, alloc::string::String, block::BlockDeviceDimensions,
+    core::ops::RangeInclusive,
+};
 
 const EFI_PART_SIGNATURE: u64 = 0x5452415020494645;
 const EFI_PART_REVISION: u32 = 0x00010000;
@@ -139,12 +142,17 @@ impl FormatOptions {
 
 // Heavy duty procedures
 impl GptHeader {
-    pub fn format(&mut self, size: BlockDeviceDimensions, main: bool, options: FormatOptions) {
-        let last_pg = size.page_count - 1;
+    pub fn format(
+        &mut self,
+        dimensions: BlockDeviceDimensions,
+        main: bool,
+        options: FormatOptions,
+    ) {
+        let last_pg = dimensions.page_count - 1;
 
         let partition_cap = u32::max(options.partition_capacity.unwrap_or(128), 128);
         let partlist_size = 128 * partition_cap as usize;
-        let partlist_page_count = partlist_size.div_ceil(size.page_size);
+        let partlist_page_count = partlist_size.div_ceil(dimensions.page_size);
 
         self.res0 = 0;
         self.res1.fill(0);
@@ -167,8 +175,17 @@ impl GptHeader {
         self.partlist_crc32 = crypto::crc32_zdata(partlist_size);
         self.part_entry_size = 128;
 
-        self.first_usable_pg = partlist_page_count as u64 + 2;
-        self.last_usable_pg = last_pg - partlist_page_count as u64 - 1;
+        let alignment = dimensions
+            .page_size
+            .max(dimensions.frame_size.unwrap_or(0))
+            .max(dimensions.optimal_transfer_size.unwrap_or(0));
+        let align_pg = (alignment / dimensions.page_size) as u64;
+
+        self.first_usable_pg = u64::max(partlist_page_count as u64, align_pg);
+        self.last_usable_pg = u64::min(
+            last_pg - partlist_page_count as u64 - 1,
+            last_pg - align_pg - 1,
+        );
 
         self.header_crc32 = 0;
 
