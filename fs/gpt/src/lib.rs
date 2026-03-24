@@ -396,7 +396,7 @@ impl GptDisk {
                 );
             }
 
-            let new_partlist_crc32 = crypto::crc32(&p_cache.partlist);
+            let new_partlist_crc32 = crypto::crc32(&b_cache.partlist);
 
             let p_header = p_cache.header_mut();
             let b_header = b_cache.header_mut();
