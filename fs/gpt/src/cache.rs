@@ -4,7 +4,7 @@ use {
 };
 
 pub struct HeaderCache {
-    pub lba: u64,
+    pub pg: u64,
     pub header: Box<[u8]>,
     pub partlist: Box<[u8]>,
 }

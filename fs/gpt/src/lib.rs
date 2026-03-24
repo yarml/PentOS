@@ -19,7 +19,7 @@ use {
         mbr::MasterBootRecord,
     },
     alloc::{borrow::ToOwned, boxed::Box, string::String, sync::Arc, vec::Vec},
-    block::{BlockDevice, BlockDeviceSize},
+    block::{BlockDevice, BlockDeviceDimensions},
     core::{
         ops::RangeInclusive,
         pin::Pin,
@@ -33,7 +33,7 @@ pub struct GptDisk {
     device: Arc<dyn BlockDevice>,
     guid: Guid,
 
-    lba_usable: RangeInclusive<u64>,
+    usable_pages: RangeInclusive<u64>,
 
     partlist_cap: usize,
     partlist_dirty: AtomicBool,
@@ -47,22 +47,22 @@ pub struct GptPartition {
     guid: Guid,
     type_guid: Guid,
     name: String,
-    lba_start: u64,
-    lba_end: u64,
+    pg_start: u64,
+    pg_end: u64,
     open_count: Arc<AtomicUsize>,
 }
 
 pub struct GptOpenPartition {
     device: Arc<dyn BlockDevice>,
-    lba_start: u64,
-    lba_end: u64,
+    start_pg: u64,
+    end_pg: u64,
     open_count: Arc<AtomicUsize>,
 }
 
 // Simple stuff
 impl GptDisk {
-    pub fn lba_usable(&self) -> RangeInclusive<u64> {
-        self.lba_usable.clone()
+    pub fn usable_pages(&self) -> RangeInclusive<u64> {
+        self.usable_pages.clone()
     }
     pub fn disk_guid(&self) -> Guid {
         self.guid
@@ -73,17 +73,17 @@ impl GptDisk {
 }
 
 impl GptPartition {
-    pub fn lba_range(&self) -> RangeInclusive<u64> {
-        self.lba_start..=self.lba_end
+    pub fn pages(&self) -> RangeInclusive<u64> {
+        self.pg_start..=self.pg_end
     }
 }
 impl GptOpenPartition {
-    pub fn get_absolute_lba(&self, rel_lba: u64) -> Option<u64> {
-        let absolute_lba = rel_lba + self.lba_start;
-        if absolute_lba > self.lba_end {
+    pub fn get_absolute_pg(&self, rel_pg: u64) -> Option<u64> {
+        let abs_pg = rel_pg + self.start_pg;
+        if abs_pg > self.end_pg {
             None
         } else {
-            Some(absolute_lba)
+            Some(abs_pg)
         }
     }
 }
@@ -94,23 +94,23 @@ impl GptDisk {
         &self,
         type_guid: Guid,
         name: &str,
-        lba_start: u64,
-        lba_end: u64,
+        pg_start: u64,
+        pg_end: u64,
     ) -> IoResult<Guid> {
         let mut partlist = self.partlist.lock().await;
 
         if partlist.len() >= self.partlist_cap {
             return Err(IoError::NoSpace);
         }
-        if lba_start > lba_end
-            || lba_start < *self.lba_usable.start()
-            || lba_end > *self.lba_usable.end()
+        if pg_start > pg_end
+            || pg_start < *self.usable_pages.start()
+            || pg_end > *self.usable_pages.end()
         {
             return Err(IoError::InvalidInput);
         }
 
         if partlist.iter().any(|entry| {
-            entry.lba_range().contains(&lba_start) || entry.lba_range().contains(&lba_end)
+            entry.pages().contains(&pg_start) || entry.pages().contains(&pg_end)
         }) {
             return Err(IoError::AlreadyExists);
         }
@@ -121,8 +121,8 @@ impl GptDisk {
             guid,
             type_guid,
             name: name.to_owned(),
-            lba_start,
-            lba_end,
+            pg_start,
+            pg_end,
             open_count: Arc::new(AtomicUsize::new(0)),
         });
         self.partlist_dirty.store(true, Ordering::Relaxed);
@@ -183,8 +183,8 @@ impl GptDisk {
 
         Ok(GptOpenPartition {
             device: self.device.clone(),
-            lba_start: partition.lba_start,
-            lba_end: partition.lba_end,
+            start_pg: partition.pg_start,
+            end_pg: partition.pg_end,
             open_count: partition.open_count.clone(),
         })
     }
@@ -193,30 +193,30 @@ impl GptDisk {
 // Heavy duty procedures
 impl GptDisk {
     pub async fn open(device: Arc<dyn BlockDevice>) -> IoResult<Self> {
-        let sector_size = device.size().sector_size;
+        let page_size = device.dimensions().page_size;
 
         let mut p_header_buf = device.make_buf(1);
         let mut b_header_buf = device.make_buf(1);
 
-        device.read_sectors(1, &mut p_header_buf).await?;
+        device.read_pages(1, &mut p_header_buf).await?;
         let p_header = GptHeader::from_raw_mut(&mut p_header_buf);
 
-        let b_header_lba = p_header.alternate_lba();
+        let b_header_pg = p_header.alternate_pg();
 
-        device.read_sectors(b_header_lba, &mut b_header_buf).await?;
+        device.read_pages(b_header_pg, &mut b_header_buf).await?;
         let b_header = GptHeader::from_raw_mut(&mut b_header_buf);
 
-        let p_partlist_lba = p_header.partlist_lba(sector_size);
-        let b_partlist_lba = b_header.partlist_lba(sector_size);
+        let p_partlist_pg = p_header.partlist_pg(page_size);
+        let b_partlist_pg = b_header.partlist_pg(page_size);
 
-        let mut p_partlist_buf = device.make_buf(p_partlist_lba.clone().count());
-        let mut b_partlist_buf = device.make_buf(b_partlist_lba.clone().count());
+        let mut p_partlist_buf = device.make_buf(p_partlist_pg.clone().count());
+        let mut b_partlist_buf = device.make_buf(b_partlist_pg.clone().count());
 
         device
-            .read_sectors(*p_partlist_lba.start(), &mut p_partlist_buf)
+            .read_pages(*p_partlist_pg.start(), &mut p_partlist_buf)
             .await?;
         device
-            .read_sectors(*b_partlist_lba.start(), &mut b_partlist_buf)
+            .read_pages(*b_partlist_pg.start(), &mut b_partlist_buf)
             .await?;
 
         let p_partlist = PartitionEntry::from_raw_mut(&mut p_partlist_buf, p_header.partlist_cap());
@@ -232,15 +232,15 @@ impl GptDisk {
                 entries.push(GptPartition {
                     type_guid: entry.type_guid,
                     guid: entry.guid,
-                    lba_start: entry.lba_start,
-                    lba_end: entry.lba_end,
+                    pg_start: entry.pg_start,
+                    pg_end: entry.pg_end,
                     name: entry.name(),
                     open_count: Arc::new(AtomicUsize::new(0)),
                 });
             }
         }
 
-        let lba_usable = p_header.usable_lba();
+        let usable_pages = p_header.usable_pages();
         let partlist_cap = p_header.partlist_cap();
 
         let disk_guid = p_header.disk_guid();
@@ -251,14 +251,14 @@ impl GptDisk {
             partlist: AsyncMutex::new(entries),
             partlist_cap,
             partlist_dirty: AtomicBool::new(false),
-            lba_usable,
+            usable_pages,
             p_cache: AsyncMutex::new(HeaderCache {
-                lba: 1,
+                pg: 1,
                 header: p_header_buf,
                 partlist: p_partlist_buf,
             }),
             b_cache: AsyncMutex::new(HeaderCache {
-                lba: b_header_lba,
+                pg: b_header_pg,
                 header: b_header_buf,
                 partlist: b_partlist_buf,
             }),
@@ -266,18 +266,18 @@ impl GptDisk {
     }
 
     pub async fn format(device: Arc<dyn BlockDevice>, options: FormatOptions) -> IoResult<Self> {
-        let device_size = device.size();
-        assert!(device_size.sector_size >= 512);
+        let device_size = device.dimensions();
+        assert!(device_size.page_size >= 512);
 
-        let lbaz = device_size.sector_count - 1;
-        let mut sector_buf = device.make_buf(1);
+        let last_pg = device_size.page_count - 1;
+        let mut page_buf = device.make_buf(1);
 
         // Protective MBR stuff
         {
-            device.read_sectors(0, &mut sector_buf).await?;
-            let mbr = MasterBootRecord::interpret_mbr(&mut sector_buf);
-            mbr.set_protective(device_size.sector_count);
-            device.write_sectors(0, &sector_buf).await?;
+            device.read_pages(0, &mut page_buf).await?;
+            let mbr = MasterBootRecord::from_raw(&mut page_buf);
+            mbr.set_protective(device_size.page_count);
+            device.write_pages(0, &page_buf).await?;
         }
 
         let mut p_header_buf = device.make_buf(1);
@@ -291,36 +291,36 @@ impl GptDisk {
         p_header.format(device_size, true, options.with_guid(disk_guid));
         b_header.format(device_size, false, options.with_guid(disk_guid));
 
-        let lba_usable = p_header.usable_lba();
+        let usable_pages = p_header.usable_pages();
         let partlist_cap = p_header.partlist_cap();
 
-        let p_partlist_lba = p_header.partlist_lba(device_size.sector_size);
-        let b_partlist_lba = b_header.partlist_lba(device_size.sector_size);
+        let p_partlist_pg = p_header.partlist_pg(device_size.page_size);
+        let b_partlist_pg = b_header.partlist_pg(device_size.page_size);
 
-        device.write_sectors(1, &p_header_buf).await?;
-        device.write_sectors(lbaz, &b_header_buf).await?;
+        device.write_pages(1, &p_header_buf).await?;
+        device.write_pages(last_pg, &b_header_buf).await?;
         device
-            .zero_sectors(
-                *p_partlist_lba.start(),
-                p_partlist_lba.clone().count() as u64,
+            .zero_pages(
+                *p_partlist_pg.start(),
+                p_partlist_pg.clone().count() as u64,
             )
             .await?;
         device
-            .zero_sectors(
-                *b_partlist_lba.start(),
-                b_partlist_lba.clone().count() as u64,
+            .zero_pages(
+                *b_partlist_pg.start(),
+                b_partlist_pg.clone().count() as u64,
             )
             .await?;
 
         if options.full_zero {
-            let range = (p_partlist_lba.end() + 1)..*b_partlist_lba.start();
+            let range = (p_partlist_pg.end() + 1)..*b_partlist_pg.start();
             device
-                .zero_sectors(range.start, range.count() as u64)
+                .zero_pages(range.start, range.count() as u64)
                 .await?;
         }
 
-        let p_partlist_buf = device.make_buf(p_partlist_lba.count());
-        let b_partlist_buf = device.make_buf(b_partlist_lba.count());
+        let p_partlist_buf = device.make_buf(p_partlist_pg.count());
+        let b_partlist_buf = device.make_buf(b_partlist_pg.count());
 
         Ok(Self {
             device,
@@ -329,14 +329,14 @@ impl GptDisk {
             partlist_cap,
             partlist_dirty: AtomicBool::new(false),
 
-            lba_usable,
+            usable_pages,
             p_cache: AsyncMutex::new(HeaderCache {
-                lba: 1,
+                pg: 1,
                 header: p_header_buf,
                 partlist: p_partlist_buf,
             }),
             b_cache: AsyncMutex::new(HeaderCache {
-                lba: lbaz,
+                pg: last_pg,
                 header: b_header_buf,
                 partlist: b_partlist_buf,
             }),
@@ -353,21 +353,21 @@ impl Drop for GptOpenPartition {
 // BlockDevice interfacing
 
 impl GptDisk {
-    async fn read_sectors_impl(&self, lba: u64, buf: &mut [u8]) -> IoResult<()> {
-        let sector_count = (buf.len() / self.device.size().sector_size) as u64;
-        let last_lba = lba + sector_count - 1;
-        if self.lba_usable.contains(&lba) && self.lba_usable.contains(&last_lba) {
-            self.device.read_sectors(lba, buf).await
+    async fn read_pages_impl(&self, pg: u64, buf: &mut [u8]) -> IoResult<()> {
+        let page_count = (buf.len() / self.device.dimensions().page_size) as u64;
+        let last_pg = pg + page_count - 1;
+        if self.usable_pages.contains(&pg) && self.usable_pages.contains(&last_pg) {
+            self.device.read_pages(pg, buf).await
         } else {
             Err(IoError::OutOfBounds)
         }
     }
 
-    async fn write_sectors_impl(&self, lba: u64, buf: &[u8]) -> IoResult<()> {
-        let sector_count = (buf.len() / self.device.size().sector_size) as u64;
-        let last_lba = lba + sector_count - 1;
-        if self.lba_usable.contains(&lba) && self.lba_usable.contains(&last_lba) {
-            self.device.write_sectors(lba, buf).await
+    async fn write_pages_impl(&self, pg: u64, buf: &[u8]) -> IoResult<()> {
+        let page_count = (buf.len() / self.device.dimensions().page_size) as u64;
+        let last_pg = pg + page_count - 1;
+        if self.usable_pages.contains(&pg) && self.usable_pages.contains(&last_pg) {
+            self.device.write_pages(pg, buf).await
         } else {
             Err(IoError::OutOfBounds)
         }
@@ -390,8 +390,8 @@ impl GptDisk {
                 b_partlist[i] = PartitionEntry::new(
                     Some(part.guid),
                     part.type_guid,
-                    part.lba_start,
-                    part.lba_end,
+                    part.pg_start,
+                    part.pg_end,
                     &part.name,
                 );
             }
@@ -413,17 +413,17 @@ impl GptDisk {
             // on devices, which we should support ASAP.
             // FIXME: swear this is the last, we keep the partlist_dirty set to false even on failure
             self.device
-                .write_sectors(
+                .write_pages(
                     *b_header
-                        .partlist_lba(self.device.size().sector_size)
+                        .partlist_pg(self.device.dimensions().page_size)
                         .start(),
                     &b_cache.partlist,
                 )
                 .await?;
             self.device
-                .write_sectors(
+                .write_pages(
                     *p_header
-                        .partlist_lba(self.device.size().sector_size)
+                        .partlist_pg(self.device.dimensions().page_size)
                         .start(),
                     // we're deliberatly using the backup's cached partlist
                     // The primary cache does not track partlist since it should always
@@ -433,10 +433,10 @@ impl GptDisk {
                 .await?;
 
             self.device
-                .write_sectors(b_cache.lba, &b_cache.header)
+                .write_pages(b_cache.pg, &b_cache.header)
                 .await?;
             self.device
-                .write_sectors(p_cache.lba, &p_cache.header)
+                .write_pages(p_cache.pg, &p_cache.header)
                 .await?;
         }
         self.device.flush().await
@@ -444,55 +444,55 @@ impl GptDisk {
 }
 
 impl GptOpenPartition {
-    async fn read_sectors_impl(&self, lba: u64, buf: &mut [u8]) -> IoResult<()> {
-        let sector_count = (buf.len() / self.device.size().sector_size) as u64;
-        let last_lba = lba + sector_count - 1;
-        let lba = self.get_absolute_lba(lba).ok_or(IoError::OutOfBounds)?;
-        self.get_absolute_lba(last_lba)
+    async fn read_pages_impl(&self, pg: u64, buf: &mut [u8]) -> IoResult<()> {
+        let page_count = (buf.len() / self.device.dimensions().page_size) as u64;
+        let last_pg = pg + page_count - 1;
+        let pg = self.get_absolute_pg(pg).ok_or(IoError::OutOfBounds)?;
+        self.get_absolute_pg(last_pg)
             .ok_or(IoError::OutOfBounds)?;
 
-        self.device.read_sectors(lba, buf).await
+        self.device.read_pages(pg, buf).await
     }
-    async fn write_sectors_impl(&self, lba: u64, buf: &[u8]) -> IoResult<()> {
-        let sector_count = (buf.len() / self.device.size().sector_size) as u64;
-        let last_lba = lba + sector_count - 1;
-        let lba = self.get_absolute_lba(lba).ok_or(IoError::OutOfBounds)?;
-        self.get_absolute_lba(last_lba)
+    async fn write_pages_impl(&self, pg: u64, buf: &[u8]) -> IoResult<()> {
+        let page_count = (buf.len() / self.device.dimensions().page_size) as u64;
+        let last_pg = pg + page_count - 1;
+        let pg = self.get_absolute_pg(pg).ok_or(IoError::OutOfBounds)?;
+        self.get_absolute_pg(last_pg)
             .ok_or(IoError::OutOfBounds)?;
 
-        self.device.write_sectors(lba, buf).await
+        self.device.write_pages(pg, buf).await
     }
     async fn flush_impl(&self) -> IoResult<()> {
-        // FIXME: flush should take a range parameter for which LBAs to flush
-        // So that a partition flushing can flush only its sectors instead of
+        // FIXME: flush should take a range parameter for which pages to flush
+        // So that a partition flushing can flush only its pages instead of
         // flushing the whole drive
         self.device.flush().await
     }
 }
 
 impl BlockDevice for GptOpenPartition {
-    fn size(&self) -> BlockDeviceSize {
-        let device_size = self.device.size();
-        BlockDeviceSize {
-            sector_size: device_size.sector_size,
-            sector_count: self.lba_end - self.lba_start + 1,
+    fn dimensions(&self) -> BlockDeviceDimensions {
+        let device_size = self.device.dimensions();
+        BlockDeviceDimensions {
+            page_size: device_size.page_size,
+            page_count: self.end_pg - self.start_pg + 1,
         }
     }
 
-    fn read_sectors<'a>(
+    fn read_pages<'a>(
         &'a self,
-        lba: u64,
+        pg: u64,
         buf: &'a mut [u8],
     ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
-        Box::pin(self.read_sectors_impl(lba, buf))
+        Box::pin(self.read_pages_impl(pg, buf))
     }
 
-    fn write_sectors<'a>(
+    fn write_pages<'a>(
         &'a self,
-        lba: u64,
+        pg: u64,
         buf: &'a [u8],
     ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
-        Box::pin(self.write_sectors_impl(lba, buf))
+        Box::pin(self.write_pages_impl(pg, buf))
     }
 
     fn flush<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
@@ -501,24 +501,24 @@ impl BlockDevice for GptOpenPartition {
 }
 
 impl BlockDevice for GptDisk {
-    fn size(&self) -> BlockDeviceSize {
-        self.device.size()
+    fn dimensions(&self) -> BlockDeviceDimensions {
+        self.device.dimensions()
     }
 
-    fn read_sectors<'a>(
+    fn read_pages<'a>(
         &'a self,
-        lba: u64,
+        pg: u64,
         buf: &'a mut [u8],
     ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
-        Box::pin(self.read_sectors_impl(lba, buf))
+        Box::pin(self.read_pages_impl(pg, buf))
     }
 
-    fn write_sectors<'a>(
+    fn write_pages<'a>(
         &'a self,
-        lba: u64,
+        pg: u64,
         buf: &'a [u8],
     ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
-        Box::pin(self.write_sectors_impl(lba, buf))
+        Box::pin(self.write_pages_impl(pg, buf))
     }
 
     fn flush<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {

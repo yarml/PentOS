@@ -1,4 +1,4 @@
-use {crate::guid::Guid, alloc::string::String, block::BlockDeviceSize, core::ops::RangeInclusive};
+use {crate::guid::Guid, alloc::string::String, block::BlockDeviceDimensions, core::ops::RangeInclusive};
 
 const EFI_PART_SIGNATURE: u64 = 0x5452415020494645;
 const EFI_PART_REVISION: u32 = 0x00010000;
@@ -13,12 +13,12 @@ pub struct GptHeader {
     header_size: u32,
     header_crc32: u32,
     res0: u32,
-    my_lba: u64,
-    alternate_lba: u64,
-    first_usable_lba: u64,
-    last_usable_lba: u64,
+    my_pg: u64,
+    alternate_pg: u64,
+    first_usable_pg: u64,
+    last_usable_pg: u64,
     disk_guid: Guid,
-    partlist_lba: u64,
+    partlist_pg: u64,
     partlist_cap: u32,
     part_entry_size: u32,
     partlist_crc32: u32,
@@ -30,8 +30,8 @@ pub struct GptHeader {
 pub struct PartitionEntry {
     pub type_guid: Guid,
     pub guid: Guid,
-    pub lba_start: u64,
-    pub lba_end: u64,
+    pub pg_start: u64,
+    pub pg_end: u64,
     attributes: u64,
     name: [u16; 36],
 }
@@ -48,15 +48,15 @@ pub struct FormatOptions {
 
 // Constructors
 impl GptHeader {
-    pub fn from_raw(sector: &[u8]) -> &Self {
-        let sector_size = sector.len();
-        let res1_size = sector_size - GPT_HEADER_MIN_SIZE;
-        unsafe { &*core::ptr::from_raw_parts(sector.as_ptr(), res1_size) }
+    pub fn from_raw(page: &[u8]) -> &Self {
+        let page_size = page.len();
+        let res1_size = page_size - GPT_HEADER_MIN_SIZE;
+        unsafe { &*core::ptr::from_raw_parts(page.as_ptr(), res1_size) }
     }
-    pub fn from_raw_mut(sector: &mut [u8]) -> &mut Self {
-        let sector_size = sector.len();
-        let res1_size = sector_size - GPT_HEADER_MIN_SIZE;
-        unsafe { &mut *core::ptr::from_raw_parts_mut(sector.as_mut_ptr(), res1_size) }
+    pub fn from_raw_mut(page: &mut [u8]) -> &mut Self {
+        let page_size = page.len();
+        let res1_size = page_size - GPT_HEADER_MIN_SIZE;
+        unsafe { &mut *core::ptr::from_raw_parts_mut(page.as_mut_ptr(), res1_size) }
     }
 
     pub fn as_raw(&self) -> &[u8] {
@@ -75,8 +75,8 @@ impl PartitionEntry {
         guid: Guid::NULL,
         type_guid: Guid::NULL,
         name: [0; 36],
-        lba_start: 0,
-        lba_end: 0,
+        pg_start: 0,
+        pg_end: 0,
     };
 
     pub fn from_raw(buf: &[u8], cap: usize) -> &[PartitionEntry] {
@@ -105,18 +105,18 @@ impl PartitionEntry {
 
 // Simple accessors
 impl GptHeader {
-    pub fn alternate_lba(&self) -> u64 {
-        self.alternate_lba
+    pub fn alternate_pg(&self) -> u64 {
+        self.alternate_pg
     }
 
-    pub fn usable_lba(&self) -> RangeInclusive<u64> {
-        self.first_usable_lba..=self.last_usable_lba
+    pub fn usable_pages(&self) -> RangeInclusive<u64> {
+        self.first_usable_pg..=self.last_usable_pg
     }
 
-    pub fn partlist_lba(&self, sector_size: usize) -> RangeInclusive<u64> {
+    pub fn partlist_pg(&self, page_size: usize) -> RangeInclusive<u64> {
         let partlist_size = 128 * self.partlist_cap as u64;
-        let partlist_sector_count = partlist_size.div_ceil(sector_size as u64);
-        self.partlist_lba..=(self.partlist_lba + partlist_sector_count - 1)
+        let partlist_page_count = partlist_size.div_ceil(page_size as u64);
+        self.partlist_pg..=(self.partlist_pg + partlist_page_count - 1)
     }
 
     pub fn partlist_cap(&self) -> usize {
@@ -139,12 +139,12 @@ impl FormatOptions {
 
 // Heavy duty procedures
 impl GptHeader {
-    pub fn format(&mut self, size: BlockDeviceSize, main: bool, options: FormatOptions) {
-        let last_lba = size.sector_count - 1;
+    pub fn format(&mut self, size: BlockDeviceDimensions, main: bool, options: FormatOptions) {
+        let last_pg = size.page_count - 1;
 
         let partition_cap = u32::max(options.partition_capacity.unwrap_or(128), 128);
         let partlist_size = 128 * partition_cap as usize;
-        let partlist_sector_count = partlist_size.div_ceil(size.sector_size);
+        let partlist_page_count = partlist_size.div_ceil(size.page_size);
 
         self.res0 = 0;
         self.res1.fill(0);
@@ -153,22 +153,22 @@ impl GptHeader {
         self.revision = EFI_PART_REVISION;
         self.header_size = (self.res1.len() + 92) as u32;
 
-        self.my_lba = if main { 1 } else { last_lba };
-        self.alternate_lba = if !main { 1 } else { last_lba };
+        self.my_pg = if main { 1 } else { last_pg };
+        self.alternate_pg = if !main { 1 } else { last_pg };
 
         self.disk_guid = options.guid.unwrap_or_else(Guid::gen_v4);
 
-        self.partlist_lba = if main {
+        self.partlist_pg = if main {
             2
         } else {
-            last_lba - partlist_sector_count as u64
+            last_pg - partlist_page_count as u64
         };
         self.partlist_cap = partition_cap;
         self.partlist_crc32 = crypto::crc32_zdata(partlist_size);
         self.part_entry_size = 128;
 
-        self.first_usable_lba = partlist_sector_count as u64 + 2;
-        self.last_usable_lba = last_lba - partlist_sector_count as u64 - 1;
+        self.first_usable_pg = partlist_page_count as u64 + 2;
+        self.last_usable_pg = last_pg - partlist_page_count as u64 - 1;
 
         self.header_crc32 = 0;
 
@@ -192,8 +192,8 @@ impl GptHeader {
             return false;
         }
         // Basic information matching
-        if p_header.my_lba != b_header.alternate_lba
-            || b_header.my_lba != p_header.alternate_lba
+        if p_header.my_pg != b_header.alternate_pg
+            || b_header.my_pg != p_header.alternate_pg
             || p_header.partlist_crc32 != b_header.partlist_crc32
         {
             return false;
@@ -230,28 +230,28 @@ impl PartitionEntry {
     pub fn new(
         guid: Option<Guid>,
         type_guid: Guid,
-        lba_start: u64,
-        lba_end: u64,
+        pg_start: u64,
+        pg_end: u64,
         name: &str,
     ) -> Self {
         let guid = guid.unwrap_or_else(Guid::gen_v4);
-        let name = Self::str_to_gpt_name(name).expect("invalid partition name");
+        let name = Self::str_to_name(name).expect("invalid partition name");
 
         Self {
             type_guid,
             guid,
-            lba_start,
-            lba_end,
+            pg_start,
+            pg_end,
             attributes: 0,
             name,
         }
     }
 
     pub fn name(&self) -> String {
-        Self::gpt_name_to_string(&self.name)
+        Self::name_to_string(&self.name)
     }
 
-    fn str_to_gpt_name(s: &str) -> Result<[u16; 36], &'static str> {
+    fn str_to_name(s: &str) -> Result<[u16; 36], &'static str> {
         let mut buf = [0u16; 36];
         for (i, c) in s.encode_utf16().enumerate() {
             if i >= 35 {
@@ -262,7 +262,7 @@ impl PartitionEntry {
         Ok(buf)
     }
 
-    fn gpt_name_to_string(buf: &[u16; 36]) -> String {
+    fn name_to_string(buf: &[u16; 36]) -> String {
         let end = buf.iter().position(|&c| c == 0).unwrap_or(36);
         String::from_utf16_lossy(&buf[..end])
     }
