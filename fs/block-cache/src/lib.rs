@@ -64,10 +64,6 @@ impl BlockCache {
 }
 
 impl BlockCache {
-    pub fn size(&self) -> BlockDeviceDimensions {
-        self.size
-    }
-
     pub async fn get_page(&self, pg: u64) -> IoResult<Arc<CachedPage>> {
         let mut pages = self.pages.lock().await;
         if let Some(cached_page) = pages.get(&pg) {

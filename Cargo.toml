@@ -7,6 +7,11 @@ members = [
     "system/klib",
     "system/system",
     "system/boot-protocol",
+    "fs/block",
+    "fs/block-cache",
+    "fs/gpt",
+    "fs/fat",
+    "fs/ext4",
     "lib/x64",
     "lib/io",
     "lib/sync",
@@ -18,17 +23,13 @@ members = [
     "lib/utils",
     "lib/keys",
     "lib/console-font",
-    "fs/block",
-    "lib/io",
     "macros/klib-macros",
     "build-system/chef",
     "build-system/builder",
     "test",
-    "fs/block",
-    "fs/block-cache",
-    "fs/gpt",
     "user/lib/runtime",
     "user/core/init",
+    "build-system/chef2",
 ]
 resolver = "3"
 
@@ -49,6 +50,7 @@ xz = "0.1.0"
 flate2 = "1.1.9"
 md5 = "0.8.0"
 getrandom = "0.4.2"
+env_logger = "0.11.10"
 
 # Builder dependencies
 nasm-rs = "0.3.2"
@@ -67,13 +69,16 @@ uefi = { version = "0.36.1" }
 log = "0.4.29"
 
 # local crates
-config = { path = "config" }
 klib = { path = "system/klib" }
 system = { path = "system/system" }
 boot-protocol = { path = "system/boot-protocol" }
+
+config = { path = "config" }
+
+builder = { path = "build-system/builder" }
+
 x64 = { path = "lib/x64" }
 elf = { path = "lib/elf" }
-builder = { path = "build-system/builder" }
 spinlocks = { path = "lib/spinlocks" }
 acpi = { path = "lib/acpi" }
 utils = { path = "lib/utils" }
@@ -83,9 +88,12 @@ console-font = { path = "lib/console-font" }
 io = { path = "lib/io" }
 crypto = { path = "lib/crypto" }
 sync = { path = "lib/sync" }
+
+block = { path = "fs/block" }
 block-cache = { path = "fs/block-cache" }
 gpt = { path = "fs/gpt" }
-block = { path = "fs/block" }
+fat = { path = "fs/fat" }
+ext4 = { path = "fs/ext4" }
 
 # user space crates
 runtime = { path = "user/lib/runtime" }

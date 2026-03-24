@@ -4,7 +4,7 @@ qemu_cmd() {
         -smp $(bash scripts/chef.sh config qemu-numcores) \
         -m $(bash scripts/chef.sh config qemu-mem) \
         -full-screen \
-        -cpu qemu64-v1,pdpe1gb,pcid,invpcid,fsgsbase,x2apic \
+        -cpu qemu64-v1,pdpe1gb,pcid,invpcid,fsgsbase,x2apic,rdrand \
         -drive if=pflash,format=raw,readonly=on,file=run/ovmf/code.fd \
         -drive if=pflash,format=raw,file=run/ovmf/vars.fd \
         -drive format=raw,file=$1/img/pentos.img \

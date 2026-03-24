@@ -266,17 +266,17 @@ impl GptDisk {
     }
 
     pub async fn format(device: Arc<dyn BlockDevice>, options: FormatOptions) -> IoResult<Self> {
-        let device_size = device.dimensions();
-        assert!(device_size.page_size >= 512);
+        let device_dimensions = device.dimensions();
+        assert!(device_dimensions.page_size >= 512);
 
-        let last_pg = device_size.page_count - 1;
+        let last_pg = device_dimensions.page_count - 1;
         let mut page_buf = device.make_buf(1);
 
         // Protective MBR stuff
         {
             device.read_pages(0, &mut page_buf).await?;
             let mbr = MasterBootRecord::from_raw(&mut page_buf);
-            mbr.set_protective(device_size.page_count);
+            mbr.set_protective(device_dimensions.page_count);
             device.write_pages(0, &page_buf).await?;
         }
 
@@ -288,14 +288,14 @@ impl GptDisk {
 
         let disk_guid = options.guid.unwrap_or_else(Guid::gen_v4);
 
-        p_header.format(device_size, true, options.with_guid(disk_guid));
-        b_header.format(device_size, false, options.with_guid(disk_guid));
+        p_header.format(device_dimensions, true, options.with_guid(disk_guid));
+        b_header.format(device_dimensions, false, options.with_guid(disk_guid));
 
         let usable_pages = p_header.usable_pages();
         let partlist_cap = p_header.partlist_cap();
 
-        let p_partlist_pg = p_header.partlist_pg(device_size.page_size);
-        let b_partlist_pg = b_header.partlist_pg(device_size.page_size);
+        let p_partlist_pg = p_header.partlist_pg(device_dimensions.page_size);
+        let b_partlist_pg = b_header.partlist_pg(device_dimensions.page_size);
 
         device.write_pages(1, &p_header_buf).await?;
         device.write_pages(last_pg, &b_header_buf).await?;
@@ -472,10 +472,11 @@ impl GptOpenPartition {
 
 impl BlockDevice for GptOpenPartition {
     fn dimensions(&self) -> BlockDeviceDimensions {
-        let device_size = self.device.dimensions();
+        let device_dimensions = self.device.dimensions();
         BlockDeviceDimensions {
-            page_size: device_size.page_size,
+            page_size: device_dimensions.page_size,
             page_count: self.end_pg - self.start_pg + 1,
+            optimal_transfer_size: device_dimensions.optimal_transfer_size
         }
     }
 

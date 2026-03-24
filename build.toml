@@ -1,0 +1,20 @@
+ovmf-version = "edk2-stable202511-r1"
+ovmf-source-template = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/$$/$$-bin.tar.xz"
+ovmf-varsfd-path-template = "$$-bin/x64/vars.fd"
+ovmf-codefd-path-template = "$$-bin/x64/code.fd"
+
+font-version = "1.11.6"
+font-source-template = "https://github.com/sunaku/tamzen-font/archive/refs/tags/Tamzen-$$.tar.gz"
+font-path-template = "tamzen-font-Tamzen-$$/psf/TamzenForPowerline10x20.psf"
+
+img-disk-size-mb = 256
+img-part-boot-size-mb = 32
+img-part-system-size-mb = 96
+# Keeping half the image empty for absolutely no reason
+
+install-bootloader = "/boot/efi/pentos.efi"
+install-kernel = "/boot/efi/pentos.kernel"
+
+qemu-numcores = "12"
+qemu-mem = "8G"
+qemu-resolution = "1920x1080"

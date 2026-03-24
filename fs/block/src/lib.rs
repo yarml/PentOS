@@ -13,6 +13,8 @@ pub struct BlockDeviceDimensions {
     pub page_size: usize,
     /// Total number of addressable pages on this device.
     pub page_count: u64,
+
+    pub optimal_transfer_size: Option<usize>,
 }
 
 pub trait BlockDevice {
