@@ -7,6 +7,7 @@ use {
     block::{BlockDevice, BlockDeviceSize},
     core::{
         ops::{Deref, DerefMut},
+        pin::Pin,
         sync::atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     io::{IoError, IoResult},
@@ -72,7 +73,7 @@ impl BlockCache {
         if let Some(cached_sector) = sectors.get(&lba) {
             return IoResult::Ok(cached_sector.clone());
         }
-        let mut device = self.device.lock().await;
+        let device = self.device.lock().await;
         let size = device.size();
         if size.sector_count < lba {
             return IoResult::Err(IoError::OutOfBounds);
@@ -100,7 +101,7 @@ impl BlockCache {
         IoResult::Ok(cached_sector)
     }
 
-    pub async fn flush(&self) -> IoResult<()> {
+    async fn flush_impl(&self) -> IoResult<()> {
         let sectors = self.sectors.lock().await;
         for sector in sectors
             .values()
@@ -114,7 +115,7 @@ impl BlockCache {
 
 impl CachedSector {
     pub async fn flush(&self) -> IoResult<()> {
-        let mut device = self.device.lock().await;
+        let device = self.device.lock().await;
         let data = self.data.lock().await;
         let result = device.write_sectors(self.lba, &data).await;
         if result.is_ok() {
@@ -165,4 +166,61 @@ impl Drop for CachedSector {
             panic!("dropping dirty cached sector!")
         }
     }
+}
+
+impl BlockDevice for BlockCache {
+    fn size(&self) -> BlockDeviceSize {
+        self.size
+    }
+
+    fn read_sectors<'a>(
+        &'a self,
+        lba: u64,
+        buf: &'a mut [u8],
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+        Box::pin(read_sectors(self, lba, buf))
+    }
+
+    fn write_sectors<'a>(
+        &'a self,
+        lba: u64,
+        buf: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+        Box::pin(write_sectors(self, lba, buf))
+    }
+
+    fn flush<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+        Box::pin(self.flush_impl())
+    }
+}
+
+async fn read_sectors(cache: &BlockCache, lba: u64, buf: &mut [u8]) -> IoResult<()> {
+    let sector_size = cache.size.sector_size;
+
+    assert!(buf.len().is_multiple_of(sector_size));
+    let sector_count = (buf.len() / sector_size) as u64;
+
+    for i in 0..sector_count {
+        let lba = lba + i;
+        let sector_lock = cache.get_sector(lba).await?;
+        let sector = sector_lock.lock().await;
+        buf[(i as usize) * sector_size..(i as usize + 1) * sector_size].copy_from_slice(&sector);
+    }
+
+    Ok(())
+}
+async fn write_sectors(cache: &BlockCache, lba: u64, buf: &[u8]) -> IoResult<()> {
+    let sector_size = cache.size.sector_size;
+
+    assert!(buf.len().is_multiple_of(sector_size));
+    let sector_count = (buf.len() / sector_size) as u64;
+
+    for i in 0..sector_count {
+        let lba = lba + i;
+        let sector_lock = cache.get_sector(lba).await?;
+        let mut sector = sector_lock.lock().await;
+        sector.copy_from_slice(&buf[(i as usize) * sector_size..(i as usize + 1) * sector_size]);
+    }
+
+    Ok(())
 }

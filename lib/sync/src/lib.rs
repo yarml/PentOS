@@ -53,7 +53,8 @@ pub struct AsyncMutex<T: ?Sized, CS: CriticalSection = DefaultCriticalSection> {
 
 /// Returned by [`AsyncMutex::lock`]. Holds the mutex until dropped, then
 /// wakes the next waiter in line.
-pub struct AsyncMutexGuard<'mutex, T: 'mutex + ?Sized, CS: CriticalSection = DefaultCriticalSection> {
+pub struct AsyncMutexGuard<'mutex, T: 'mutex + ?Sized, CS: CriticalSection = DefaultCriticalSection>
+{
     mutex: &'mutex AsyncMutex<T, CS>,
     data: &'mutex mut T,
 }
@@ -68,8 +69,11 @@ pub struct AsyncMutexGuard<'mutex, T: 'mutex + ?Sized, CS: CriticalSection = Def
 /// because the waker queue is FIFO and the guard drops only one waker at a
 /// time) and the guard also does not mark the mutex as unlocked for a
 /// task to skip the queue and hold the lock before everyone else.
-pub struct AsyncMutexLockFuture<'mutex, T: 'mutex + ?Sized, CS: CriticalSection = DefaultCriticalSection>
-{
+pub struct AsyncMutexLockFuture<
+    'mutex,
+    T: 'mutex + ?Sized,
+    CS: CriticalSection = DefaultCriticalSection,
+> {
     mutex: &'mutex AsyncMutex<T, CS>,
     queue_state: Option<Arc<AtomicU8>>,
 }
@@ -185,7 +189,7 @@ impl<'mutex, T: ?Sized, CS: CriticalSection> Future for AsyncMutexLockFuture<'mu
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
-        interrupts::with_disabled(|| {
+        CS::with(|| {
             let mut waiters = this.mutex.waiters.lock();
             let queue_state = this
                 .queue_state

@@ -1,6 +1,7 @@
 use core::fmt::{self, Debug, Display};
 
 impl Guid {
+    pub const NULL: Guid = Guid([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     pub const EFI_SYSTEM: Guid = Guid::new(0xC12A7328_F81F_11D2_BA4B_00A0C93EC93B);
     pub const PENTOS_SYSTEM: Guid = Guid::new(0xBE179251_0C3E_49F7_9804_90395571005E);
     pub const LINUX_DATA: Guid = Guid::new(0x0FC63DAF_8483_4772_8E79_3D69D8477DE4);

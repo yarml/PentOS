@@ -9,6 +9,7 @@ pub enum SeekFrom {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IoError {
+    Unknown,
     UnexpectedEof,
     WriteZero,
     InvalidInput,
