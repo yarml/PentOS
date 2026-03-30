@@ -7,10 +7,11 @@ members = [
     "system/klib",
     "system/system",
     "system/boot-protocol",
+    "fs/fs",
     "fs/block",
     "fs/block-cache",
     "fs/gpt",
-    "fs/fat",
+    "fs/fat32",
     "fs/ext4",
     "lib/x64",
     "lib/io",
@@ -45,7 +46,7 @@ colored = "3.1.1"
 reqwest = { version = "0.13.2", features = ["blocking"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
-tar = "0.4.44"
+tar = "0.4.45"
 xz = "0.1.0"
 flate2 = "1.1.9"
 md5 = "0.8.0"
@@ -56,13 +57,13 @@ env_logger = "0.11.10"
 nasm-rs = "0.3.2"
 
 prettyplease = "0.2.37"
-toml = "1.0.6"
+toml = "1.1.0"
 syn = { version = "2.0.117", features = ["full"] }
 quote = "1.0.45"
 proc-macro2 = "1.0.106"
 
 # Bootloader dependencies
-uefi = { version = "0.36.1" }
+uefi = { version = "0.37.0" }
 
 # Logging system
 # TODO: self-host this
@@ -92,7 +93,7 @@ sync = { path = "lib/sync" }
 block = { path = "fs/block" }
 block-cache = { path = "fs/block-cache" }
 gpt = { path = "fs/gpt" }
-fat = { path = "fs/fat" }
+fat32 = { path = "fs/fat32" }
 ext4 = { path = "fs/ext4" }
 
 # user space crates

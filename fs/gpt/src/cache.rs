@@ -17,10 +17,10 @@ impl HeaderCache {
         GptHeader::from_raw_mut(&mut self.header)
     }
 
-    pub fn partlist(&self) -> &[PartitionEntry] {
-        let cap = self.header().partlist_cap();
-        PartitionEntry::from_raw(&self.partlist, cap)
-    }
+    // pub fn partlist(&self) -> &[PartitionEntry] {
+    //     let cap = self.header().partlist_cap();
+    //     PartitionEntry::from_raw(&self.partlist, cap)
+    // }
     pub fn partlist_mut(&mut self) -> &mut [PartitionEntry] {
         let cap = self.header().partlist_cap();
         PartitionEntry::from_raw_mut(&mut self.partlist, cap)

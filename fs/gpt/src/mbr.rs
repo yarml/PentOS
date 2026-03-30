@@ -1,3 +1,5 @@
+const MBR_SIG: u16 = 0xAA55;
+
 /// Minimum definition to represent Protective MBT in GPT
 #[repr(C, packed)]
 pub struct MasterBootRecord {
@@ -6,7 +8,7 @@ pub struct MasterBootRecord {
     res0: u16,
     partitions: [MasterBootRecordPartition; 4],
     signature: u16,
-    res1: [u8],
+    res1: [u8], // likely size 0
 }
 
 #[repr(C, packed)]
@@ -20,11 +22,11 @@ pub struct MasterBootRecordPartition {
 }
 
 impl MasterBootRecord {
-    pub fn from_raw(buf: &mut [u8]) -> &mut Self {
-        let page_size = buf.len();
+    pub fn from_raw_mut(page: &mut [u8]) -> &mut Self {
+        let page_size = page.len();
         assert!(page_size >= 512);
         let res1_size = page_size - 512;
-        unsafe { &mut *core::ptr::from_raw_parts_mut(buf.as_mut_ptr(), res1_size) }
+        unsafe { &mut *core::ptr::from_raw_parts_mut(page.as_mut_ptr(), res1_size) }
     }
     pub fn set_protective(&mut self, disk_page_count: u64) {
         self.boot_code.fill(0);
@@ -36,7 +38,7 @@ impl MasterBootRecord {
             MasterBootRecordPartition::null(),
             MasterBootRecordPartition::null(),
         ];
-        self.signature = 0xAA55;
+        self.signature = MBR_SIG;
         self.res1.fill(0);
     }
 }

@@ -271,14 +271,14 @@ impl GptDisk {
         assert!(device_dimensions.page_size >= 512);
 
         let last_pg = device_dimensions.page_count - 1;
-        let mut page_buf = device.make_buf(1);
 
         // Protective MBR stuff
         {
-            device.read_pages(0, &mut page_buf).await?;
-            let mbr = MasterBootRecord::from_raw(&mut page_buf);
+            let mut mbr_buf = device.make_buf(1);
+            device.read_pages(0, &mut mbr_buf).await?;
+            let mbr = MasterBootRecord::from_raw_mut(&mut mbr_buf);
             mbr.set_protective(device_dimensions.page_count);
-            device.write_pages(0, &page_buf).await?;
+            device.write_pages(0, &mbr_buf).await?;
         }
 
         let mut p_header_buf = device.make_buf(1);

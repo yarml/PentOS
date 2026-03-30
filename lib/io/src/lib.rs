@@ -22,6 +22,7 @@ pub enum IoError {
     IsADirectory,
     NotEmpty,
     NoSpace,
+    Unsupported,
     Corrupted,
 }
 

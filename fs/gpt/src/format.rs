@@ -25,7 +25,7 @@ pub struct GptHeader {
     partlist_cap: u32,
     part_entry_size: u32,
     partlist_crc32: u32,
-    res1: [u8],
+    res1: [u8], // Likely size 0
 }
 
 #[derive(Clone, Copy)]
