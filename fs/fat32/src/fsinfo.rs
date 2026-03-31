@@ -37,3 +37,12 @@ impl FSInfo {
         self.res2.fill(0);
     }
 }
+
+impl FSInfo {
+    pub const fn set_next_free(&mut self, next_free: Option<u32>) {
+        self.next_free = next_free.unwrap_or(0xFFFFFFFF);
+    }
+    pub const fn set_free_count(&mut self, free_count: Option<u32>) {
+        self.free_count = free_count.unwrap_or(0xFFFFFFFF);
+    }
+}

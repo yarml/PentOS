@@ -8,11 +8,11 @@ members = [
     "system/system",
     "system/boot-protocol",
     "fs/fs",
+    "fs/fs-cache",
     "fs/block",
     "fs/block-cache",
     "fs/gpt",
     "fs/fat32",
-    "fs/ext4",
     "lib/x64",
     "lib/io",
     "lib/sync",
@@ -90,11 +90,12 @@ io = { path = "lib/io" }
 crypto = { path = "lib/crypto" }
 sync = { path = "lib/sync" }
 
+fs = { path = "fs/fs" }
+fs-cache = { path = "fs/fs-cache" }
 block = { path = "fs/block" }
 block-cache = { path = "fs/block-cache" }
 gpt = { path = "fs/gpt" }
 fat32 = { path = "fs/fat32" }
-ext4 = { path = "fs/ext4" }
 
 # user space crates
 runtime = { path = "user/lib/runtime" }

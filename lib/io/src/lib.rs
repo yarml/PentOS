@@ -11,7 +11,7 @@ pub enum SeekFrom {
 pub enum IoError {
     Unknown,
     InUse,
-    UnexpectedEof,
+    Eof,
     WriteZero,
     InvalidInput,
     InvalidData,

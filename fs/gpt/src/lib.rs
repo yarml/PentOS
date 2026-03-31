@@ -33,7 +33,7 @@ pub struct GptDisk {
     device: Arc<dyn BlockDevice>,
     guid: Guid,
 
-    usable_pages: RangeInclusive<u64>,
+    usable_pages: RangeInclusive<usize>,
 
     partlist_cap: usize,
     partlist_dirty: AtomicBool,
@@ -47,21 +47,21 @@ pub struct GptPartition {
     guid: Guid,
     type_guid: Guid,
     name: String,
-    pg_start: u64,
-    pg_end: u64,
+    pg_start: usize,
+    pg_end: usize,
     open_count: Arc<AtomicUsize>,
 }
 
 pub struct GptOpenPartition {
     device: Arc<dyn BlockDevice>,
-    start_pg: u64,
-    end_pg: u64,
+    start_pg: usize,
+    end_pg: usize,
     open_count: Arc<AtomicUsize>,
 }
 
 // Simple stuff
 impl GptDisk {
-    pub fn usable_pages(&self) -> RangeInclusive<u64> {
+    pub fn usable_pages(&self) -> RangeInclusive<usize> {
         self.usable_pages.clone()
     }
     pub fn disk_guid(&self) -> Guid {
@@ -73,12 +73,12 @@ impl GptDisk {
 }
 
 impl GptPartition {
-    pub fn pages(&self) -> RangeInclusive<u64> {
+    pub fn pages(&self) -> RangeInclusive<usize> {
         self.pg_start..=self.pg_end
     }
 }
 impl GptOpenPartition {
-    pub fn get_absolute_pg(&self, rel_pg: u64) -> Option<u64> {
+    pub fn get_absolute_pg(&self, rel_pg: usize) -> Option<usize> {
         let abs_pg = rel_pg + self.start_pg;
         if abs_pg > self.end_pg {
             None
@@ -94,8 +94,8 @@ impl GptDisk {
         &self,
         type_guid: Guid,
         name: &str,
-        pg_start: u64,
-        pg_end: u64,
+        pg_start: usize,
+        pg_end: usize,
     ) -> IoResult<Guid> {
         let mut partlist = self.partlist.lock().await;
 
@@ -233,8 +233,8 @@ impl GptDisk {
                 entries.push(GptPartition {
                     type_guid: entry.type_guid,
                     guid: entry.guid,
-                    pg_start: entry.pg_start,
-                    pg_end: entry.pg_end,
+                    pg_start: entry.pg_start as usize,
+                    pg_end: entry.pg_end as usize,
                     name: entry.name(),
                     open_count: Arc::new(AtomicUsize::new(0)),
                 });
@@ -301,15 +301,15 @@ impl GptDisk {
         device.write_pages(1, &p_header_buf).await?;
         device.write_pages(last_pg, &b_header_buf).await?;
         device
-            .zero_pages(*p_partlist_pg.start(), p_partlist_pg.clone().count() as u64)
+            .zero_pages(*p_partlist_pg.start(), p_partlist_pg.clone().count())
             .await?;
         device
-            .zero_pages(*b_partlist_pg.start(), b_partlist_pg.clone().count() as u64)
+            .zero_pages(*b_partlist_pg.start(), b_partlist_pg.clone().count())
             .await?;
 
         if options.full_zero {
             let range = (p_partlist_pg.end() + 1)..*b_partlist_pg.start();
-            device.zero_pages(range.start, range.count() as u64).await?;
+            device.zero_pages(range.start, range.count()).await?;
         }
 
         let p_partlist_buf = device.make_buf(p_partlist_pg.count());
@@ -346,8 +346,8 @@ impl Drop for GptOpenPartition {
 // BlockDevice interfacing
 
 impl GptDisk {
-    async fn read_pages_impl(&self, pg: u64, buf: &mut [u8]) -> IoResult<()> {
-        let page_count = (buf.len() / self.device.dimensions().page_size) as u64;
+    async fn read_pages_impl(&self, pg: usize, buf: &mut [u8]) -> IoResult<()> {
+        let page_count = buf.len() / self.device.dimensions().page_size;
         let last_pg = pg + page_count - 1;
         if self.usable_pages.contains(&pg) && self.usable_pages.contains(&last_pg) {
             self.device.read_pages(pg, buf).await
@@ -356,8 +356,8 @@ impl GptDisk {
         }
     }
 
-    async fn write_pages_impl(&self, pg: u64, buf: &[u8]) -> IoResult<()> {
-        let page_count = (buf.len() / self.device.dimensions().page_size) as u64;
+    async fn write_pages_impl(&self, pg: usize, buf: &[u8]) -> IoResult<()> {
+        let page_count = buf.len() / self.device.dimensions().page_size;
         let last_pg = pg + page_count - 1;
         if self.usable_pages.contains(&pg) && self.usable_pages.contains(&last_pg) {
             self.device.write_pages(pg, buf).await
@@ -383,8 +383,8 @@ impl GptDisk {
                 b_partlist[i] = PartitionEntry::new(
                     Some(part.guid),
                     part.type_guid,
-                    part.pg_start,
-                    part.pg_end,
+                    part.pg_start as u64,
+                    part.pg_end as u64,
                     &part.name,
                 );
             }
@@ -433,16 +433,16 @@ impl GptDisk {
 }
 
 impl GptOpenPartition {
-    async fn read_pages_impl(&self, pg: u64, buf: &mut [u8]) -> IoResult<()> {
-        let page_count = (buf.len() / self.device.dimensions().page_size) as u64;
+    async fn read_pages_impl(&self, pg: usize, buf: &mut [u8]) -> IoResult<()> {
+        let page_count = buf.len() / self.device.dimensions().page_size;
         let last_pg = pg + page_count - 1;
         let pg = self.get_absolute_pg(pg).ok_or(IoError::OutOfBounds)?;
         self.get_absolute_pg(last_pg).ok_or(IoError::OutOfBounds)?;
 
         self.device.read_pages(pg, buf).await
     }
-    async fn write_pages_impl(&self, pg: u64, buf: &[u8]) -> IoResult<()> {
-        let page_count = (buf.len() / self.device.dimensions().page_size) as u64;
+    async fn write_pages_impl(&self, pg: usize, buf: &[u8]) -> IoResult<()> {
+        let page_count = buf.len() / self.device.dimensions().page_size;
         let last_pg = pg + page_count - 1;
         let pg = self.get_absolute_pg(pg).ok_or(IoError::OutOfBounds)?;
         self.get_absolute_pg(last_pg).ok_or(IoError::OutOfBounds)?;
@@ -468,21 +468,21 @@ impl BlockDevice for GptOpenPartition {
 
     fn read_pages<'a>(
         &'a self,
-        pg: u64,
+        pg: usize,
         buf: &'a mut [u8],
-    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>> {
         Box::pin(self.read_pages_impl(pg, buf))
     }
 
     fn write_pages<'a>(
         &'a self,
-        pg: u64,
+        pg: usize,
         buf: &'a [u8],
-    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>> {
         Box::pin(self.write_pages_impl(pg, buf))
     }
 
-    fn flush<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+    fn flush<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>> {
         Box::pin(self.flush_impl())
     }
 }
@@ -494,21 +494,21 @@ impl BlockDevice for GptDisk {
 
     fn read_pages<'a>(
         &'a self,
-        pg: u64,
+        pg: usize,
         buf: &'a mut [u8],
-    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>> {
         Box::pin(self.read_pages_impl(pg, buf))
     }
 
     fn write_pages<'a>(
         &'a self,
-        pg: u64,
+        pg: usize,
         buf: &'a [u8],
-    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>> {
         Box::pin(self.write_pages_impl(pg, buf))
     }
 
-    fn flush<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+    fn flush<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>> {
         Box::pin(self.flush_impl())
     }
 }

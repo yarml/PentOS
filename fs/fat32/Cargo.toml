@@ -8,6 +8,7 @@ authors.workspace = true
 [dependencies]
 block.workspace = true
 io.workspace = true
+sync.workspace = true
 log.workspace = true
 
 [target.'cfg(not(target_os = "none"))'.dependencies]

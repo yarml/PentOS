@@ -12,7 +12,7 @@ pub struct BlockDeviceDimensions {
     /// Logical block size in bytes.
     pub page_size: usize,
     /// Total number of addressable pages on this device.
-    pub page_count: u64,
+    pub page_count: usize,
 
     /// Frame size of the physical media
     pub frame_size: Option<usize>,
@@ -20,7 +20,7 @@ pub struct BlockDeviceDimensions {
     pub optimal_transfer_size: Option<usize>,
 }
 
-pub trait BlockDevice {
+pub trait BlockDevice: Send + Sync {
     fn dimensions(&self) -> BlockDeviceDimensions;
 
     fn make_buf(&self, page_count: usize) -> Box<[u8]> {
@@ -31,39 +31,39 @@ pub trait BlockDevice {
     /// `buf.len()` must be a multiple of `self.dimensions().page_size`.
     fn read_pages<'a>(
         &'a self,
-        pg: u64,
+        pg: usize,
         buf: &'a mut [u8],
-    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>>;
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>>;
 
     /// Write pages at `pg` from `buf`.
     /// `buf.len()` must be a multiple of `self.dimensions().page_size`.
     fn write_pages<'a>(
         &'a self,
-        pg: u64,
+        pg: usize,
         buf: &'a [u8],
-    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>>;
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>>;
 
     fn zero_pages<'a>(
         &'a self,
-        pg: u64,
-        page_count: u64,
-    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+        pg: usize,
+        page_count: usize,
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>> {
         Box::pin(default_zero_pages(self, pg, page_count))
     }
 
-    fn full_zero<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+    fn full_zero<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>> {
         Box::pin(default_full_zero(self))
     }
 
-    fn flush<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>>;
+    fn flush<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>>;
 }
 
 async fn default_zero_pages<D: ?Sized + BlockDevice>(
     device: &D,
-    pg: u64,
-    page_count: u64,
+    pg: usize,
+    page_count: usize,
 ) -> IoResult<()> {
-    let zbuf = device.make_buf(page_count as usize);
+    let zbuf = device.make_buf(page_count);
     device.write_pages(pg, &zbuf).await
 }
 
@@ -73,7 +73,7 @@ async fn default_full_zero<D: ?Sized + BlockDevice>(device: &D) -> IoResult<()> 
         .optimal_transfer_size
         .unwrap_or(device_dim.page_size)
         .max(device_dim.page_size);
-    let device_size = device_dim.page_size * device_dim.page_count as usize;
+    let device_size = device_dim.page_size * device_dim.page_count;
     let transfer_count = device_size / transfer_size;
     let rem_pg_count = (device_size % transfer_size) / device_dim.page_size; // likely 0
 
@@ -81,16 +81,14 @@ async fn default_full_zero<D: ?Sized + BlockDevice>(device: &D) -> IoResult<()> 
 
     for i in 0..transfer_count {
         let pg = transfer_pg_count * i;
-        device
-            .zero_pages(pg as u64, transfer_pg_count as u64)
-            .await?;
+        device.zero_pages(pg, transfer_pg_count).await?;
     }
 
     if rem_pg_count > 0 {
         let rem_pg_start = transfer_pg_count * transfer_count;
         for i in 0..rem_pg_count {
             let pg = device_dim.page_size * i + rem_pg_start;
-            device.zero_pages(pg as u64, 1).await?;
+            device.zero_pages(pg, 1).await?;
         }
     }
     Ok(())

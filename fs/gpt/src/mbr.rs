@@ -28,7 +28,7 @@ impl MasterBootRecord {
         let res1_size = page_size - 512;
         unsafe { &mut *core::ptr::from_raw_parts_mut(page.as_mut_ptr(), res1_size) }
     }
-    pub fn set_protective(&mut self, disk_page_count: u64) {
+    pub fn set_protective(&mut self, disk_page_count: usize) {
         self.boot_code.fill(0);
         self.disk_signature = 0;
         self.res0 = 0;
@@ -44,14 +44,14 @@ impl MasterBootRecord {
 }
 
 impl MasterBootRecordPartition {
-    pub const fn protective(disk_page_count: u64) -> Self {
+    pub const fn protective(disk_page_count: usize) -> Self {
         Self {
             boot: 0x00,
             chs_starting: [0x00, 0x02, 0x00],
             os_type: 0xEE,
             chs_ending: [0xFF, 0xFF, 0xFF],
             pg_start: 1,
-            pg_size: u64::min(disk_page_count - 1, u32::MAX as u64) as u32,
+            pg_size: usize::min(disk_page_count - 1, u32::MAX as usize) as u32,
         }
     }
 

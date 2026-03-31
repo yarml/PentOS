@@ -1,9 +1,3 @@
-pub struct FatEntryCoordinates {
-    pub pg: u64,
-    pub offset: usize,
-    pub shift: usize,
-}
-
 /// Mimicking Microsoft's magic numbers and applying 0 brain energy into
 /// understanding this thing
 pub mod disk_table {

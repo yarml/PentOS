@@ -491,10 +491,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ext4"
-version = "0.1.0"
-
-[[package]]
 name = "fat32"
 version = "0.1.0"
 dependencies = [
@@ -502,6 +498,7 @@ dependencies = [
  "getrandom 0.4.2",
  "io",
  "log",
+ "sync",
 ]
 
 [[package]]
@@ -555,6 +552,13 @@ dependencies = [
 
 [[package]]
 name = "fs"
+version = "0.1.0"
+dependencies = [
+ "io",
+]
+
+[[package]]
+name = "fs-cache"
 version = "0.1.0"
 
 [[package]]

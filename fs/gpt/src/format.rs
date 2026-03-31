@@ -108,18 +108,18 @@ impl PartitionEntry {
 
 // Simple accessors
 impl GptHeader {
-    pub fn alternate_pg(&self) -> u64 {
-        self.alternate_pg
+    pub fn alternate_pg(&self) -> usize {
+        self.alternate_pg as usize
     }
 
-    pub fn usable_pages(&self) -> RangeInclusive<u64> {
-        self.first_usable_pg..=self.last_usable_pg
+    pub fn usable_pages(&self) -> RangeInclusive<usize> {
+        (self.first_usable_pg as usize)..=(self.last_usable_pg as usize)
     }
 
-    pub fn partlist_pg(&self, page_size: usize) -> RangeInclusive<u64> {
-        let partlist_size = 128 * self.partlist_cap as u64;
-        let partlist_page_count = partlist_size.div_ceil(page_size as u64);
-        self.partlist_pg..=(self.partlist_pg + partlist_page_count - 1)
+    pub fn partlist_pg(&self, page_size: usize) -> RangeInclusive<usize> {
+        let partlist_size = 128 * self.partlist_cap as usize;
+        let partlist_page_count = partlist_size.div_ceil(page_size);
+        (self.partlist_pg as usize)..=(self.partlist_pg as usize + partlist_page_count - 1)
     }
 
     pub fn partlist_cap(&self) -> usize {
@@ -161,15 +161,15 @@ impl GptHeader {
         self.revision = EFI_PART_REVISION;
         self.header_size = (self.res1.len() + 92) as u32;
 
-        self.my_pg = if main { 1 } else { last_pg };
-        self.alternate_pg = if !main { 1 } else { last_pg };
+        self.my_pg = if main { 1 } else { last_pg as u64 };
+        self.alternate_pg = if !main { 1 } else { last_pg as u64 };
 
         self.disk_guid = options.guid.unwrap_or_else(Guid::gen_v4);
 
         self.partlist_pg = if main {
             2
         } else {
-            last_pg - partlist_page_count as u64
+            (last_pg - partlist_page_count) as u64
         };
         self.partlist_cap = partition_cap;
         self.partlist_crc32 = crypto::crc32_zdata(partlist_size);
@@ -179,13 +179,10 @@ impl GptHeader {
             .page_size
             .max(dimensions.frame_size.unwrap_or(0))
             .max(dimensions.optimal_transfer_size.unwrap_or(0));
-        let align_pg = (alignment / dimensions.page_size) as u64;
+        let align_pg = alignment / dimensions.page_size;
 
-        self.first_usable_pg = u64::max(partlist_page_count as u64, align_pg);
-        self.last_usable_pg = u64::min(
-            last_pg - partlist_page_count as u64 - 1,
-            last_pg - align_pg - 1,
-        );
+        self.first_usable_pg = usize::max(partlist_page_count, align_pg) as u64;
+        self.last_usable_pg = usize::min(last_pg - partlist_page_count - 1, last_pg - align_pg - 1) as u64;
 
         self.header_crc32 = 0;
 

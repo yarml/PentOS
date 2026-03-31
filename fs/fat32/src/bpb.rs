@@ -1,9 +1,6 @@
-use block::BlockDeviceDimensions;
-
-use crate::{
-    fat::FatType,
-    format::{FatEntryCoordinates, disk_table},
-    media::MediaType,
+use {
+    crate::{fat::FatType, format::disk_table, media::MediaType},
+    block::BlockDeviceDimensions,
 };
 
 const OEM_NAME: [u8; 8] = *b"PENT FAT";
@@ -86,8 +83,15 @@ impl BiosParameterBlock {
 }
 
 impl BiosParameterBlock {
-    pub const fn root_dir_page_count(&self) -> usize {
+    pub const fn root_dir_pg_count(&self) -> usize {
         (self.root_entry_count as usize * FAT_DIRENTRY_SIZE).div_ceil(self.bytes_per_page as usize)
+    }
+    pub const fn root_entry_count(&self) -> usize {
+        if matches!(self.fat_type(), FatType::Fat32) {
+            0
+        } else {
+            self.root_entry_count as usize
+        }
     }
     pub const fn fat_pg_first(&self) -> usize {
         if matches!(self.fat_type(), FatType::Fat32) {
@@ -118,22 +122,32 @@ impl BiosParameterBlock {
         }
     }
 
-    pub const fn data_region_pg_first(&self) -> u64 {
-        (self.reserved_pages_count as usize
+    pub const fn data_region_pg_first(&self) -> usize {
+        self.reserved_pages_count as usize
             + self.fat_count as usize * self.fat_pg_count()
-            + self.root_dir_page_count()) as u64
+            + self.root_dir_pg_count()
     }
     pub const fn data_region_page_count(&self) -> usize {
-        self.total_page_count() - self.reserved_pages_count as usize
-            + self.fat_count as usize * self.fat_pg_count()
-            + self.root_dir_page_count()
+        let total = self.total_page_count();
+        total
+            - self.reserved_pages_count as usize
+            - self.fat_count as usize * self.fat_pg_count()
+            - self.root_dir_pg_count()
+    }
+
+    pub const fn root_cluster(&self) -> usize {
+        if matches!(self.fat_type(), FatType::Fat32) {
+            unsafe { self.ext.fat32.root_cluster as usize }
+        } else {
+            0
+        }
     }
 
     pub const fn data_cluster_count(&self) -> usize {
         self.data_region_page_count() / self.pages_per_cluster as usize
     }
-    pub const fn cluster_pg_first(&self, n: usize) -> u64 {
-        ((n as u64 - 2) * self.pages_per_cluster as u64) + self.data_region_pg_first()
+    pub const fn cluster_pg_first(&self, n: usize) -> usize {
+        ((n - 2) * self.pages_per_cluster as usize) + self.data_region_pg_first()
     }
 
     pub const fn cluster_fat_offset(&self, n: usize) -> usize {
@@ -143,25 +157,12 @@ impl BiosParameterBlock {
             FatType::Fat32 => n * 4,
         }
     }
-    pub const fn cluster_fat_pg(&self, n: usize) -> u64 {
-        self.reserved_pages_count as u64
-            + self.cluster_fat_offset(n) as u64 / self.bytes_per_page as u64
+    pub const fn cluster_fat_pg(&self, n: usize) -> usize {
+        self.reserved_pages_count as usize
+            + self.cluster_fat_offset(n) / self.bytes_per_page as usize
     }
     pub const fn cluster_fat_entry_offset(&self, n: usize) -> usize {
         self.cluster_fat_offset(n) % self.bytes_per_page as usize
-    }
-    pub const fn cluster_fat_entry_coordinates(&self, n: usize) -> FatEntryCoordinates {
-        let shift = if n.is_multiple_of(2) || !matches!(self.fat_type(), FatType::Fat12) {
-            0
-        } else {
-            4
-        };
-
-        FatEntryCoordinates {
-            pg: self.cluster_fat_pg(n),
-            offset: self.cluster_fat_offset(n),
-            shift,
-        }
     }
 
     pub const fn fat_type(&self) -> FatType {
@@ -175,10 +176,10 @@ impl BiosParameterBlock {
         }
     }
 
-    pub const fn root_dir_pg_first(&self) -> u64 {
+    pub const fn root_dir_pg_first(&self) -> usize {
         match self.fat_type() {
             FatType::Fat12 | FatType::Fat16 => {
-                self.data_region_pg_first() - self.root_dir_page_count() as u64
+                self.data_region_pg_first() - self.root_dir_pg_count()
             }
             FatType::Fat32 => {
                 self.cluster_pg_first(unsafe { self.ext.fat32.root_cluster as usize })
@@ -202,7 +203,7 @@ impl BiosParameterBlock {
         assert_eq!(core::mem::offset_of!(BiosParameterBlock, ext), 36);
         assert_eq!(core::mem::offset_of!(BiosParameterBlock, bpb_sig), 510);
 
-        self.jmp_boot = [0xF4, 0xEB, 0xFD]; // hlt; jmp -3; if someone jumps to the bpb of this, they get trapped
+        self.jmp_boot = [0xEB, 0xFE, 0x90]; // jmp self
         self.oem_name = OEM_NAME;
         self.bytes_per_page = device_dimensions.page_size as u16;
         self.fat_count = 2;
@@ -212,7 +213,7 @@ impl BiosParameterBlock {
         self.hidden_pages = 0; // nor here
         self.bpb_sig = BPB_SIG;
 
-        let fat32 = match disk_table::format_type(device_dimensions.page_count as usize) {
+        let fat32 = match disk_table::format_type(device_dimensions.page_count) {
             FatType::Fat12 => todo!("FAT12 formatting"),
             FatType::Fat16 => false,
             FatType::Fat32 => true,
@@ -251,15 +252,22 @@ impl BiosParameterBlock {
             self.root_entry_count = 0;
             self.page_count_16 = 0;
             self.page_count_32 = device_dimensions.page_count as u32;
-            self.pages_per_cluster = disk_table::fat32(device_dimensions.page_count as usize)
+            self.pages_per_cluster = disk_table::fat32(device_dimensions.page_count)
                 .expect("incompatible disksize and partition type")
                 as u8;
         } else {
             self.reserved_pages_count = 1;
             self.root_entry_count = 512;
-            self.page_count_16 = device_dimensions.page_count as u16;
-            self.page_count_32 = 0;
-            self.pages_per_cluster = disk_table::fat16(device_dimensions.page_count as usize)
+
+            if device_dimensions.page_count <= u16::MAX as usize {
+                self.page_count_16 = device_dimensions.page_count as u16;
+                self.page_count_32 = 0;
+            } else {
+                self.page_count_16 = 0;
+                self.page_count_32 = device_dimensions.page_count as u32;
+            }
+
+            self.pages_per_cluster = disk_table::fat16(device_dimensions.page_count)
                 .expect("incompatible disksize and partition type")
                 as u8;
         }
@@ -268,7 +276,7 @@ impl BiosParameterBlock {
             // Magic formulas from Microsoft to compute the FAT size
             let root_dir_page_count =
                 (self.root_entry_count as usize * 32).div_ceil(self.bytes_per_page as usize);
-            let t1 = device_dimensions.page_count as usize
+            let t1 = device_dimensions.page_count
                 - (self.reserved_pages_count as usize + root_dir_page_count);
             let t2 = (256 * self.pages_per_cluster as usize + self.fat_count as usize)
                 / if fat32 { 2 } else { 1 };

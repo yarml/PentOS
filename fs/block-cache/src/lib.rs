@@ -15,18 +15,18 @@ use {
 };
 
 pub struct BlockCache {
-    device: Arc<AsyncMutex<dyn BlockDevice + Send>>,
-    pages: AsyncMutex<BTreeMap<u64, Arc<CachedPage>>>,
+    device: Arc<dyn BlockDevice>,
+    pages: AsyncMutex<BTreeMap<usize, Arc<CachedPage>>>,
     size: BlockDeviceDimensions,
     get_time: fn() -> usize,
 }
 
 pub struct CachedPage {
-    device: Arc<AsyncMutex<dyn BlockDevice + Send>>,
+    device: Arc<dyn BlockDevice>,
     dirty: AtomicBool,
     data: AsyncMutex<Box<[u8]>>,
 
-    pg: u64,
+    pg: usize,
 
     /// How many times this page has been accessed (we count the number of times it has been locked)
     /// will be used to sort which cached pages can be evicted first (low usage)
@@ -55,7 +55,7 @@ impl BlockCache {
     ) -> Self {
         let size = device.dimensions();
         Self {
-            device: Arc::new(AsyncMutex::new(device)),
+            device: Arc::new(device),
             pages: AsyncMutex::new(BTreeMap::new()),
             size,
             get_time: time_accessor,
@@ -64,20 +64,19 @@ impl BlockCache {
 }
 
 impl BlockCache {
-    pub async fn get_page(&self, pg: u64) -> IoResult<Arc<CachedPage>> {
+    pub async fn get_page(&self, pg: usize) -> IoResult<Arc<CachedPage>> {
         let mut pages = self.pages.lock().await;
         if let Some(cached_page) = pages.get(&pg) {
             return IoResult::Ok(cached_page.clone());
         }
-        let device = self.device.lock().await;
-        let size = device.dimensions();
+        let size = self.device.dimensions();
         if size.page_count < pg {
             return IoResult::Err(IoError::OutOfBounds);
         }
         let page_size = size.page_size;
         let data = vec![0u8; page_size];
         let mut data = data.into_boxed_slice();
-        device.read_pages(pg, &mut data).await?;
+        self.device.read_pages(pg, &mut data).await?;
 
         let current_time = (self.get_time)();
 
@@ -111,9 +110,8 @@ impl BlockCache {
 
 impl CachedPage {
     pub async fn flush(&self) -> IoResult<()> {
-        let device = self.device.lock().await;
         let data = self.data.lock().await;
-        let result = device.write_pages(self.pg, &data).await;
+        let result = self.device.write_pages(self.pg, &data).await;
         if result.is_ok() {
             self.dirty.store(false, Ordering::Relaxed);
         }
@@ -171,51 +169,51 @@ impl BlockDevice for BlockCache {
 
     fn read_pages<'a>(
         &'a self,
-        pg: u64,
+        pg: usize,
         buf: &'a mut [u8],
-    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>> {
         Box::pin(read_pages_impl(self, pg, buf))
     }
 
     fn write_pages<'a>(
         &'a self,
-        pg: u64,
+        pg: usize,
         buf: &'a [u8],
-    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>> {
         Box::pin(write_pages_impl(self, pg, buf))
     }
 
-    fn flush<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + 'a>> {
+    fn flush<'a>(&'a self) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>> {
         Box::pin(self.flush_impl())
     }
 }
 
-async fn read_pages_impl(cache: &BlockCache, pg: u64, buf: &mut [u8]) -> IoResult<()> {
+async fn read_pages_impl(cache: &BlockCache, pg: usize, buf: &mut [u8]) -> IoResult<()> {
     let page_size = cache.size.page_size;
 
     assert!(buf.len().is_multiple_of(page_size));
-    let page_count = (buf.len() / page_size) as u64;
+    let page_count = buf.len() / page_size;
 
     for i in 0..page_count {
         let pg = pg + i;
         let page_lock = cache.get_page(pg).await?;
         let page = page_lock.lock().await;
-        buf[(i as usize) * page_size..(i as usize + 1) * page_size].copy_from_slice(&page);
+        buf[i * page_size..(i + 1) * page_size].copy_from_slice(&page);
     }
 
     Ok(())
 }
-async fn write_pages_impl(cache: &BlockCache, pg: u64, buf: &[u8]) -> IoResult<()> {
+async fn write_pages_impl(cache: &BlockCache, pg: usize, buf: &[u8]) -> IoResult<()> {
     let page_size = cache.size.page_size;
 
     assert!(buf.len().is_multiple_of(page_size));
-    let page_count = (buf.len() / page_size) as u64;
+    let page_count = buf.len() / page_size;
 
     for i in 0..page_count {
         let pg = pg + i;
         let page_lock = cache.get_page(pg).await?;
         let mut page = page_lock.lock().await;
-        page.copy_from_slice(&buf[(i as usize) * page_size..(i as usize + 1) * page_size]);
+        page.copy_from_slice(&buf[i * page_size..(i + 1) * page_size]);
     }
 
     Ok(())
