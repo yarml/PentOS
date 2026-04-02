@@ -12,44 +12,28 @@ use {
         fsinfo::FSInfo,
         media::MediaType,
     },
-    alloc::{boxed::Box, sync::Arc},
+    alloc::sync::Arc,
     block::BlockDevice,
-    core::sync::atomic::{AtomicUsize, Ordering},
     io::{IoError, IoResult},
     log::trace,
-    sync::{AsyncMutex, AsyncMutexGuard},
+    sync::AsyncMutex,
 };
 
 extern crate alloc;
 
-pub mod bpb;
-pub mod dirent;
-pub mod format;
-pub mod fsinfo;
+pub mod file;
 pub mod media;
 
+mod bpb;
+mod dirent;
 mod fat;
+mod format;
+mod fsinfo;
 mod random;
 
 pub struct FatVolume {
     geometry: FatGeometry,
     fat: Arc<AsyncMutex<Fat>>,
-}
-
-pub struct FatFile {
-    fat: Arc<AsyncMutex<Fat>>,
-    geometry: FatGeometry,
-    device: Arc<dyn BlockDevice>,
-
-    write: bool,
-    cluster_first: usize,
-    file_size: Arc<AtomicUsize>,
-
-    // Cursor state
-    pos: usize,
-    cluster_current: usize,
-    cluster_buf: AsyncMutex<Box<[u8]>>,
-    cluster_dirty: bool,
 }
 
 pub struct FormatOptions {
@@ -167,100 +151,5 @@ impl FatVolume {
             },
             fat: Arc::new(AsyncMutex::new(fat)),
         })
-    }
-}
-
-impl FatFile {
-    pub async fn read(&self, buf: &mut [u8]) -> IoResult<()> {
-        if self.pos >= buf.len() {
-            return Err(IoError::Eof);
-        }
-        if self.pos + buf.len() > self.size() {
-            return Err(IoError::OutOfBounds);
-        }
-
-        let fat = self.fat.lock().await;
-
-        let device_dim = self.device.dimensions();
-        let cluster_size = self.geometry.cluster_pg_count * device_dim.page_size;
-
-        let original_pos = self.pos;
-
-        while self.pos - original_pos < buf.len() {
-            let cluster_idx = self.pos / cluster_size;
-            let cluster_pos = self.pos % cluster_size;
-
-            let next_cluster = fat.cluster_follow(self.cluster_current);
-        }
-
-        todo!()
-    }
-
-    pub async fn write(&self, buf: &[u8]) -> IoResult<()> {
-        todo!()
-    }
-
-    pub async fn seek(&self, pos: usize) -> IoResult<()> {
-        if pos > self.size() {
-            return Err(IoError::OutOfBounds);
-        }
-        let device_dim = self.device.dimensions();
-        let cluster_size = self.geometry.cluster_pg_count * device_dim.page_size;
-
-        let cluster_idx = pos / cluster_size;
-
-        if cluster_idx == 0 {
-            todo!()
-            // self.pos = pos;
-            // return self.load_cluster(self.cluster_first as usize).await;
-        }
-
-        let fat = self.fat.lock().await;
-
-        todo!()
-    }
-
-    pub fn pos(&self) -> usize {
-        self.pos
-    }
-
-    pub fn size(&self) -> usize {
-        self.file_size.load(Ordering::Relaxed)
-    }
-
-    pub async fn set_size(&self, new_size: usize) -> IoResult<()> {
-        todo!()
-    }
-
-    pub async fn flush(&self) -> IoResult<()> {
-        self.fat.lock().await.flush(self.device.clone()).await?;
-        self.device.flush().await
-    }
-
-    async fn load_cluster(&mut self, index: usize) -> IoResult<AsyncMutexGuard<'_, Box<[u8]>>> {
-        if self.cluster_current == index {
-            Ok(self.cluster_buf.lock().await)
-        } else {
-            let mut cluster_buf = self.cluster_buf.lock().await;
-            if self.cluster_dirty && self.write {
-                self.device
-                    .write_pages(
-                        self.geometry.data_region_pg_first
-                            + self.cluster_current * self.geometry.cluster_pg_count,
-                        &cluster_buf,
-                    )
-                    .await?;
-            }
-            self.device
-                .read_pages(
-                    self.geometry.data_region_pg_first
-                        + index * self.geometry.cluster_pg_count,
-                    &mut cluster_buf,
-                )
-                .await?;
-            self.cluster_dirty = false;
-            self.cluster_current = index;
-            Ok(cluster_buf)
-        }
     }
 }

@@ -7,3 +7,4 @@ authors.workspace = true
 
 [dependencies]
 io.workspace = true
+sync.workspace = true

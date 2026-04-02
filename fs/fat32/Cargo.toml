@@ -6,10 +6,12 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
+config.workspace = true
 block.workspace = true
 io.workspace = true
 sync.workspace = true
 log.workspace = true
+fs.workspace = true
 
 [target.'cfg(not(target_os = "none"))'.dependencies]
 getrandom.workspace = true

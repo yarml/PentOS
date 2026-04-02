@@ -131,15 +131,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "block-cache"
-version = "0.1.0"
-dependencies = [
- "block",
- "io",
- "sync",
-]
-
-[[package]]
 name = "boot-protocol"
 version = "0.1.0"
 dependencies = [
@@ -268,7 +259,6 @@ name = "chef2"
 version = "0.1.0"
 dependencies = [
  "block",
- "block-cache",
  "cargo_metadata",
  "clap",
  "colored",
@@ -495,6 +485,8 @@ name = "fat32"
 version = "0.1.0"
 dependencies = [
  "block",
+ "config",
+ "fs",
  "getrandom 0.4.2",
  "io",
  "log",
@@ -555,11 +547,8 @@ name = "fs"
 version = "0.1.0"
 dependencies = [
  "io",
+ "sync",
 ]
-
-[[package]]
-name = "fs-cache"
-version = "0.1.0"
 
 [[package]]
 name = "fs_extra"

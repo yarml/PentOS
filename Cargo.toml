@@ -8,9 +8,7 @@ members = [
     "system/system",
     "system/boot-protocol",
     "fs/fs",
-    "fs/fs-cache",
     "fs/block",
-    "fs/block-cache",
     "fs/gpt",
     "fs/fat32",
     "lib/x64",
@@ -91,9 +89,7 @@ crypto = { path = "lib/crypto" }
 sync = { path = "lib/sync" }
 
 fs = { path = "fs/fs" }
-fs-cache = { path = "fs/fs-cache" }
 block = { path = "fs/block" }
-block-cache = { path = "fs/block-cache" }
 gpt = { path = "fs/gpt" }
 fat32 = { path = "fs/fat32" }
 

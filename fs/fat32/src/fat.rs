@@ -108,6 +108,9 @@ impl Fat {
 
         self.set_entry_raw(index + 2, value);
     }
+    pub const fn unset_entry(&mut self, index: usize) {
+        self.set_entry_raw(index + 2, self.fat_type.eoc_mark_min() as u32);
+    }
     pub const fn get_entry(&self, index: usize) -> usize {
         self.get_entry_raw(index + 2) as usize
     }
@@ -200,10 +203,7 @@ impl Fat {
             for i in 0..self.fat_count {
                 let fat_pg_start = i * fat_pg_count;
                 device
-                    .write_pages(
-                        fat_pg_start + first_pg + self.fat_pg_first,
-                        buf,
-                    )
+                    .write_pages(fat_pg_start + first_pg + self.fat_pg_first, buf)
                     .await?;
             }
 
