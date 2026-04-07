@@ -104,7 +104,7 @@ impl File {
         let cache = self.cache.lock().await;
         for chunk in cache
             .values()
-            .filter(|chunk| chunk.dirty.load(Ordering::Relaxed))
+            .filter(|chunk| chunk.dirty.load(Ordering::Acquire))
         {
             chunk.flush().await?;
         }
@@ -124,7 +124,10 @@ impl OpenFile {
         let chunk = self.file.get_chunk(chunk_index).await?;
         let data = chunk.lock().await;
 
-        Ok(self.copy_chunk_part(&data, buf, chunk_offset))
+        let copy_amount = self.copy_chunk_part(&data, buf, chunk_offset);
+        self.position += copy_amount;
+
+        Ok(copy_amount)
     }
     pub async fn write(&mut self, buf: &[u8]) -> IoResult<usize> {
         if self.position + buf.len() > self.file.size.load(Ordering::Relaxed) {
@@ -137,7 +140,10 @@ impl OpenFile {
         let chunk = self.file.get_chunk(chunk_index).await?;
         let mut data = chunk.lock().await;
 
-        Ok(self.copy_chunk_part(buf, &mut data, chunk_offset))
+        let copy_amount = self.copy_chunk_part(buf, &mut data, chunk_offset);
+        self.position += copy_amount;
+
+        Ok(copy_amount)
     }
 }
 
@@ -175,7 +181,9 @@ impl Chunk {
     async fn flush(&self) -> IoResult<()> {
         let mut backend = self.file.backend.lock().await;
         let data = self.data.lock().await;
-        backend.write_chunk(self.index, &data).await
+        backend.write_chunk(self.index, &data).await?;
+        self.dirty.store(false, Ordering::Release);
+        Ok(())
     }
 }
 
@@ -205,7 +213,7 @@ impl Deref for ChunkGuard<'_> {
 
 impl DerefMut for ChunkGuard<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.dirty.store(false, Ordering::Relaxed);
+        self.dirty.store(true, Ordering::Release);
         &mut self.mutex_guard
     }
 }

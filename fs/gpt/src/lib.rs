@@ -109,10 +109,10 @@ impl GptDisk {
             return Err(IoError::InvalidInput);
         }
 
-        if partlist
-            .iter()
-            .any(|entry| entry.pages().contains(&pg_start) || entry.pages().contains(&pg_end))
-        {
+        if partlist.iter().any(|entry| {
+            let e = entry.pages();
+            pg_start <= *e.end() && *e.start() <= pg_end
+        }) {
             return Err(IoError::AlreadyExists);
         }
 

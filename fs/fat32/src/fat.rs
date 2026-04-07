@@ -108,7 +108,7 @@ impl Fat {
 
         self.set_entry_raw(index + 2, value);
     }
-    pub const fn unset_entry(&mut self, index: usize) {
+    pub const fn make_eoc(&mut self, index: usize) {
         self.set_entry_raw(index + 2, self.fat_type.eoc_mark_min() as u32);
     }
     pub const fn get_entry(&self, index: usize) -> usize {
@@ -223,6 +223,9 @@ impl Fat {
         Ok(())
     }
 
+    /// Retruns self.next_free if it is Some, otherwise walks the FAT until it finds
+    /// a free entry, updates self.next_free to contain that and returns that
+    /// If self.next_free is None, and all FAT entries are full, returns None.
     pub fn next_free(&mut self) -> Option<usize> {
         if let Some(next_free) = self.next_free {
             return Some(next_free);
@@ -230,10 +233,8 @@ impl Fat {
 
         for i in 0..self.data_cluster_count {
             if self.get_entry(i) == 0 {
-                if i < self.data_cluster_count - 1 && self.get_entry(i + 1) == 0 {
-                    self.next_free = Some(i + 1);
-                    self.fsinfo_dirty = true;
-                }
+                self.next_free = Some(i);
+                self.fsinfo_dirty = true;
                 return Some(i);
             }
         }
@@ -243,14 +244,13 @@ impl Fat {
 
     pub fn cluster_alloc(&mut self) -> Option<usize> {
         let next = self.next_free()?;
-        if let Some(next_free) = self.next_free
-            && next_free == next
-        {
-            if self.get_entry(next_free + 1) == 0 {
-                self.next_free = Some(next_free + 1);
-            } else {
-                self.next_free = None;
-            }
+
+        // If next_free was the cached one, we check if the next clustere is free and put it
+        // in cache, otherwise,
+        if next + 1 < self.data_cluster_count && self.get_entry(next + 1) == 0 {
+            self.next_free = Some(next + 1);
+        } else {
+            self.next_free = None;
         }
         self.free_count -= 1;
         self.fsinfo_dirty = true;

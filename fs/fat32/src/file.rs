@@ -30,10 +30,6 @@ impl FatFileBackend {
     }
 
     async fn get_cluster(&mut self, cluster_index: usize) -> IoResult<usize> {
-        if cluster_index >= self.cluster_count() {
-            return Err(IoError::OutOfBounds);
-        }
-
         if cluster_index < self.cluster_index_buf.len() {
             return Ok(self.cluster_index_buf[cluster_index] as usize);
         }
@@ -55,7 +51,7 @@ impl FatFileBackend {
         let fat = self.fat.lock().await;
 
         while index < cluster_index {
-            current = fat.cluster_follow(current).ok_or(IoError::Corrupted)?;
+            current = fat.cluster_follow(current).ok_or(IoError::OutOfBounds)?;
             self.cluster_index_buf.push(current as u32);
             index += 1;
         }
@@ -111,30 +107,18 @@ impl FatFileBackend {
         }
 
         if new_cluster_count > current_cluster_count {
+            let mut new_clusters = self
+                .allow_many_clusters(new_cluster_count - current_cluster_count)
+                .await?;
+
+            let current_cluster_count = if self.cluster_first.is_none() {
+                self.cluster_first = Some(new_clusters.pop().unwrap());
+                1
+            } else {
+                current_cluster_count
+            };
             let diff = new_cluster_count - current_cluster_count;
 
-            let mut new_clusters = Vec::with_capacity(diff);
-            {
-                let mut fat = self.fat.lock().await;
-                for _ in 0..diff {
-                    let Some(new_cluster) = fat.cluster_alloc() else {
-                        break;
-                    };
-                    new_clusters.push(new_cluster);
-                }
-                if new_clusters.len() != diff {
-                    for cluster in new_clusters.drain(..) {
-                        fat.cluster_free(cluster);
-                    }
-                    return Err(IoError::NoSpace);
-                }
-            }
-
-            let mut current_cluster_count = current_cluster_count;
-            if self.cluster_first.is_none() {
-                self.cluster_first = Some(new_clusters.pop().unwrap());
-                current_cluster_count = 1;
-            }
             let mut current = self.get_cluster(current_cluster_count - 1).await?;
             let mut fat = self.fat.lock().await;
             self.cluster_index_buf.reserve(diff);
@@ -156,10 +140,38 @@ impl FatFileBackend {
 
             for cluster in self.cluster_index_buf.drain(new_cluster_count..) {
                 let cluster = cluster as usize;
-                fat.unset_entry(cluster);
+                fat.cluster_free(cluster);
             }
+
+            if let Some(cluster) = self.cluster_index_buf.last() {
+                let cluster = *cluster as usize;
+                fat.make_eoc(cluster);
+            }
+
             self.size = new_size;
             Ok(())
+        }
+    }
+
+    async fn allow_many_clusters(&mut self, count: usize) -> IoResult<Vec<usize>> {
+        let mut clusters = Vec::with_capacity(count);
+        let mut fat = self.fat.lock().await;
+
+        for _ in 0..count {
+            let Some(cluster) = fat.cluster_alloc() else {
+                break;
+            };
+            clusters.push(cluster);
+        }
+
+        if clusters.len() != count {
+            for cluster in clusters.drain(..) {
+                fat.cluster_free(cluster);
+            }
+            Err(IoError::NoSpace)
+        } else {
+            clusters.reverse();
+            Ok(clusters)
         }
     }
 }

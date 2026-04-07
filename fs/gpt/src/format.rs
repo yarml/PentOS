@@ -190,11 +190,6 @@ impl GptHeader {
         self.header_crc32 = crypto::crc32(self_raw);
     }
 
-    /// Performs the most basic check of the signature only
-    pub fn sanity_check(&self) -> bool {
-        self.signature == EFI_PART_SIGNATURE
-    }
-
     pub fn check(
         p_header: &Self,
         b_header: &Self,
