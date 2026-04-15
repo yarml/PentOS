@@ -12,6 +12,12 @@ use {
 pub trait FileBackend {
     fn chunk_size(&self) -> usize;
 
+    fn size(&self) -> usize;
+    fn resize<'a>(
+        &'a mut self,
+        new_size: usize,
+    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>>;
+
     fn read_chunk<'a>(
         &'a mut self,
         chunk_index: usize,
@@ -21,12 +27,6 @@ pub trait FileBackend {
         &'a mut self,
         chunk_index: usize,
         buf: &'a [u8],
-    ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>>;
-
-    fn size(&self) -> usize;
-    fn resize<'a>(
-        &'a mut self,
-        new_size: usize,
     ) -> Pin<Box<dyn Future<Output = IoResult<()>> + Send + 'a>>;
 
     fn make_chunk_buf(&self) -> Box<[u8]> {
@@ -114,24 +114,36 @@ impl File {
 
 impl OpenFile {
     pub async fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
-        if self.position + buf.len() > self.file.size.load(Ordering::Relaxed) {
+        let size = self.file.size.load(Ordering::Relaxed);
+        if self.position >= size {
             return Err(IoError::Eof);
         }
 
         let chunk_index = self.chunk_index();
         let chunk_offset = self.chunk_offset();
 
+        let chunk_remaining = self.chunk_size - chunk_offset;
+        let absolute_remaining = size - self.position;
+        let request = buf.len();
+
         let chunk = self.file.get_chunk(chunk_index).await?;
         let data = chunk.lock().await;
 
-        let copy_amount = self.copy_chunk_part(&data, buf, chunk_offset);
+        let copy_amount = chunk_remaining.min(absolute_remaining).min(request);
+        buf[..copy_amount].copy_from_slice(&data[chunk_offset..(chunk_offset + copy_amount)]);
+
         self.position += copy_amount;
 
         Ok(copy_amount)
     }
     pub async fn write(&mut self, buf: &[u8]) -> IoResult<usize> {
-        if self.position + buf.len() > self.file.size.load(Ordering::Relaxed) {
-            return Err(IoError::Eof);
+        let min_size = self.position + buf.len();
+
+        {
+            let old_size = self.file.size.load(Ordering::Relaxed);
+            if min_size > old_size {
+                self.resize(min_size).await?;
+            }
         }
 
         let chunk_index = self.chunk_index();
@@ -140,10 +152,20 @@ impl OpenFile {
         let chunk = self.file.get_chunk(chunk_index).await?;
         let mut data = chunk.lock().await;
 
-        let copy_amount = self.copy_chunk_part(buf, &mut data, chunk_offset);
+        let copy_amount = usize::min(self.chunk_size - chunk_offset, buf.len());
+        data[chunk_offset..chunk_offset + copy_amount].copy_from_slice(&buf[..copy_amount]);
         self.position += copy_amount;
 
         Ok(copy_amount)
+    }
+
+    pub async fn resize(&mut self, new_size: usize) -> IoResult<()> {
+        let mut backend = self.file.backend.lock().await;
+
+        backend.resize(new_size).await?;
+        self.file.size.store(new_size, Ordering::Relaxed);
+
+        Ok(())
     }
 }
 
@@ -193,13 +215,6 @@ impl OpenFile {
     }
     const fn chunk_offset(&self) -> usize {
         self.position % self.chunk_size
-    }
-
-    fn copy_chunk_part(&self, src: &[u8], dst: &mut [u8], chunk_offset: usize) -> usize {
-        let remaining_bytes = self.chunk_size - chunk_offset;
-        let copy_amount = usize::min(remaining_bytes, dst.len());
-        dst[..copy_amount].copy_from_slice(&src[chunk_offset..(chunk_offset + copy_amount)]);
-        copy_amount
     }
 }
 

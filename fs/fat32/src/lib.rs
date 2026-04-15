@@ -133,7 +133,9 @@ impl FatVolume {
         fat.set_media(media);
         fat.set_eoc();
 
-        fat.set_entry(2, fat_type.eoc_mark_min());
+        if fat32 {
+            fat.make_eoc(0);
+        }
 
         fat.flush(device).await?;
 

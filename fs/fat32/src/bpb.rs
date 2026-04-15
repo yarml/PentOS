@@ -94,11 +94,7 @@ impl BiosParameterBlock {
         }
     }
     pub const fn fat_pg_first(&self) -> usize {
-        if matches!(self.fat_type(), FatType::Fat32) {
-            32
-        } else {
-            1
-        }
+        self.reserved_pages_count as usize
     }
     pub const fn fat_pg_count(&self) -> usize {
         if self.fat_size_16 != 0 {

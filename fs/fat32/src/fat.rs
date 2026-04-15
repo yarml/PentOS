@@ -50,8 +50,8 @@ impl Fat {
             data_cluster_count,
             dirty_range: None,
             fat_count: 2,
-            // Next free cluster is 3 or 2, as 0 & 1 reserved, 2 is root dir in FAT32, otherwise 2 is free in FAT16,
-            next_free: Some(if fat32 { 3 } else { 2 }),
+            // 0-based: cluster 0 is root dir in FAT32, all clusters free in FAT16
+            next_free: Some(if fat32 { 1 } else { 0 }),
             free_count: data_cluster_count - if fat32 { 1 } else { 0 },
             fsinfo_dirty: true,
         }
@@ -252,6 +252,7 @@ impl Fat {
         } else {
             self.next_free = None;
         }
+        self.make_eoc(next);
         self.free_count -= 1;
         self.fsinfo_dirty = true;
         Some(next)
