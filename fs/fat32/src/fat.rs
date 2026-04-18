@@ -3,6 +3,7 @@ use {
     alloc::{boxed::Box, sync::Arc, vec},
     block::BlockDevice,
     io::IoResult,
+    log::trace,
 };
 
 use crate::media::MediaType;
@@ -106,7 +107,7 @@ impl Fat {
 
         assert!(value & mask == value);
 
-        self.set_entry_raw(index + 2, value);
+        self.set_entry_raw(index + 2, value + 2);
     }
     pub const fn make_eoc(&mut self, index: usize) {
         self.set_entry_raw(index + 2, self.fat_type.eoc_mark_min() as u32);
@@ -255,16 +256,21 @@ impl Fat {
         self.make_eoc(next);
         self.free_count -= 1;
         self.fsinfo_dirty = true;
+
+        trace!("cluster alloc: {next}");
+
         Some(next)
     }
 
-    pub const fn cluster_free(&mut self, index: usize) {
+    pub fn cluster_free(&mut self, index: usize) {
         if self.next_free.is_none() {
             self.next_free = Some(index);
         }
-        self.set_entry(index, 0);
+        self.set_entry_raw(index + 2, 0);
         self.free_count += 1;
         self.fsinfo_dirty = true;
+
+        trace!("cluster free: {index}");
     }
 
     pub const fn cluster_follow(&self, index: usize) -> Option<usize> {
@@ -277,5 +283,36 @@ impl Fat {
         } else {
             Some(raw_entry)
         }
+    }
+}
+
+impl Fat {
+    pub fn as_raw_mut(&mut self) -> &mut [u8] {
+        unsafe {
+            &mut *core::ptr::from_raw_parts_mut(
+                self.fat.as_mut_ptr() as *mut u8,
+                self.fat.len() * core::mem::size_of::<u32>(),
+            )
+        }
+    }
+
+    pub fn recompute_metadata(&mut self) {
+        let mut count = 0;
+        for i in 0..self.data_cluster_count {
+            if self.get_entry(i) == 0 {
+                count += 1;
+            }
+        }
+        self.free_count = count;
+        self.next_free = None;
+        self.dirty_range = None;
+        self.fsinfo_dirty = false;
+    }
+
+    pub fn fat_pg_first(&self) -> usize {
+        self.fat_pg_first
+    }
+    pub fn fat_pg_count(&self, page_size: usize) -> usize {
+        self.fat.len() * core::mem::size_of::<u32>() / page_size
     }
 }

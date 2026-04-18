@@ -7,6 +7,7 @@
 use {
     crate::{
         bpb::BiosParameterBlock,
+        dir::FatDirectory,
         fat::{Fat, FatType},
         format::disk_table,
         fsinfo::FSInfo,
@@ -14,13 +15,14 @@ use {
     },
     alloc::sync::Arc,
     block::BlockDevice,
+    fs::dir::{Directory, Filesystem},
     io::{IoError, IoResult},
-    log::trace,
     sync::AsyncMutex,
 };
 
 extern crate alloc;
 
+pub mod dir;
 pub mod file;
 pub mod media;
 
@@ -32,8 +34,11 @@ mod fsinfo;
 mod random;
 
 pub struct FatVolume {
+    device: Arc<dyn BlockDevice>,
+    #[allow(dead_code)]
     geometry: FatGeometry,
     fat: Arc<AsyncMutex<Fat>>,
+    root: Arc<FatDirectory>,
 }
 
 pub struct FormatOptions {
@@ -44,18 +49,84 @@ pub struct FormatOptions {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct FatGeometry {
-    fat_type: FatType,
-    data_cluster_count: usize,
-    cluster_pg_count: usize,
-    data_region_pg_first: usize,
+pub struct FatGeometry {
+    pub fat_type: FatType,
+    pub data_cluster_count: usize,
+    pub cluster_pg_count: usize,
+    pub data_region_pg_first: usize,
 
-    root_cluster: usize,      // FAT32 only
-    root_dir_pg_first: usize, // FAT16 only
-    root_entry_count: usize,  // FAT16 only
+    pub root_cluster: usize,      // FAT32 only
+    pub root_dir_pg_first: usize, // FAT16/12 only
+    pub root_entry_count: usize,  // FAT16/12 only
 }
 
 impl FatVolume {
+    pub async fn mount(device: Arc<dyn BlockDevice>) -> IoResult<Self> {
+        let device_dim = device.dimensions();
+
+        let mut bpb_buf = device.make_buf(1);
+        device.read_pages(0, &mut bpb_buf).await?;
+
+        // Per FAT spec: bpb_buf[510] == 0x55, bpb_buf[511] == 0xAA.
+        if bpb_buf.len() < 512 || bpb_buf[510] != 0x55 || bpb_buf[511] != 0xAA {
+            return Err(IoError::Corrupted);
+        }
+
+        let bpb = BiosParameterBlock::from_raw_mut(&mut bpb_buf);
+
+        // TODO: i don't wanna think rn about about any page size other than 512
+        if device_dim.page_size != 512 {
+            return Err(IoError::Unsupported);
+        }
+
+        let fat_type = bpb.fat_type();
+
+        // TODO: give FAT12 some care
+        if fat_type == FatType::Fat12 {
+            // Same constraint as `format`.
+            return Err(IoError::Unsupported);
+        }
+
+        let geometry = FatGeometry {
+            fat_type,
+            data_cluster_count: bpb.data_cluster_count(),
+            cluster_pg_count: bpb.cluster_pg_count(),
+            data_region_pg_first: bpb.data_region_pg_first(),
+            root_cluster: bpb.root_cluster(),
+            root_dir_pg_first: bpb.root_dir_pg_first(),
+            root_entry_count: bpb.root_entry_count(),
+        };
+
+        let fat_pg_first = bpb.fat_pg_first();
+        let fat_pg_count = bpb.fat_pg_count();
+
+        let mut fat = Fat::alloc(
+            fat_type,
+            device_dim.page_size,
+            fat_pg_first,
+            fat_pg_count,
+            geometry.data_cluster_count,
+        );
+
+        device.read_pages(fat_pg_first, fat.as_raw_mut()).await?;
+        fat.recompute_metadata();
+
+        let fat = Arc::new(AsyncMutex::new(fat));
+
+        let root = FatDirectory::open_root(geometry, device.clone(), fat.clone()).await?;
+
+        Ok(Self {
+            device,
+            geometry,
+            fat,
+            root,
+        })
+    }
+
+    pub fn root(&self) -> Arc<dyn Directory> {
+        self.root.clone() as Arc<dyn Directory>
+    }
+
     pub async fn format(device: Arc<dyn BlockDevice>, options: FormatOptions) -> IoResult<Self> {
         let device_dim = device.dimensions();
 
@@ -96,29 +167,22 @@ impl FatVolume {
             device.full_zero().await?;
         } else {
             let header_pg_count = if fat32 {
-                // 32 reserved(BPB + FSInfo + backups + lots of empty space) + FATs + root_dir first cluster
                 32 + fat_count * fat_pg_count + cluster_pg_count
             } else {
-                // FAT16
-                // BPB + FATs + root directory
                 1 + fat_count * fat_pg_count + root_dir_pg_count
             };
-
             device.zero_pages(0, header_pg_count).await?;
         }
 
         device.write_pages(0, &bpb_buf).await?;
-
         if fat32 {
             device.write_pages(6, &bpb_buf).await?;
         }
 
         if fat32 {
             let mut fsinfo_buf = device.make_buf(1);
-
             let fsinfo = FSInfo::from_raw_mut(&mut fsinfo_buf);
             fsinfo.format();
-
             device.write_pages(1, &fsinfo_buf).await?;
             device.write_pages(7, &fsinfo_buf).await?;
         }
@@ -132,26 +196,40 @@ impl FatVolume {
         );
         fat.set_media(media);
         fat.set_eoc();
-
         if fat32 {
             fat.make_eoc(0);
         }
+        fat.flush(device.clone()).await?;
 
-        fat.flush(device).await?;
+        let geometry = FatGeometry {
+            fat_type,
+            data_cluster_count,
+            cluster_pg_count,
+            data_region_pg_first,
+            root_cluster,
+            root_dir_pg_first,
+            root_entry_count,
+        };
+        let fat = Arc::new(AsyncMutex::new(fat));
 
-        trace!("FAT format success!");
+        let root = FatDirectory::open_root(geometry, device.clone(), fat.clone()).await?;
 
         Ok(Self {
-            geometry: FatGeometry {
-                fat_type,
-                data_cluster_count,
-                cluster_pg_count,
-                data_region_pg_first,
-                root_cluster,
-                root_dir_pg_first,
-                root_entry_count,
-            },
-            fat: Arc::new(AsyncMutex::new(fat)),
+            device,
+            geometry,
+            fat,
+            root,
         })
+    }
+
+    pub async fn flush(&self) -> IoResult<()> {
+        self.fat.lock().await.flush(self.device.clone()).await?;
+        self.device.flush().await
+    }
+}
+
+impl Filesystem for FatVolume {
+    fn root(&self) -> Arc<dyn Directory> {
+        self.root.clone() as Arc<dyn Directory>
     }
 }
