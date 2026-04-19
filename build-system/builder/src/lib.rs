@@ -16,13 +16,46 @@ pub enum Target {
 }
 
 pub fn add_nasm_lib(libname: &str, assemblies: &[&str]) {
+    if assemblies.is_empty() {
+        return;
+    }
+
     let cfg = getcfg();
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+
     for assembly in assemblies {
         println!("cargo::rerun-if-changed={assembly}");
     }
-    let full_lib_name = format!("lib{}.a", libname);
-    nasm_rs::compile_library_args(&full_lib_name, assemblies, &cfg.nasm_flags())
-        .expect("Could not compile NASM library");
+
+    let mut objects = Vec::new();
+    for assembly in assemblies {
+        let src = PathBuf::from(assembly);
+        let obj = out_dir.join(src.file_stem().unwrap()).with_extension("o");
+
+        let mut cmd = Command::new("nasm");
+        cmd.args(cfg.nasm_flags());
+        cmd.args(["-o", obj.to_str().unwrap(), assembly]);
+
+        let status = cmd.status().expect("failed to run nasm - is it in PATH?");
+        if !status.success() {
+            panic!("NASM failed to assemble: {}", assembly);
+        }
+        objects.push(obj);
+    }
+
+    let lib_path = out_dir.join(format!("lib{}.a", libname));
+    let mut ar = Command::new("llvm-ar");
+    ar.arg("crs").arg(&lib_path);
+    for obj in &objects {
+        ar.arg(obj);
+    }
+
+    let status = ar.status().expect("failed to run llvm-ar");
+    if !status.success() {
+        panic!("llvm-ar failed to create library: {}", libname);
+    }
+
+    println!("cargo::rustc-link-search={}", out_dir.display());
     println!("cargo::rustc-link-lib={libname}");
 }
 
@@ -33,7 +66,7 @@ pub fn build_nasm_flat(src: &str, bin: &str) {
     let status = Command::new("nasm")
         .args(["-f", "bin", "-o", out_file.to_str().unwrap(), src])
         .status()
-        .expect("failed to run nasm");
+        .expect("failed to run nasm - is it in PATH?");
 
     if !status.success() {
         panic!("NASM failed to assemble flat binary");
