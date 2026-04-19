@@ -10,7 +10,7 @@ extern crate alloc;
 pub mod bootinfo;
 pub mod dev;
 pub mod hart;
-pub mod sync;
+pub mod process;
 pub mod task;
 
 mod interrupts;

@@ -104,14 +104,14 @@ jobs:
             ~/.rustup/toolchains
           key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
       - name: Build Release Image
-        run: cargo chef generate img system -p release
+        run: cargo chef generate img disk -p release
       - name: Upload Release Image
         uses: actions/upload-artifact@v7.0.0
         with:
           name: pentos-release.img
           path: .build/release/img/pentos.img
       - name: Build Debug Image
-        run: cargo chef generate img system -p debug
+        run: cargo chef generate img disk -p debug
       - name: Upload Debug Image
         uses: actions/upload-artifact@v7.0.0
         with:
