@@ -6,7 +6,6 @@ use {
     std::{
         fs::{self, File},
         io::{Read, Seek, SeekFrom, Write},
-        os::unix::fs::MetadataExt,
         path::Path,
         pin::Pin,
         sync::Mutex,
@@ -54,7 +53,8 @@ impl FileBlockDevice {
     }
 
     pub fn open(path: &Path, page_size: usize, frame_size: usize) -> Self {
-        let total_size = fs::metadata(path).or_fatal("metadata").size() as usize;
+
+        let total_size = fs::metadata(path).or_fatal("metadata").len() as usize;
         let page_count = total_size / page_size;
 
         let fd = File::options()

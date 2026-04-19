@@ -15,7 +15,6 @@ use {
     io::IoResult,
     std::{
         fs,
-        os::unix::fs::MetadataExt,
         path::{Path, PathBuf},
         rc::Rc,
         sync::Arc,
@@ -89,7 +88,7 @@ impl Target for GenerateFatImgTarget {
                 let page_count = size / page_size;
                 Arc::new(
                     if let Ok(existing_size) =
-                        fs::metadata(path).map(|metadata| metadata.size() as usize)
+                        fs::metadata(path).map(|metadata| metadata.len() as usize)
                         && existing_size == size
                     {
                         Status::doing("Reusing", format!("partition file {path:?}"));

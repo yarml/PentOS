@@ -14,7 +14,7 @@ use {
     },
     block::BlockDevice,
     gpt::{GptDisk, format::FormatOptions, guid::Guid},
-    std::{fs, os::unix::fs::MetadataExt, path::PathBuf, rc::Rc, sync::Arc},
+    std::{fs, path::PathBuf, rc::Rc, sync::Arc},
 };
 
 pub struct DiskImgPartition {
@@ -78,7 +78,7 @@ impl Target for GenerateDiskImgTarget {
 
         Status::push("Generating", format!("disk image {img_path:?}"));
         let device = Arc::new(
-            if let Ok(size) = fs::metadata(&img_path).map(|metadata| metadata.size() as usize)
+            if let Ok(size) = fs::metadata(&img_path).map(|metadata| metadata.len() as usize)
                 && size == self.size
             {
                 Status::doing("Reusing", format!("disk file {img_path:?}"));
