@@ -1,7 +1,9 @@
+#![feature(exit_status_error)]
+
 use {
     proc_macro2::TokenStream,
     quote::quote,
-    std::{collections::HashMap, env, fs, path::Path},
+    std::{collections::HashMap, env, fs, path::Path, process::Command},
 };
 
 const PSF2_MAGIC: u32 = 0x864a_b572;
@@ -23,7 +25,10 @@ fn read_u32_le(data: &[u8], offset: usize) -> u32 {
 }
 
 fn parse_header(data: &[u8]) -> Psf2Header {
-    assert!(data.len() >= 32, "Font file too small to contain PSF2 header");
+    assert!(
+        data.len() >= 32,
+        "Font file too small to contain PSF2 header"
+    );
     let magic = read_u32_le(data, 0);
     assert_eq!(magic, PSF2_MAGIC, "Not a PSF2 font (bad magic)");
     Psf2Header {
@@ -63,14 +68,18 @@ fn parse_unicode_table(data: &[u8], header: &Psf2Header) -> HashMap<u16, Vec<Vec
 
             if byte == PSF2_SEPARATOR {
                 if !current_seq.is_empty() && !in_ligature {
-                    map.entry(glyph_index).or_default().push(current_seq.clone());
+                    map.entry(glyph_index)
+                        .or_default()
+                        .push(current_seq.clone());
                 }
                 current_seq.clear();
                 in_ligature = false;
                 break;
             } else if byte == PSF2_STARTSEQ {
                 if !current_seq.is_empty() && !in_ligature {
-                    map.entry(glyph_index).or_default().push(current_seq.clone());
+                    map.entry(glyph_index)
+                        .or_default()
+                        .push(current_seq.clone());
                 }
                 current_seq.clear();
                 in_ligature = true;
@@ -84,7 +93,9 @@ fn parse_unicode_table(data: &[u8], header: &Psf2Header) -> HashMap<u16, Vec<Vec
                         || (next & 0x80 == 0)
                         || (next & 0xC0 == 0xC0);
                     if next_is_boundary && is_complete_utf8(&current_seq) && !in_ligature {
-                        map.entry(glyph_index).or_default().push(current_seq.clone());
+                        map.entry(glyph_index)
+                            .or_default()
+                            .push(current_seq.clone());
                         current_seq.clear();
                     }
                 }
@@ -92,7 +103,9 @@ fn parse_unicode_table(data: &[u8], header: &Psf2Header) -> HashMap<u16, Vec<Vec
         }
 
         if !current_seq.is_empty() && !in_ligature && is_complete_utf8(&current_seq) {
-            map.entry(glyph_index).or_default().push(current_seq.clone());
+            map.entry(glyph_index)
+                .or_default()
+                .push(current_seq.clone());
         }
 
         glyph_index += 1;
@@ -266,11 +279,26 @@ fn generate_feed_fn(fallback_glyph: u16) -> TokenStream {
     }
 }
 
+const FONT_FILE: &str = "../../.build/font.psf";
+
 fn main() {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let font_path = Path::new(&manifest_dir).join("../../run/font.psf");
+    let workspace_dir = std::fs::canonicalize(Path::new(&manifest_dir).join("../..")).unwrap();
+
+    let font_path = Path::new(&manifest_dir).join(FONT_FILE);
 
     println!("cargo:rerun-if-changed={}", font_path.display());
+
+    if !fs::exists(&font_path).unwrap() {
+        Command::new("target/debug/chef")
+            .current_dir(workspace_dir)
+            .arg("download")
+            .arg("font")
+            .output()
+            .expect("could not install font")
+            .exit_ok()
+            .expect("could not install font");
+    }
 
     let data = fs::read(&font_path).unwrap_or_else(|e| {
         panic!(

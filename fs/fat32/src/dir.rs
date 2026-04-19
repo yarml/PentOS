@@ -251,7 +251,7 @@ impl FatDirectory {
             .find(|e| UpperName::from_str(&e.display_name()) == key)
             .ok_or(IoError::NotFound)?;
         if !resolved.is_dir() {
-            return Err(IoError::NotFound);
+            return Err(IoError::NotDir);
         }
 
         let dir_cluster = resolved.sfn.cluster() - 2;

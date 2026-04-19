@@ -31,10 +31,8 @@ jobs:
           path: |
             ~/.rustup/toolchains
           key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
-      - name: Setup Build System
-        run: make
       - name: Lint
-        run: make clippy
+        run: cargo chef lint
 
   test:
     runs-on: ubuntu-latest
@@ -55,7 +53,5 @@ jobs:
           path: |
             ~/.rustup/toolchains
           key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
-      - name: Setup Build System
-        run: make
       - name: Run tests
-        run: make test
+        run: cargo chef test

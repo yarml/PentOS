@@ -10,6 +10,8 @@ pub trait RunPolicy {
 pub struct AlwaysRun;
 pub struct MirrorDeps;
 pub struct FilesNotExist(pub Vec<PathBuf>);
+
+#[allow(dead_code)]
 pub struct TimestampsCompare {
     targets: Vec<PathBuf>,
     dependencies: Vec<PathBuf>,
@@ -22,6 +24,7 @@ impl FilesNotExist {
     }
 }
 
+#[allow(dead_code)]
 impl TimestampsCompare {
     pub fn one_target(target: PathBuf, dependencies: Vec<PathBuf>) -> Self {
         Self {

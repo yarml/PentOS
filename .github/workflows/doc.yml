@@ -37,10 +37,8 @@ jobs:
           path: |
             ~/.rustup/toolchains
           key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
-      - name: Setup Build System
-        run: make
       - name: Generate Docs
-        run: make doc
+        run: cargo chef doc
       - name: Upload Docs (ZIP)
         uses: actions/upload-artifact@v7.0.0
         with:

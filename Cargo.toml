@@ -28,7 +28,6 @@ members = [
     "test",
     "user/lib/runtime",
     "user/core/init",
-    "build-system/chef2",
 ]
 resolver = "3"
 
@@ -50,6 +49,7 @@ flate2 = "1.1.9"
 md5 = "0.8.0"
 getrandom = "0.4.2"
 env_logger = "0.11.10"
+tempfile = "3.27.0"
 
 # Builder dependencies
 nasm-rs = "0.3.2"

@@ -81,6 +81,7 @@ pub fn flat_pkg_bin(pkg: &Pkg, profile: BuildProfile) -> PathBuf {
     normalize_path(rel_path)
 }
 
+#[allow(dead_code)]
 pub fn flat_pkg_perm(pkg: &Pkg, profile: BuildProfile) -> PathBuf {
     let rel_path = format!(
         "{flat}/pkg/{pkg}/perms/{bin}.toml",

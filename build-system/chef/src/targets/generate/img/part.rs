@@ -152,21 +152,6 @@ impl Target for GenerateFatImgTarget {
     }
 }
 
-/// Recursively copy the contents of `host_dir` into `fat_dir`.
-///
-/// Every file in `host_dir` becomes a file in `fat_dir`; every
-/// subdirectory becomes a subdirectory, populated recursively.
-/// Symlinks are followed (std::fs::read_dir follows them by default).
-///
-/// Hidden files (names starting with `.`) are included. The function
-/// does NOT skip `.` or `..` because `std::fs::read_dir` never yields
-/// them.
-///
-/// # Errors
-///
-/// Returns the first I/O error encountered, whether from the host
-/// filesystem or from the FAT layer. The FAT volume may be partially
-/// populated on error.
 pub async fn populate(fat_dir: &Arc<dyn Directory>, host_dir: &Path) -> IoResult<()> {
     let entries = std::fs::read_dir(host_dir).map_err(|_| io::IoError::NotFound)?;
 
@@ -179,7 +164,6 @@ pub async fn populate(fat_dir: &Arc<dyn Directory>, host_dir: &Path) -> IoResult
 
         if file_type.is_dir() {
             let sub = fat_dir.create_dir(name_str).await?;
-            // Recurse into the subdirectory.
             Box::pin(populate(&sub, &full_path)).await?;
         } else if file_type.is_file() {
             let file = fat_dir.create_file(name_str).await?;
@@ -193,10 +177,6 @@ pub async fn populate(fat_dir: &Arc<dyn Directory>, host_dir: &Path) -> IoResult
 
             file.flush().await?;
         }
-        // Symlinks that resolve to files/dirs are already handled above
-        // because `file_type()` follows symlinks. Other special file
-        // types (sockets, pipes) are silently skipped — they have no
-        // FAT equivalent.
     }
 
     Ok(())

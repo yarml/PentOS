@@ -19,6 +19,9 @@ pub enum IoError {
     NoSpace,
     Unsupported,
     Corrupted,
+
+    NotFile,
+    NotDir,
 }
 
 pub type IoResult<T> = Result<T, IoError>;
