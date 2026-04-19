@@ -3,7 +3,7 @@ A hobby x86_64 operating system written in Rust, featuring a UEFI bootloader, an
 
 This is the 5th iteration of [HeliumOS](https://github.com/yarml/HeliumOS), hence the name.
 
-**Developer documentation:** [pentos.yarml.com](https://pentos.yarml.com)
+**WIP Developer documentation:** [pentos.yarml.com](https://pentos.yarml.com)
 
 ## Table of Contents
 - [Dependencies](#dependencies)
@@ -16,148 +16,165 @@ This is the 5th iteration of [HeliumOS](https://github.com/yarml/HeliumOS), henc
 - [Acknowledgements](#acknowledgements)
 
 ## Dependencies
-## Base Dependencies
+
+### Base Dependencies
 The following tools must be installed manually before building:
 
 - `cargo` / `rustup`
 - `nasm`
-- `make`
 
-## Optional Dependencies
+### Optional Dependencies
 | Tool | Purpose |
 |-|-|
-| `qemu-system-x86_64` | Required for quickly running PentOS on a VM (`make run-*` & `make debug`). |
-| `gdb`, `tmux`, & `socat` | Required for debugging the kernel (alongside Qemu) (`make debug`). |
-| `mtools`, `e2fsprogs`, & `sfdisk` | Required to create raw `.img` disk images (`make img-*`). |
-| `VBoxManage` | Required to convert images to `.vmdk` or `.iso` format (`make vmdk-*` / `make iso-*`). |
+| `qemu-system-x86_64` | Required for running PentOS in a VM (`cargo chef run` & `cargo chef debug`). |
+| `gdb`, `tmux`, `tee`, & `socat` | Required for debugging the kernel alongside QEMU (`cargo chef debug`). |
 
-## Automatic dependencies
-PentOS depends on other tools, but those not listed above are autmatically managed by the build system itself.
+### Automatic Dependencies
+PentOS depends on additional tools and assets, but those not listed above are automatically managed by the build system itself.
 
-A comprehensive list of all build dependencies can be found in (Cargo.toml).
+A comprehensive list of all Rust build dependencies can be found in `Cargo.toml`.
 
-Additionally OVMF is downloaded and managed automatically by the build system the first time you run `make`.
+OVMF and the console font are downloaded and managed automatically by chef the first time they are needed.
 
 ## Building
-### First-time setup
-Run `make` once to bootstrap the build system and download OVMF:
-
+### Building the Bootloader and Kernel
 ```sh
-make
-```
+# Release build (default)
+cargo chef build bootloader
+cargo chef build kernel
 
-### Building the bootloader, kernel, & user binaries
-```sh
 # Debug build
-make build-bootloader-debug
-make build-kernel-debug
-make build-userbin-debug
-
-# Release build
-make build-bootloader-release
-make build-userbin-release
+cargo chef build -p debug bootloader
+cargo chef build -p debug kernel
 ```
 
 Output locations:
 - Bootloader: `target/uefi/{debug,release}/bootloader.efi`
 - Kernel: `target/kernel/{debug,release}/kernel`
-- user binaries `target/user/{debug,release}/*`
+
+### Building a User Package
+```sh
+cargo chef build pkg <name>
+cargo chef build -p debug pkg <name>
+```
+
+Output location: `target/user/{debug,release}/<name>`
+
+### Linting
+```sh
+cargo chef lint
+```
+
+### Running Unit Tests
+```sh
+cargo chef test
+```
 
 ## Running in QEMU
-These targets build everything automatically before launching QEMU.
+These commands build and generate everything automatically before launching QEMU.
 
 ```sh
 # Run release build
-make run
+cargo chef run
 
 # Run debug build (no debugger attached)
-make run-debug
+cargo chef run -p debug
 
 # Run debug build with GDB + tmux (attaches GDB and a QEMU monitor)
-make debug
+cargo chef debug
 ```
 
-The configuration Qemu uses for these commands can be found at the root `Cargo.toml`. The defaults are:
-- 12 SMP Cores
-- 8GB of RAM
+The QEMU configuration is controlled via `build.toml` (and overrides in `.build.toml`). The defaults are:
+- 12 SMP cores
+- 8 GB of RAM
 - Resolution set to 1920x1080
 
 ## Creating Disk Images
-### Flat
-These will create normal directories containing the system
+
+### Flat (directory layout)
+Creates a directory tree representing the filesystem contents.
+
 ```sh
-make flat-release   # run/release/flat
-make flat-debug     # run/debug/flat
+# Release
+cargo chef generate flat
+
+# Debug
+cargo chef generate -p debug flat
+```
+
+You can also generate individual partitions:
+
+```sh
+cargo chef generate flat boot
+cargo chef generate flat system
 ```
 
 ### Raw `.img`
-Requires `mtools` and `parted`.
+Creates a raw GPT disk image containing both the boot and system partitions.
 
 ```sh
-make img-release   # run/release/pentos.img
-make img-debug     # run/debug/pentos.img
+# Release
+cargo chef generate img disk
+
+# Debug
+cargo chef generate -p debug img disk
 ```
 
-### VMDK (VirtualBox / VMware)
-Requires `VBoxManage`. Depends on the `.img` targets above.
+Individual partition images:
 
 ```sh
-make vmdk-release  # run/release/pentos.vmdk
-make vmdk-debug    # run/debug/pentos.vmdk
+cargo chef generate img boot
+cargo chef generate img system
 ```
 
-### ISO
-Requires `VBoxManage`. Also depends on the `.img` targets.
+Output: `.build/{debug,release}/img/pentos.img`
+
+Optional page/frame size flags (defaults: `--page-size 512`, `--frame-size 4096`):
 
 ```sh
-make iso-release   # run/release/pentos.iso
-make iso-debug     # run/debug/pentos.iso
+cargo chef generate -p release img disk --page-size 512 --frame-size 4096
 ```
 
 ## Building the Documentation
 ```sh
-make doc
+cargo chef doc
 ```
 
-This generates rustdoc for the entire workspace under `target/doc/`. An `index.html` redirect to the `pentos` root crate is written automatically.
+This generates rustdoc for the entire workspace under `target/doc/`.
 
 The hosted version of the developer documentation is available at [pentos.yarml.com](https://pentos.yarml.com).
 
 ## Build Configuration
 
-The following settings in the root `Cargo.toml` under `[workspace.metadata.chef]` control build-time behaviour:
+The following settings in `build.toml` control build-time behaviour:
 
-| Key | Default | Description |
+| Key | Example | Description |
 |-----|---------|-------------|
 | `ovmf-version` | `edk2-stable202511-r1` | Version of the OVMF firmware to download. |
-| `ovmf-source-template` | GitHub release URL | URL template used to fetch the OVMF tarball (`$$` is replaced by the version string). |
-| `ovmf-varsfd-path-template` | `$$-bin/x64/vars.fd` | Path inside the tarball for the VARS firmware volume (`$$` is replaced by the version string). |
-| `ovmf-codefd-path-template` | `$$-bin/x64/code.fd` | Path inside the tarball for the CODE firmware volume (`$$` is replaced by the version string). |
-| `install-bootloader` | `/boot/efi/pentos.efi` | Destination used by `make install` for the bootloader EFI binary. |
-| `install-kernel` | `/boot/efi/pentos.kernel` | Destination used by `make install` for the kernel ELF binary. |
-| `qemu-numcores` | `12` | Number of SMP cores used by Qemu. |
-| `qemu-mem` | `8G` | Amount of memory allocated to Qemu VM. |
-| `qemu-resolution` | `1920x1080` | Maximm resolution supported by the Qemu VM. |
+| `ovmf-source-template` | GitHub release URL | URL template for the OVMF tarball (`$$` is replaced by the version string). |
+| `ovmf-varsfd-path-template` | `$$-bin/x64/vars.fd` | Path inside the tarball for the VARS firmware volume. |
+| `ovmf-codefd-path-template` | `$$-bin/x64/code.fd` | Path inside the tarball for the CODE firmware volume. |
+| `font-version` | `1.11.6` | Version of the Tamzen console font to download. |
+| `font-source-template` | GitHub release URL | URL template for the font tarball. |
+| `font-path-template` | `tamzen-font-Tamzen-$$/psf/TamzenForPowerline10x20.psf` | Path inside the tarball for the PSF font file. |
+| `install-bootloader` | `/boot/efi/pentos.efi` | Destination for the bootloader EFI binary on install. |
+| `install-kernel` | `/boot/efi/pentos.kernel` | Destination for the kernel ELF binary on install. |
+| `qemu-bin` | `qemu-system-x86_64` | QEMU binary name or path. |
+| `qemu-numcores` | `12` | Number of SMP cores used by QEMU. |
+| `qemu-mem` | `8G` | Amount of memory allocated to the QEMU VM. |
+| `qemu-resolution` | `1920x1080` | Maximum resolution supported by the QEMU VM. |
 
 ## Runtime Configuration
 
 Kernel behaviour is controlled by compile-time constants in the `config` crate (`config/src/`). The crate is organised into modules:
 
-- `config::topology` — hardware topology limits (e.g. maximum number of supported CPUs, interrupt controllers, and stack sizes per hart).
-- `config::task` — async executor limits (e.g. maximum number of concurrent urgent tasks).
-- `config::dev` — device driver settings (e.g. PS/2 keyboard retry limits and event queue sizes).
+- `config::topology` hardware topology limits (e.g. maximum number of supported CPUs, interrupt controllers, and stack sizes per hart).
+- `config::task` async executor limits (e.g. maximum number of concurrent urgent tasks).
+- `config::dev` device driver settings (e.g. PS/2 keyboard retry limits and event queue sizes).
 
 As an example, `config/src/topology/hart.rs` exposes `MAX_HART_COUNT` (default `16`), which determines the maximum number of CPU cores the OS will boot. The OS will panic at startup if more cores are detected than this constant allows.
 
-Changing any constant in the `config` crate requires a rebuild of the kernel & bootloader.
-
 ## Acknowledgements
 
-The following libraries were not taken as direct Cargo dependencies, but code or design from them was copied and adapted into this repository:
-
-- **[spin](https://github.com/mvdnes/spin-rs)** (MIT) - The `lib/spinlocks` crate is heavily inspired by and contains code adapted from `spin`. It provides `SpinMutex`, `SpinRwLock`, and `SpinOnce` primitives tailored to the kernel environment.
-- **[futures](https://github.com/rust-lang/futures-rs)** (MIT/Apache-2.0) - The async stream in `system/klib/src/task/stream.rs` in addition to other system in the future probably
-
-## License
-
-PentOS is licensed under the [GNU General Public License v3.0 or later](LICENSE).
+- [rust-osdev/ovmf-prebuilt](https://github.com/rust-osdev/ovmf-prebuilt) for pre-built OVMF firmware binaries.
+- [sunaku/tamzen-font](https://github.com/sunaku/tamzen-font) for the Tamzen console font.
