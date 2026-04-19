@@ -2,27 +2,45 @@ use {
     crate::{allocator::PreBootAllocator, misc},
     elf::{Elf, ElfClass, ElfType},
     uefi::{
-        CStr16, Identify,
+        CStr16, Guid, Identify,
         boot::{self, SearchType},
+        guid,
         proto::media::{
             file::{File, FileAttribute, FileMode},
             fs::SimpleFileSystem,
+            partition::PartitionInfo,
         },
     },
 };
 
-// TODO: Load kernel from PentFS partition
+// TODO: we are defining this twice, once in fs/gpt, and once here
+const PENTOS_SYSTEM_TYPE_GUID: Guid = guid!("BE179251-0C3E-49F7-9804-90395571005E");
+
 pub fn load_kernel(allocator: &PreBootAllocator) -> Elf<'static> {
-    let simple_fs_handle =
-        *boot::locate_handle_buffer(SearchType::ByProtocol(&SimpleFileSystem::GUID))
-            .expect("Failed to locate SimpleFileSystem protocol")
-            .first()
-            .expect("No SimpleFileSystem protocol found");
+    let handles = boot::locate_handle_buffer(SearchType::ByProtocol(&SimpleFileSystem::GUID))
+        .expect("Failed to locate SimpleFileSystem handles");
+
+    let simple_fs_handle = handles
+        .iter()
+        .copied()
+        .find(|&handle| {
+            let Ok(partition_info) = boot::open_protocol_exclusive::<PartitionInfo>(handle) else {
+                return false;
+            };
+
+            if let Some(gpt_entry) = partition_info.gpt_partition_entry() {
+                let part_type_guid = gpt_entry.partition_type_guid.0;
+                part_type_guid == PENTOS_SYSTEM_TYPE_GUID
+            } else {
+                false
+            }
+        })
+        .expect("No PentOS system partition found");
     let mut simple_fs = boot::open_protocol_exclusive::<SimpleFileSystem>(simple_fs_handle)
         .expect("Failed to open SimpleFileSystem protocol");
     let mut volume = simple_fs.open_volume().expect("Failed to open volume");
 
-    let filename = "pentos.kernel";
+    let filename = "sys\\kernel";
     let mut file_buf = [0u16; 256];
     let filename_wide =
         CStr16::from_str_with_buf(filename, &mut file_buf).expect("Filename too long");

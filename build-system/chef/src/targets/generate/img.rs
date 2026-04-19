@@ -32,7 +32,7 @@ pub fn disk(profile: BuildProfile, page_size: usize, frame_size: usize) -> Gener
                 Rc::new(targets::generate::flat(GeneratePartition::Boot, profile)),
             ),
             DiskImgPartition::new(
-                Guid::EFI_SYSTEM,
+                Guid::PENTOS_SYSTEM,
                 "PENTOS",
                 CONFIG.img_part_system_size_mb,
                 PathBuf::from(paths::flat_dir(GeneratePartition::System, profile)),
