@@ -1,0 +1,252 @@
+[layout]
+name = "English (US) - QWERTY"
+
+# Numbers
+
+[[layout.key]]
+name = "BACKTICK"
+normal = '`'
+shifted = '~'
+
+[[layout.key]]
+name = "N1"
+normal = '1'
+shifted = '!'
+
+[[layout.key]]
+name = "N2"
+normal = '2'
+shifted = '@'
+
+[[layout.key]]
+name = "N3"
+normal = '3'
+shifted = '#'
+
+[[layout.key]]
+name = "N4"
+normal = '4'
+shifted = '$'
+
+[[layout.key]]
+name = "N5"
+normal = '5'
+shifted = '%'
+
+[[layout.key]]
+name = "N6"
+normal = '6'
+shifted = '^'
+
+[[layout.key]]
+name = "N7"
+normal = '7'
+shifted = '&'
+
+[[layout.key]]
+name = "N8"
+normal = '8'
+shifted = '*'
+
+[[layout.key]]
+name = "N9"
+normal = '9'
+shifted = '('
+
+[[layout.key]]
+name = "N0"
+normal = '0'
+shifted = ')'
+
+[[layout.key]]
+name = "MINUS"
+normal = '-'
+shifted = '_'
+
+[[layout.key]]
+name = "EQUAL"
+normal = '='
+shifted = '+'
+
+# Top letters
+
+[[layout.key]]
+name = "Q"
+normal = 'q'
+shifted = 'Q'
+
+[[layout.key]]
+name = "W"
+normal = 'w'
+shifted = 'W'
+
+[[layout.key]]
+name = "E"
+normal = 'e'
+shifted = 'E'
+
+[[layout.key]]
+name = "R"
+normal = 'r'
+shifted = 'R'
+
+[[layout.key]]
+name = "T"
+normal = 't'
+shifted = 'T'
+
+[[layout.key]]
+name = "Y"
+normal = 'y'
+shifted = 'Y'
+
+[[layout.key]]
+name = "U"
+normal = 'u'
+shifted = 'U'
+
+[[layout.key]]
+name = "I"
+normal = 'i'
+shifted = 'I'
+
+[[layout.key]]
+name = "O"
+normal = 'o'
+shifted = 'O'
+
+[[layout.key]]
+name = "P"
+normal = 'p'
+shifted = 'P'
+
+[[layout.key]]
+name = "BRACKET_OPEN"
+normal = '['
+shifted = '{'
+
+[[layout.key]]
+name = "BRACKET_CLOSE"
+normal = ']'
+shifted = '}'
+
+[[layout.key]]
+name = "BACKSLASH"
+normal = '\'
+shifted = '|'
+
+# Middle letters
+
+[[layout.key]]
+name = "A"
+normal = 'a'
+shifted = 'A'
+
+[[layout.key]]
+name = "S"
+normal = 's'
+shifted = 'S'
+
+[[layout.key]]
+name = "D"
+normal = 'd'
+shifted = 'D'
+
+[[layout.key]]
+name = "F"
+normal = 'f'
+shifted = 'F'
+
+[[layout.key]]
+name = "G"
+normal = 'g'
+shifted = 'G'
+
+[[layout.key]]
+name = "H"
+normal = 'h'
+shifted = 'H'
+
+[[layout.key]]
+name = "J"
+normal = 'j'
+shifted = 'J'
+
+[[layout.key]]
+name = "K"
+normal = 'k'
+shifted = 'K'
+
+[[layout.key]]
+name = "L"
+normal = 'l'
+shifted = 'L'
+
+[[layout.key]]
+name = "SEMICOLON"
+normal = ';'
+shifted = ':'
+
+[[layout.key]]
+name = "QUOTE"
+normal = "'"
+shifted = '"'
+
+# Bottom letters
+
+[[layout.key]]
+name = "Z"
+normal = 'z'
+shifted = 'Z'
+
+[[layout.key]]
+name = "X"
+normal = 'x'
+shifted = 'X'
+
+[[layout.key]]
+name = "C"
+normal = 'c'
+shifted = 'C'
+
+[[layout.key]]
+name = "V"
+normal = 'v'
+shifted = 'V'
+
+[[layout.key]]
+name = "B"
+normal = 'b'
+shifted = 'B'
+
+[[layout.key]]
+name = "N"
+normal = 'n'
+shifted = 'N'
+
+[[layout.key]]
+name = "M"
+normal = 'm'
+shifted = 'M'
+
+[[layout.key]]
+name = "COMMA"
+normal = ','
+shifted = '<'
+
+[[layout.key]]
+name = "DOT"
+normal = '.'
+shifted = '>'
+
+[[layout.key]]
+name = "SLASH"
+normal = '/'
+shifted = '?'
+
+# Space
+
+[[layout.key]]
+name = "SPACE"
+normal = ' '
+shifted = ' '

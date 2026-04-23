@@ -2,25 +2,12 @@ use {
     proc_macro2::TokenStream,
     quote::{format_ident, quote},
     serde::Deserialize,
-    std::{collections::HashMap, env, fs, path::Path},
+    std::collections::HashMap,
 };
-
-#[derive(Deserialize)]
-struct KeysFile {
-    key: Vec<KeyDef>,
-}
-
-#[derive(Deserialize)]
-struct KeyDef {
-    name: String,
-    #[serde(rename = "type")]
-    ty: KeyType,
-    scancode: Option<u8>,
-}
 
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
-enum KeyType {
+pub enum KeyType {
     Simple,
     Extended,
     PrintScreen,
@@ -28,7 +15,7 @@ enum KeyType {
 }
 
 #[derive(Clone)]
-enum KeySeq {
+pub enum KeySeq {
     Simple(u8),
     Extended(u8),
     PrintScreen,
@@ -91,43 +78,7 @@ fn insert_sequence(
     states[current].output = Some((key_name.to_string(), is_press, is_tap));
 }
 
-fn generate_keys(keys: &[(usize, String, KeySeq)]) -> TokenStream {
-    let consts: Vec<TokenStream> = keys
-        .iter()
-        .map(|(id, name, _)| {
-            let ident = format_ident!("KEY_{}", name);
-            quote! { pub const #ident: Key = Key::of_id(#id); }
-        })
-        .collect();
-
-    let match_cases: Vec<TokenStream> = keys
-        .iter()
-        .map(|(id, name, _)| {
-            let ident = format_ident!("KEY_{}", name);
-            quote! { #id => stringify!(#ident) }
-        })
-        .collect();
-
-    let keys_count: usize = keys.len();
-
-    quote! {
-        #(#consts)*
-
-        pub const KEYS_COUNT: usize = #keys_count;
-
-        impl core::fmt::Debug for Key {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                let name = match self.id {
-                    #(#match_cases),*,
-                    _ => unreachable!()
-                };
-                write!(f, "{}", name)
-            }
-        }
-    }
-}
-
-fn generate_state_machine(keys: &[(usize, String, KeySeq)]) -> TokenStream {
+pub fn generate_state_machine(keys: &[(usize, String, KeySeq)]) -> TokenStream {
     let mut states: Vec<State> = vec![State::new()];
 
     for (_, name, seq) in keys {
@@ -169,11 +120,11 @@ fn generate_state_machine(keys: &[(usize, String, KeySeq)]) -> TokenStream {
             if let Some((key_name, is_press, is_tap)) = &state.output {
                 let key_ident = format_ident!("KEY_{}", key_name);
                 if *is_tap {
-                    quote! { Some(KeyEvent::Tap(#key_ident)) }
+                    quote! { Some(KeyEvent::Tap(crate::#key_ident)) }
                 } else if *is_press {
-                    quote! { Some(KeyEvent::Pressed(#key_ident)) }
+                    quote! { Some(KeyEvent::Pressed(crate::#key_ident)) }
                 } else {
-                    quote! { Some(KeyEvent::Released(#key_ident)) }
+                    quote! { Some(KeyEvent::Released(crate::#key_ident)) }
                 }
             } else {
                 quote! { None }
@@ -190,49 +141,4 @@ fn generate_state_machine(keys: &[(usize, String, KeySeq)]) -> TokenStream {
             #(#outputs),*
         ];
     }
-}
-
-fn main() {
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let keys_toml = Path::new(&manifest_dir).join("keys.toml");
-
-    println!("cargo:rerun-if-changed={}", keys_toml.display());
-
-    let content = fs::read_to_string(&keys_toml).expect("Failed to read keys.toml");
-    let keys_file: KeysFile = toml::from_str(&content).expect("Failed to parse keys.toml");
-
-    let keys: Vec<(usize, String, KeySeq)> = keys_file
-        .key
-        .into_iter()
-        .enumerate()
-        .map(|(id, def)| {
-            let seq = match def.ty {
-                KeyType::Simple => {
-                    KeySeq::Simple(def.scancode.expect("simple key requires scancode"))
-                }
-                KeyType::Extended => {
-                    KeySeq::Extended(def.scancode.expect("extended key requires scancode"))
-                }
-                KeyType::PrintScreen => KeySeq::PrintScreen,
-                KeyType::Pause => KeySeq::Pause,
-            };
-            (id, def.name, seq)
-        })
-        .collect();
-
-    let out_dir = env::var("OUT_DIR").unwrap();
-
-    let keys_tokens = generate_keys(&keys);
-    fs::write(
-        Path::new(&out_dir).join("keys.rs"),
-        prettyplease::unparse(&syn::parse2(keys_tokens).unwrap()),
-    )
-    .unwrap();
-
-    let sm_tokens = generate_state_machine(&keys);
-    fs::write(
-        Path::new(&out_dir).join("state_machine.rs"),
-        prettyplease::unparse(&syn::parse2(sm_tokens).unwrap()),
-    )
-    .unwrap();
 }

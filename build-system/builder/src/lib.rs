@@ -1,4 +1,12 @@
-use std::{env, path::PathBuf, process::Command, sync::Mutex};
+use std::{
+    env,
+    fs::{self, ReadDir},
+    path::{Path, PathBuf},
+    process::Command,
+    sync::Mutex,
+};
+
+use proc_macro2::TokenStream;
 
 static CONFIG: Mutex<Config> = Mutex::new(Config {
     target: Target::Elf64,
@@ -72,6 +80,34 @@ pub fn build_nasm_flat(src: &str, bin: &str) {
         panic!("NASM failed to assemble flat binary");
     }
     println!("cargo:rerun-if-changed={src}");
+}
+
+/// Load a file relative to crate root
+pub fn load_file<P: AsRef<Path>>(path: P) -> String {
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let file = Path::new(&manifest_dir).join(path);
+
+    println!("cargo:rerun-if-changed={}", file.display());
+
+    fs::read_to_string(&file).unwrap_or_else(|_| panic!("Failed to read {}", file.display()))
+}
+
+pub fn load_dir<P: AsRef<Path>>(path: P) -> ReadDir {
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let dir = Path::new(&manifest_dir).join(path);
+
+    let dirname = dir.display().to_string();
+
+    fs::read_dir(dir).unwrap_or_else(|_| panic!("Failed to open directory {dirname}"))
+}
+
+pub fn generate_rs(name: &str, tokens: TokenStream) {
+    let out_dir = env::var("OUT_DIR").unwrap();
+    fs::write(
+        Path::new(&out_dir).join(name),
+        prettyplease::unparse(&syn::parse2(tokens).unwrap()),
+    )
+    .unwrap();
 }
 
 pub fn configure(config: Config) {

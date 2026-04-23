@@ -1,0 +1,265 @@
+[layout]
+name = "French (FR) - AZERTY"
+
+# Numbers row
+[[layout.key]]
+name = "BACKTICK"
+normal = '²'
+shifted = '²'
+
+[[layout.key]]
+name = "N1"
+normal = '&'
+shifted = '1'
+
+[[layout.key]]
+name = "N2"
+normal = 'é'
+shifted = '2'
+alt = '~'
+
+[[layout.key]]
+name = "N3"
+normal = '"'
+shifted = '3'
+alt = '#'
+
+[[layout.key]]
+name = "N4"
+normal = "'"
+shifted = '4'
+alt = '{'
+
+[[layout.key]]
+name = "N5"
+normal = '('
+shifted = '5'
+alt = '['
+
+[[layout.key]]
+name = "N6"
+normal = '-'
+shifted = '6'
+alt = '|'
+
+[[layout.key]]
+name = "N7"
+normal = 'è'
+shifted = '7'
+alt = '`'
+
+[[layout.key]]
+name = "N8"
+normal = '_'
+shifted = '8'
+alt = '\'
+
+[[layout.key]]
+name = "N9"
+normal = 'ç'
+shifted = '9'
+alt = '^'
+
+[[layout.key]]
+name = "N0"
+normal = 'à'
+shifted = '0'
+alt = '@'
+
+[[layout.key]]
+name = "MINUS"
+normal = ')'
+shifted = '°'
+alt = ']'
+
+[[layout.key]]
+name = "EQUAL"
+normal = '='
+shifted = '+'
+alt = '}'
+
+# Top letters row
+[[layout.key]]
+name = "Q"
+normal = 'a'
+shifted = 'A'
+
+[[layout.key]]
+name = "W"
+normal = 'z'
+shifted = 'Z'
+
+[[layout.key]]
+name = "E"
+normal = 'e'
+shifted = 'E'
+alt = '€'
+
+[[layout.key]]
+name = "R"
+normal = 'r'
+shifted = 'R'
+
+[[layout.key]]
+name = "T"
+normal = 't'
+shifted = 'T'
+
+[[layout.key]]
+name = "Y"
+normal = 'y'
+shifted = 'Y'
+
+[[layout.key]]
+name = "U"
+normal = 'u'
+shifted = 'U'
+
+[[layout.key]]
+name = "I"
+normal = 'i'
+shifted = 'I'
+
+[[layout.key]]
+name = "O"
+normal = 'o'
+shifted = 'O'
+
+[[layout.key]]
+name = "P"
+normal = 'p'
+shifted = 'P'
+
+[[layout.dead-key]]
+name = "BRACKET_OPEN"
+normal = '^'
+shifted = '¨'
+
+[[layout.key]]
+name = "BRACKET_CLOSE"
+normal = '$'
+shifted = '£'
+alt = '¤'
+
+[[layout.key]]
+name = "BACKSLASH"
+normal = '*'
+shifted = 'µ'
+
+# Middle letters row
+[[layout.key]]
+name = "A"
+normal = 'q'
+shifted = 'Q'
+
+[[layout.key]]
+name = "S"
+normal = 's'
+shifted = 'S'
+
+[[layout.key]]
+name = "D"
+normal = 'd'
+shifted = 'D'
+
+[[layout.key]]
+name = "F"
+normal = 'f'
+shifted = 'F'
+
+[[layout.key]]
+name = "G"
+normal = 'g'
+shifted = 'G'
+
+[[layout.key]]
+name = "H"
+normal = 'h'
+shifted = 'H'
+
+[[layout.key]]
+name = "J"
+normal = 'j'
+shifted = 'J'
+
+[[layout.key]]
+name = "K"
+normal = 'k'
+shifted = 'K'
+
+[[layout.key]]
+name = "L"
+normal = 'l'
+shifted = 'L'
+
+[[layout.key]]
+name = "SEMICOLON"
+normal = 'm'
+shifted = 'M'
+
+[[layout.key]]
+name = "QUOTE"
+normal = 'ù'
+shifted = '%'
+
+# Bottom letters row
+[[layout.key]]
+name = "Z"
+normal = 'w'
+shifted = 'W'
+
+[[layout.key]]
+name = "X"
+normal = 'x'
+shifted = 'X'
+
+[[layout.key]]
+name = "C"
+normal = 'c'
+shifted = 'C'
+
+[[layout.key]]
+name = "V"
+normal = 'v'
+shifted = 'V'
+
+[[layout.key]]
+name = "B"
+normal = 'b'
+shifted = 'B'
+
+[[layout.key]]
+name = "N"
+normal = 'n'
+shifted = 'N'
+
+[[layout.key]]
+name = "M"
+normal = ','
+shifted = '?'
+
+[[layout.key]]
+name = "COMMA"
+normal = ';'
+shifted = '.'
+
+[[layout.key]]
+name = "DOT"
+normal = ':'
+shifted = '/'
+
+[[layout.key]]
+name = "SLASH"
+normal = '!'
+shifted = '§'
+
+[[layout.key]]
+name = "ISO_EXTRA"
+normal = '<'
+shifted = '>'
+alt = '|'
+
+[[layout.key]]
+name = "KEYPAD_DOT"
+normal = ','
+shifted = ','

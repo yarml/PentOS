@@ -52,7 +52,7 @@ env_logger = "0.11.10"
 tempfile = "3.27.0"
 
 prettyplease = "0.2.37"
-toml = "1.1.0"
+toml = "1.1.2"
 syn = { version = "2.0.117", features = ["full"] }
 quote = "1.0.45"
 proc-macro2 = "1.0.106"
@@ -92,20 +92,3 @@ fat32 = { path = "fs/fat32" }
 
 # user space crates
 runtime = { path = "user/lib/runtime" }
-
-[workspace.metadata.chef]
-ovmf-version = "edk2-stable202511-r1"
-ovmf-source-template = "https://github.com/rust-osdev/ovmf-prebuilt/releases/download/$$/$$-bin.tar.xz"
-ovmf-varsfd-path-template = "$$-bin/x64/vars.fd"
-ovmf-codefd-path-template = "$$-bin/x64/code.fd"
-
-font-version = "1.11.6"
-font-source-template = "https://github.com/sunaku/tamzen-font/archive/refs/tags/Tamzen-$$.tar.gz"
-font-path-template = "tamzen-font-Tamzen-$$/psf/TamzenForPowerline10x20.psf"
-
-install-bootloader = "/boot/efi/pentos.efi"
-install-kernel = "/boot/efi/pentos.kernel"
-
-qemu-numcores = "12"
-qemu-mem = "8G"
-qemu-resolution = "1920x1080"

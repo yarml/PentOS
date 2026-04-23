@@ -6,3 +6,6 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
+proc-macro2.workspace = true
+syn.workspace = true
+prettyplease.workspace = true

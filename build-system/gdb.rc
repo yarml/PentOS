@@ -10,6 +10,6 @@ set logging enabled on
 add-symbol-file .build/debug/flat/boot/efi/boot/bootx64.efi
 add-symbol-file .build/debug/flat/system/sys/kernel
 
-source tools/pent_dbg/pent_dbg.py
+source build-system/tools/pent_dbg/pent_dbg.py
 
 target remote localhost:1234

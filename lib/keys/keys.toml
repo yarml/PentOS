@@ -1,622 +1,628 @@
 [[key]]
+name = "N0"
+ps2-type = "simple"
+ps2-scancode =  0x45
+
+[[key]]
 name = "N1"
-type = "simple"
-scancode = 0x16
+ps2-type = "simple"
+ps2-scancode =  0x16
 
 [[key]]
 name = "N2"
-type = "simple"
-scancode = 0x1E
+ps2-type = "simple"
+ps2-scancode =  0x1E
 
 [[key]]
 name = "N3"
-type = "simple"
-scancode = 0x26
+ps2-type = "simple"
+ps2-scancode =  0x26
 
 [[key]]
 name = "N4"
-type = "simple"
-scancode = 0x25
+ps2-type = "simple"
+ps2-scancode =  0x25
 
 [[key]]
 name = "N5"
-type = "simple"
-scancode = 0x2E
+ps2-type = "simple"
+ps2-scancode =  0x2E
 
 [[key]]
 name = "N6"
-type = "simple"
-scancode = 0x36
+ps2-type = "simple"
+ps2-scancode =  0x36
 
 [[key]]
 name = "N7"
-type = "simple"
-scancode = 0x3D
+ps2-type = "simple"
+ps2-scancode =  0x3D
 
 [[key]]
 name = "N8"
-type = "simple"
-scancode = 0x3E
+ps2-type = "simple"
+ps2-scancode =  0x3E
 
 [[key]]
 name = "N9"
-type = "simple"
-scancode = 0x46
-
-[[key]]
-name = "N0"
-type = "simple"
-scancode = 0x45
+ps2-type = "simple"
+ps2-scancode =  0x46
 
 [[key]]
 name = "A"
-type = "simple"
-scancode = 0x1C
+ps2-type = "simple"
+ps2-scancode =  0x1C
 
 [[key]]
 name = "B"
-type = "simple"
-scancode = 0x32
+ps2-type = "simple"
+ps2-scancode =  0x32
 
 [[key]]
 name = "C"
-type = "simple"
-scancode = 0x21
+ps2-type = "simple"
+ps2-scancode =  0x21
 
 [[key]]
 name = "D"
-type = "simple"
-scancode = 0x23
+ps2-type = "simple"
+ps2-scancode =  0x23
 
 [[key]]
 name = "E"
-type = "simple"
-scancode = 0x24
+ps2-type = "simple"
+ps2-scancode =  0x24
 
 [[key]]
 name = "F"
-type = "simple"
-scancode = 0x2B
+ps2-type = "simple"
+ps2-scancode =  0x2B
 
 [[key]]
 name = "G"
-type = "simple"
-scancode = 0x34
+ps2-type = "simple"
+ps2-scancode =  0x34
 
 [[key]]
 name = "H"
-type = "simple"
-scancode = 0x33
+ps2-type = "simple"
+ps2-scancode =  0x33
 
 [[key]]
 name = "I"
-type = "simple"
-scancode = 0x43
+ps2-type = "simple"
+ps2-scancode =  0x43
 
 [[key]]
 name = "J"
-type = "simple"
-scancode = 0x3B
+ps2-type = "simple"
+ps2-scancode =  0x3B
 
 [[key]]
 name = "K"
-type = "simple"
-scancode = 0x42
+ps2-type = "simple"
+ps2-scancode =  0x42
 
 [[key]]
 name = "L"
-type = "simple"
-scancode = 0x4B
+ps2-type = "simple"
+ps2-scancode =  0x4B
 
 [[key]]
 name = "M"
-type = "simple"
-scancode = 0x3A
+ps2-type = "simple"
+ps2-scancode =  0x3A
 
 [[key]]
 name = "N"
-type = "simple"
-scancode = 0x31
+ps2-type = "simple"
+ps2-scancode =  0x31
 
 [[key]]
 name = "O"
-type = "simple"
-scancode = 0x44
+ps2-type = "simple"
+ps2-scancode =  0x44
 
 [[key]]
 name = "P"
-type = "simple"
-scancode = 0x4D
+ps2-type = "simple"
+ps2-scancode =  0x4D
 
 [[key]]
 name = "Q"
-type = "simple"
-scancode = 0x15
+ps2-type = "simple"
+ps2-scancode =  0x15
 
 [[key]]
 name = "R"
-type = "simple"
-scancode = 0x2D
+ps2-type = "simple"
+ps2-scancode =  0x2D
 
 [[key]]
 name = "S"
-type = "simple"
-scancode = 0x1B
+ps2-type = "simple"
+ps2-scancode =  0x1B
 
 [[key]]
 name = "T"
-type = "simple"
-scancode = 0x2C
+ps2-type = "simple"
+ps2-scancode =  0x2C
 
 [[key]]
 name = "U"
-type = "simple"
-scancode = 0x3C
+ps2-type = "simple"
+ps2-scancode =  0x3C
 
 [[key]]
 name = "V"
-type = "simple"
-scancode = 0x2A
+ps2-type = "simple"
+ps2-scancode =  0x2A
 
 [[key]]
 name = "W"
-type = "simple"
-scancode = 0x1D
+ps2-type = "simple"
+ps2-scancode =  0x1D
 
 [[key]]
 name = "X"
-type = "simple"
-scancode = 0x22
+ps2-type = "simple"
+ps2-scancode =  0x22
 
 [[key]]
 name = "Y"
-type = "simple"
-scancode = 0x35
+ps2-type = "simple"
+ps2-scancode =  0x35
 
 [[key]]
 name = "Z"
-type = "simple"
-scancode = 0x1A
+ps2-type = "simple"
+ps2-scancode =  0x1A
 
 [[key]]
 name = "F1"
-type = "simple"
-scancode = 0x05
+ps2-type = "simple"
+ps2-scancode =  0x05
 
 [[key]]
 name = "F2"
-type = "simple"
-scancode = 0x06
+ps2-type = "simple"
+ps2-scancode =  0x06
 
 [[key]]
 name = "F3"
-type = "simple"
-scancode = 0x04
+ps2-type = "simple"
+ps2-scancode =  0x04
 
 [[key]]
 name = "F4"
-type = "simple"
-scancode = 0x0C
+ps2-type = "simple"
+ps2-scancode =  0x0C
 
 [[key]]
 name = "F5"
-type = "simple"
-scancode = 0x03
+ps2-type = "simple"
+ps2-scancode =  0x03
 
 [[key]]
 name = "F6"
-type = "simple"
-scancode = 0x0B
+ps2-type = "simple"
+ps2-scancode =  0x0B
 
 [[key]]
 name = "F7"
-type = "simple"
-scancode = 0x83
+ps2-type = "simple"
+ps2-scancode =  0x83
 
 [[key]]
 name = "F8"
-type = "simple"
-scancode = 0x0A
+ps2-type = "simple"
+ps2-scancode =  0x0A
 
 [[key]]
 name = "F9"
-type = "simple"
-scancode = 0x01
+ps2-type = "simple"
+ps2-scancode =  0x01
 
 [[key]]
 name = "F10"
-type = "simple"
-scancode = 0x09
+ps2-type = "simple"
+ps2-scancode =  0x09
 
 [[key]]
 name = "F11"
-type = "simple"
-scancode = 0x78
+ps2-type = "simple"
+ps2-scancode =  0x78
 
 [[key]]
 name = "F12"
-type = "simple"
-scancode = 0x07
+ps2-type = "simple"
+ps2-scancode =  0x07
 
 [[key]]
 name = "SHIFT_LEFT"
-type = "simple"
-scancode = 0x12
+ps2-type = "simple"
+ps2-scancode =  0x12
 
 [[key]]
 name = "SHIFT_RIGHT"
-type = "simple"
-scancode = 0x59
+ps2-type = "simple"
+ps2-scancode =  0x59
 
 [[key]]
 name = "CONTROL_LEFT"
-type = "simple"
-scancode = 0x14
+ps2-type = "simple"
+ps2-scancode =  0x14
 
 [[key]]
 name = "ALT_LEFT"
-type = "simple"
-scancode = 0x11
+ps2-type = "simple"
+ps2-scancode =  0x11
 
 [[key]]
 name = "LOCK_CAPS"
-type = "simple"
-scancode = 0x58
+ps2-type = "simple"
+ps2-scancode =  0x58
 
 [[key]]
 name = "LOCK_NUMBER"
-type = "simple"
-scancode = 0x77
+ps2-type = "simple"
+ps2-scancode =  0x77
 
 [[key]]
 name = "LOCK_SCROLL"
-type = "simple"
-scancode = 0x7E
+ps2-type = "simple"
+ps2-scancode =  0x7E
 
 [[key]]
 name = "BACKTICK"
-type = "simple"
-scancode = 0x0E
+ps2-type = "simple"
+ps2-scancode =  0x0E
 
 [[key]]
 name = "MINUS"
-type = "simple"
-scancode = 0x4E
+ps2-type = "simple"
+ps2-scancode =  0x4E
 
 [[key]]
 name = "EQUAL"
-type = "simple"
-scancode = 0x55
+ps2-type = "simple"
+ps2-scancode =  0x55
 
 [[key]]
 name = "BRACKET_OPEN"
-type = "simple"
-scancode = 0x54
+ps2-type = "simple"
+ps2-scancode =  0x54
 
 [[key]]
 name = "BRACKET_CLOSE"
-type = "simple"
-scancode = 0x5B
+ps2-type = "simple"
+ps2-scancode =  0x5B
 
 [[key]]
 name = "BACKSLASH"
-type = "simple"
-scancode = 0x5D
+ps2-type = "simple"
+ps2-scancode =  0x5D
 
 [[key]]
 name = "SEMICOLON"
-type = "simple"
-scancode = 0x4C
+ps2-type = "simple"
+ps2-scancode =  0x4C
 
 [[key]]
 name = "QUOTE"
-type = "simple"
-scancode = 0x52
+ps2-type = "simple"
+ps2-scancode =  0x52
 
 [[key]]
 name = "COMMA"
-type = "simple"
-scancode = 0x41
+ps2-type = "simple"
+ps2-scancode =  0x41
 
 [[key]]
 name = "DOT"
-type = "simple"
-scancode = 0x49
+ps2-type = "simple"
+ps2-scancode =  0x49
 
 [[key]]
 name = "SLASH"
-type = "simple"
-scancode = 0x4A
+ps2-type = "simple"
+ps2-scancode =  0x4A
 
 [[key]]
 name = "SPACE"
-type = "simple"
-scancode = 0x29
+ps2-type = "simple"
+ps2-scancode =  0x29
 
 [[key]]
 name = "TAB"
-type = "simple"
-scancode = 0x0D
+ps2-type = "simple"
+ps2-scancode =  0x0D
 
 [[key]]
 name = "ENTER"
-type = "simple"
-scancode = 0x5A
+ps2-type = "simple"
+ps2-scancode =  0x5A
 
 [[key]]
 name = "BACKSPACE"
-type = "simple"
-scancode = 0x66
+ps2-type = "simple"
+ps2-scancode =  0x66
 
 [[key]]
 name = "ESCAPE"
-type = "simple"
-scancode = 0x76
+ps2-type = "simple"
+ps2-scancode =  0x76
 
 [[key]]
 name = "KEYPAD_0"
-type = "simple"
-scancode = 0x70
+ps2-type = "simple"
+ps2-scancode =  0x70
 
 [[key]]
 name = "KEYPAD_1"
-type = "simple"
-scancode = 0x69
+ps2-type = "simple"
+ps2-scancode =  0x69
 
 [[key]]
 name = "KEYPAD_2"
-type = "simple"
-scancode = 0x72
+ps2-type = "simple"
+ps2-scancode =  0x72
 
 [[key]]
 name = "KEYPAD_3"
-type = "simple"
-scancode = 0x7A
+ps2-type = "simple"
+ps2-scancode =  0x7A
 
 [[key]]
 name = "KEYPAD_4"
-type = "simple"
-scancode = 0x6B
+ps2-type = "simple"
+ps2-scancode =  0x6B
 
 [[key]]
 name = "KEYPAD_5"
-type = "simple"
-scancode = 0x73
+ps2-type = "simple"
+ps2-scancode =  0x73
 
 [[key]]
 name = "KEYPAD_6"
-type = "simple"
-scancode = 0x74
+ps2-type = "simple"
+ps2-scancode =  0x74
 
 [[key]]
 name = "KEYPAD_7"
-type = "simple"
-scancode = 0x6C
+ps2-type = "simple"
+ps2-scancode =  0x6C
 
 [[key]]
 name = "KEYPAD_8"
-type = "simple"
-scancode = 0x75
+ps2-type = "simple"
+ps2-scancode =  0x75
 
 [[key]]
 name = "KEYPAD_9"
-type = "simple"
-scancode = 0x7D
+ps2-type = "simple"
+ps2-scancode =  0x7D
 
 [[key]]
 name = "KEYPAD_DOT"
-type = "simple"
-scancode = 0x71
+ps2-type = "simple"
+ps2-scancode =  0x71
 
 [[key]]
 name = "KEYPAD_PLUS"
-type = "simple"
-scancode = 0x79
+ps2-type = "simple"
+ps2-scancode =  0x79
 
 [[key]]
 name = "KEYPAD_MINUS"
-type = "simple"
-scancode = 0x7B
+ps2-type = "simple"
+ps2-scancode =  0x7B
 
 [[key]]
 name = "KEYPAD_STAR"
-type = "simple"
-scancode = 0x7C
+ps2-type = "simple"
+ps2-scancode =  0x7C
 
 [[key]]
 name = "ALT_RIGHT"
-type = "extended"
-scancode = 0x11
+ps2-type = "extended"
+ps2-scancode =  0x11 # ²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²('''''''''''èèèèèèèèèèèèèèèèèèèèèèèèèèèèfrtd'"eeeeeeeeeeeee
+# The comment above has been written by a cat walking on my keyboard, and will forever stay here.
 
 [[key]]
 name = "CONTROL_RIGHT"
-type = "extended"
-scancode = 0x14
+ps2-type = "extended"
+ps2-scancode =  0x14
 
 [[key]]
 name = "GUI_LEFT"
-type = "extended"
-scancode = 0x1F
+ps2-type = "extended"
+ps2-scancode =  0x1F
 
 [[key]]
 name = "GUI_RIGHT"
-type = "extended"
-scancode = 0x27
+ps2-type = "extended"
+ps2-scancode =  0x27
 
 [[key]]
 name = "APPS"
-type = "extended"
-scancode = 0x2F
+ps2-type = "extended"
+ps2-scancode =  0x2F
 
 [[key]]
 name = "INSERT"
-type = "extended"
-scancode = 0x70
+ps2-type = "extended"
+ps2-scancode =  0x70
 
 [[key]]
 name = "DELETE"
-type = "extended"
-scancode = 0x71
+ps2-type = "extended"
+ps2-scancode =  0x71
 
 [[key]]
 name = "HOME"
-type = "extended"
-scancode = 0x6C
+ps2-type = "extended"
+ps2-scancode =  0x6C
 
 [[key]]
 name = "END"
-type = "extended"
-scancode = 0x69
+ps2-type = "extended"
+ps2-scancode =  0x69
 
 [[key]]
 name = "PAGE_UP"
-type = "extended"
-scancode = 0x7D
+ps2-type = "extended"
+ps2-scancode =  0x7D
 
 [[key]]
 name = "PAGE_DOWN"
-type = "extended"
-scancode = 0x7A
+ps2-type = "extended"
+ps2-scancode =  0x7A
 
 [[key]]
 name = "CURSOR_UP"
-type = "extended"
-scancode = 0x75
+ps2-type = "extended"
+ps2-scancode =  0x75
 
 [[key]]
 name = "CURSOR_DOWN"
-type = "extended"
-scancode = 0x72
+ps2-type = "extended"
+ps2-scancode =  0x72
 
 [[key]]
 name = "CURSOR_LEFT"
-type = "extended"
-scancode = 0x6B
+ps2-type = "extended"
+ps2-scancode =  0x6B
 
 [[key]]
 name = "CURSOR_RIGHT"
-type = "extended"
-scancode = 0x74
+ps2-type = "extended"
+ps2-scancode =  0x74
 
 [[key]]
 name = "KEYPAD_SLASH"
-type = "extended"
-scancode = 0x4A
+ps2-type = "extended"
+ps2-scancode =  0x4A
 
 [[key]]
 name = "KEYPAD_ENTER"
-type = "extended"
-scancode = 0x5A
+ps2-type = "extended"
+ps2-scancode =  0x5A
 
 [[key]]
 name = "ACPI_POWER"
-type = "extended"
-scancode = 0x37
+ps2-type = "extended"
+ps2-scancode =  0x37
 
 [[key]]
 name = "ACPI_SLEEP"
-type = "extended"
-scancode = 0x3F
+ps2-type = "extended"
+ps2-scancode =  0x3F
 
 [[key]]
 name = "ACPI_WAKE"
-type = "extended"
-scancode = 0x5E
+ps2-type = "extended"
+ps2-scancode =  0x5E
 
 [[key]]
 name = "MULTIMEDIA_TRACK_PREVIOUS"
-type = "extended"
-scancode = 0x15
+ps2-type = "extended"
+ps2-scancode =  0x15
 
 [[key]]
 name = "MULTIMEDIA_TRACK_NEXT"
-type = "extended"
-scancode = 0x4D
+ps2-type = "extended"
+ps2-scancode =  0x4D
 
 [[key]]
 name = "MULTIMEDIA_PLAY_PAUSE"
-type = "extended"
-scancode = 0x34
+ps2-type = "extended"
+ps2-scancode =  0x34
 
 [[key]]
 name = "MULTIMEDIA_STOP"
-type = "extended"
-scancode = 0x3B
+ps2-type = "extended"
+ps2-scancode =  0x3B
 
 [[key]]
 name = "MULTIMEDIA_MUTE"
-type = "extended"
-scancode = 0x23
+ps2-type = "extended"
+ps2-scancode =  0x23
 
 [[key]]
 name = "MULTIMEDIA_VOLUME_UP"
-type = "extended"
-scancode = 0x32
+ps2-type = "extended"
+ps2-scancode =  0x32
 
 [[key]]
 name = "MULTIMEDIA_VOLUME_DOWN"
-type = "extended"
-scancode = 0x21
+ps2-type = "extended"
+ps2-scancode =  0x21
 
 [[key]]
 name = "MULTIMEDIA_CALCULATOR"
-type = "extended"
-scancode = 0x2B
+ps2-type = "extended"
+ps2-scancode =  0x2B
 
 [[key]]
 name = "MULTIMEDIA_MY_COMPUTER"
-type = "extended"
-scancode = 0x40
+ps2-type = "extended"
+ps2-scancode =  0x40
 
 [[key]]
 name = "MULTIMEDIA_EMAIL"
-type = "extended"
-scancode = 0x48
+ps2-type = "extended"
+ps2-scancode =  0x48
 
 [[key]]
 name = "MULTIMEDIA_MEDIA_SELECT"
-type = "extended"
-scancode = 0x50
+ps2-type = "extended"
+ps2-scancode =  0x50
 
 [[key]]
 name = "MULTIMEDIA_WWW_SEARCH"
-type = "extended"
-scancode = 0x10
+ps2-type = "extended"
+ps2-scancode =  0x10
 
 [[key]]
 name = "MULTIMEDIA_WWW_FAVOURITES"
-type = "extended"
-scancode = 0x18
+ps2-type = "extended"
+ps2-scancode =  0x18
 
 [[key]]
 name = "MULTIMEDIA_WWW_REFRESH"
-type = "extended"
-scancode = 0x20
+ps2-type = "extended"
+ps2-scancode =  0x20
 
 [[key]]
 name = "MULTIMEDIA_WWW_STOP"
-type = "extended"
-scancode = 0x28
+ps2-type = "extended"
+ps2-scancode =  0x28
 
 [[key]]
 name = "MULTIMEDIA_WWW_FORWARD"
-type = "extended"
-scancode = 0x30
+ps2-type = "extended"
+ps2-scancode =  0x30
 
 [[key]]
 name = "MULTIMEDIA_WWW_BACK"
-type = "extended"
-scancode = 0x38
+ps2-type = "extended"
+ps2-scancode =  0x38
 
 [[key]]
 name = "MULTIMEDIA_WWW_HOME"
-type = "extended"
-scancode = 0x3A
+ps2-type = "extended"
+ps2-scancode =  0x3A
+
+[[key]]
+name = "ISO_EXTRA"
+ps2-type = "simple"
+ps2-scancode = 0x61
 
 [[key]]
 name = "PRINT_SCREEN"
-type = "print_screen"
+ps2-type = "print_screen"
 
 [[key]]
 name = "PAUSE"
-type = "pause"
+ps2-type = "pause"
