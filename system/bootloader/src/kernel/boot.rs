@@ -144,6 +144,7 @@ fn populate_hartinfo(
         stack: stack_set.stack.as_usize(),
         df_stack: stack_set.df_stack.as_usize(),
         nmi_stack: stack_set.nmi_stack.as_usize(),
+        save_user_stack: 0,
         is_bsp: (osid == 0) as usize,
         osid,
         kernel_code_selector: *khi.kernel_code_selector as usize,

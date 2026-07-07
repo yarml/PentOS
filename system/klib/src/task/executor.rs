@@ -126,8 +126,7 @@ impl Executor {
                         tasks.remove(&task.id());
                         waker_cache.remove(&task.id());
                     }
-                    Poll::Pending => {
-                    }
+                    Poll::Pending => {}
                 }
             }
 

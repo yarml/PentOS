@@ -19,5 +19,7 @@ system.workspace = true
 keys.workspace = true
 sync.workspace = true
 
+console-font.workspace = true
+
 [features]
 test = []

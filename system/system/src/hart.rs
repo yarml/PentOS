@@ -17,6 +17,7 @@ pub struct HartInfo {
     pub stack: usize,
     pub df_stack: usize,
     pub nmi_stack: usize,
+    pub save_user_stack: usize,
     pub kernel_code_selector: usize,
     pub kernel_data_selector: usize,
     pub user_code_selector: usize,

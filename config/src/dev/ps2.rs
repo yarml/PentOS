@@ -1,3 +1,5 @@
+//! PS/2 Driver configuration
+
 /// Number of elements held in the PS/2 keyboard event queue
 /// before events start being discarded from the oldest
 pub const KEY_EVENT_QUEUE_SIZE: usize = 32;

@@ -2,7 +2,10 @@ use {
     crate::{dev::ps2::keyboard_update_wake, task},
     config::dev::ps2::KB_BAD_RESPONSE_MAX_RETRIES,
     core::sync::atomic::{AtomicBool, Ordering},
-    keys::{FeedResult, KEYS_COUNT, StateMachine},
+    keys::{
+        KEYS_COUNT, KeyEvent,
+        ps2::{FeedResult, StateMachine},
+    },
     log::warn,
     spinlocks::mutex::SpinMutex,
     x64::{
@@ -60,13 +63,16 @@ pub(crate) fn on_scancode() {
         FeedResult::Output(event) => event,
     };
 
-    if event.is_pressed() && KEYS_PRESS_MAP[event.key().id].swap(true, Ordering::Relaxed) {
-        return;
-    }
-
     if event.is_released() && !KEYS_PRESS_MAP[event.key().id].swap(false, Ordering::Relaxed) {
         return;
     }
+    let repeat = event.is_pressed() && KEYS_PRESS_MAP[event.key().id].swap(true, Ordering::Relaxed);
+
+    let event = if repeat {
+        KeyEvent::Repeated(event.key())
+    } else {
+        event
+    };
 
     task::spawn(keyboard_update_wake(event));
 }
