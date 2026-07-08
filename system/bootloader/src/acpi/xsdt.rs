@@ -1,5 +1,7 @@
 use {
-    super::{complain_corrupt_acpi, madt}, crate::timers, acpi::table::{AcpiTable, Fadt, Madt, Xsdt}
+    super::{complain_corrupt_acpi, madt},
+    crate::{acpi::mcfg, timers},
+    acpi::table::{AcpiTable, Fadt, Madt, Mcfg, Xsdt},
 };
 
 pub fn parse(xsdt: &Xsdt) {
@@ -14,8 +16,11 @@ pub fn parse(xsdt: &Xsdt) {
 
     let madt = xsdt.find_unique::<Madt>();
     let fadt = xsdt.find_unique::<Fadt>();
-    madt::parse(madt);
+    let mcfg = xsdt.find_unique::<Mcfg>();
 
     let pm_timer_info = fadt.pm_timer_info();
+
+    madt::parse(madt);
+    mcfg::parse(mcfg);
     timers::init_pm(pm_timer_info);
 }

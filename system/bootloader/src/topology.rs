@@ -1,6 +1,11 @@
 use {
-    boot_protocol::topology::{Hart, InterruptController, InterruptOverrride, Topology},
-    config::topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
+    boot_protocol::topology::{
+        Hart, InterruptController, InterruptOverrride, PCIConfigSpace, Topology,
+    },
+    config::{
+        dev::pci::MAX_MCFG_ENTRIES,
+        topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
+    },
     log::debug,
     spinlocks::mutex::{SpinMutex, SpinMutexGuard},
     x64::ioapic::{InputPolarity, TriggerMode},
@@ -22,7 +27,14 @@ pub fn register_interrupt_controller(interrupt_controller: InterruptController) 
     }
 }
 
-pub fn registr_interrupt_source_override(irq: usize, r#override: InterruptOverrride) {
+pub fn register_pci_config_space(cfg_space: PCIConfigSpace) {
+    let mut topology = SYSTEM_TOPOLOGY.lock();
+    if topology.pci_config_spaces.push(cfg_space).is_err() {
+        complain_big_system("PCI configuration spaces", MAX_MCFG_ENTRIES);
+    }
+}
+
+pub fn register_interrupt_source_override(irq: usize, r#override: InterruptOverrride) {
     let mut topology = SYSTEM_TOPOLOGY.lock();
     if topology.irq_overrides[irq].is_some() {
         panic!("IRQ override for {irq} specified more than once");

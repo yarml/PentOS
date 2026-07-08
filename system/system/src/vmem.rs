@@ -29,8 +29,15 @@ pub const KERNELSPACE: VirtualMemoryRegion =
 /// - [Kernel code, data, and rodata](KBIN_REGION)
 /// - [Kernel stacks](KSTACK_REGION)
 /// - [Global MMIO](GLOBAL_MMIO_REGION)
-/// - [Local APIC](LOCAL_APIC_REGION)
 pub const KERNEL_SHARED_REGION: VirtualMemoryRegion = firstof(KERNELSPACE, t(64), b(0));
+
+/// Memory mapped PCIe configuration space is mapped into these virtual addresses
+/// The offset of the configuration space of each PCI function can be determined
+/// using its segment group, bus, device, and function number
+/// 4K * (segment*65536 + bus*256 + dev*8 + func)
+pub const PCIE_REGION: VirtualMemoryRegion = after(KERNEL_SHARED_REGION, t(16), b(0), b(0));
+
+pub const KERNEL_RESERVED: VirtualMemoryRegion = after(PCIE_REGION, t(48), b(0), b(0));
 
 /// Region where data passed from the bootloader to the kernel is stored
 pub const BOOTINFO_REGION: VirtualMemoryRegion = firstof(KERNEL_SHARED_REGION, m(1), b(0));

@@ -4,7 +4,7 @@ set script-extension strict
 
 set breakpoint auto-hw on
 
-set logging file run/gdb.log
+set logging file .build/gdb.log
 set logging enabled on
 
 add-symbol-file .build/debug/flat/boot/efi/boot/bootx64.efi

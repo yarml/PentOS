@@ -7,6 +7,7 @@ members = [
     "system/klib",
     "system/system",
     "system/boot-protocol",
+    "dev/pci",
     "fs/fs",
     "fs/block",
     "fs/gpt",
@@ -84,6 +85,8 @@ console-font = { path = "lib/console-font" }
 io = { path = "lib/io" }
 crypto = { path = "lib/crypto" }
 sync = { path = "lib/sync" }
+
+pci = { path = "dev/pci" }
 
 fs = { path = "fs/fs" }
 block = { path = "fs/block" }

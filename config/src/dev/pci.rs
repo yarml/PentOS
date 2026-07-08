@@ -1,0 +1,1 @@
+pub const MAX_MCFG_ENTRIES: usize = 256;

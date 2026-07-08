@@ -17,6 +17,7 @@ spinlocks.workspace = true
 acpi.workspace = true
 config.workspace = true
 utils.workspace = true
+pci.workspace = true
 
 [build-dependencies]
 builder.workspace = true

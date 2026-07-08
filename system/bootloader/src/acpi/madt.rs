@@ -1,6 +1,6 @@
 use {
     crate::topology::{
-        register_hart, register_interrupt_controller, registr_interrupt_source_override,
+        register_hart, register_interrupt_controller, register_interrupt_source_override,
     },
     acpi::table::{IOApic, InterruptSourceOverride, LocalApic, LocalX2Apic, Madt},
     boot_protocol::topology::{Hart, InterruptController, InterruptOverrride},
@@ -77,7 +77,7 @@ fn parse_is_override(is_override: &InterruptSourceOverride) {
         _ => panic!("invalid interrupt override trigger"),
     };
 
-    registr_interrupt_source_override(
+    register_interrupt_source_override(
         is_override.source as usize,
         InterruptOverrride {
             gsi: is_override.gsi as usize,

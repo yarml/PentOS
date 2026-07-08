@@ -1,4 +1,5 @@
 mod madt;
+mod mcfg;
 mod xsdt;
 
 use {

@@ -24,6 +24,7 @@ const QEMU_DEBUG: [&str; 2] = ["unimp", "guest_errors"];
 pub fn base(profile: BuildProfile) -> Command {
     let mut command = Command::new(&CONFIG.qemu_bin);
 
+    command.args(["-machine", "q35"]);
     command.arg("-full-screen");
     command.args(["-debugcon", "stdio"]);
     command.args(["-smp", &CONFIG.qemu_numcores]);

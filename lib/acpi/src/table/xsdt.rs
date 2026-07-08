@@ -45,7 +45,7 @@ impl Xsdt {
             if let Some(str_sig) = T::SIG.as_ascii() {
                 panic!("ACPI table: {} not found", str_sig.as_str());
             } else {
-                panic!("ACPI tabke: {:?} not found", T::SIG);
+                panic!("ACPI table: {:?} not found", T::SIG);
             }
         };
         header.getas().expect("Corrupt ACPI table")

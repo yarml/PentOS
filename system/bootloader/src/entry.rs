@@ -44,7 +44,9 @@ fn main() -> Status {
 
     let features = features::bsp_featureset_init();
     let allocator = PreBootAllocator;
+
     acpi::init();
+
     let kernel = kernel::load_kernel(&allocator);
 
     topology::dump();
@@ -125,6 +127,11 @@ fn main() -> Status {
         virt_mmap::apply_bootinfo_mapping(map_root, &mut allocator, bootinfo);
         virt_mmap::apply_legacy_mem_mapping(map_root, &mut allocator, &legacy_mmap);
         virt_mmap::apply_ioapic_mappings(map_root, &mut allocator);
+        virt_mmap::apply_pcie_mappings(
+            map_root,
+            &mut allocator,
+            &topology::topology().pci_config_spaces,
+        );
     }
 
     let mut khi = unsafe {

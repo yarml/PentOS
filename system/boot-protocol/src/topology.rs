@@ -1,5 +1,8 @@
 use {
-    config::topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
+    config::{
+        dev::pci::MAX_MCFG_ENTRIES,
+        topology::hart::{MAX_HART_COUNT, MAX_INTCTL_COUNT},
+    },
     utils::collections::smallvec::SmallVec,
     x64::{
         ioapic::{InputPolarity, TriggerMode},
@@ -13,6 +16,7 @@ pub struct Topology {
     pub harts: SmallVec<Hart, MAX_HART_COUNT>,
     pub int_controllers: SmallVec<InterruptController, MAX_INTCTL_COUNT>,
     pub irq_overrides: [Option<InterruptOverrride>; 16],
+    pub pci_config_spaces: SmallVec<PCIConfigSpace, MAX_MCFG_ENTRIES>,
 }
 
 // Too proud of myself to call this CPU
@@ -38,6 +42,7 @@ impl Topology {
             harts: SmallVec::new(),
             int_controllers: SmallVec::new(),
             irq_overrides: [None; 16],
+            pci_config_spaces: SmallVec::new(),
         }
     }
 }
@@ -54,4 +59,13 @@ pub struct InterruptOverrride {
     pub gsi: usize,
     pub polarity: InputPolarity,
     pub trigger: TriggerMode,
+}
+
+#[derive(Debug, Clone, Copy)]
+#[repr(C)]
+pub struct PCIConfigSpace {
+    pub phys_base: PhysAddr,
+    pub segment_group: usize,
+    pub bus_start: usize,
+    pub bus_end: usize,
 }

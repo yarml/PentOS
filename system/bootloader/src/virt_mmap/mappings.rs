@@ -5,10 +5,11 @@ use {
         topology,
         virt_mmap::{map, map_many, map_optimal},
     },
-    boot_protocol::BootInfo,
+    boot_protocol::{BootInfo, topology::PCIConfigSpace},
     core::{cmp::min, mem, slice},
     elf::{Elf, SegmentType},
     log::debug,
+    pci::adr::BusAddress,
     system::{
         pmem::IDENTITY_MAPPED_REGION,
         vmem::{BOOTINFO_REGION, IOAPIC_REGION, KBIN_REGION},
@@ -204,6 +205,35 @@ pub unsafe fn apply_ioapic_mappings<const ALLOCATOR_CAP: usize>(
             page,
             true,
             false,
+            PatMemoryType::Uncacheable,
+        );
+    }
+}
+
+/// Maps PCIe MMIO configuration space into PCIE_REGION
+/// # Safety
+/// Should be called only once, and in the BSP
+pub unsafe fn apply_pcie_mappings<const ALLOCATOR_CAP: usize>(
+    map_root: PagingRootEntry,
+    allocator: &mut PostBootAllocator<ALLOCATOR_CAP>,
+    cs_phys_map: &[PCIConfigSpace],
+) {
+    for cs in cs_phys_map {
+        let bus_start_addr = BusAddress::new(cs.segment_group, cs.bus_start);
+        let bus_end_addr = BusAddress::new(cs.segment_group, cs.bus_end);
+
+        let ecam_region = VirtualMemoryRegion::new_boundaries(
+            bus_start_addr.start_virtaddr(),
+            bus_end_addr.end_virtaddr(),
+        );
+
+        map_optimal(
+            map_root,
+            allocator,
+            ecam_region,
+            cs.phys_base,
+            true,  // WRITE
+            false, // NO EXEC
             PatMemoryType::Uncacheable,
         );
     }
