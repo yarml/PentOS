@@ -1,12 +1,14 @@
 use {
-    crate::{
-        config::CONFIG, files, paths, result::ResultExt, status::Status, target::{
+    crate::paths, chef_core::{
+        config::CONFIG,
+        files,
+        result::ResultExt,
+        status::Status,
+        target::{
             Target,
             run_policy::{FilesNotExist, RunPolicy},
-        }
-    },
-    std::{collections::HashMap, path::PathBuf, str::FromStr},
-    tar::Archive,
+        },
+    }, std::{collections::HashMap, path::PathBuf, str::FromStr}, tar::Archive
 };
 
 pub fn ovmf() -> DownloadArchiveTarget {

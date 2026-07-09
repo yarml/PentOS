@@ -1,2 +1,3 @@
 [alias]
-chef = "run --quiet --bin chef -- "
+dev = "run --quiet --bin chef-dev -- "
+analyze = "run --quiet --bin chef-analyze -- "

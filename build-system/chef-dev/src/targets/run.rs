@@ -1,12 +1,11 @@
 use {
-    crate::{
-        args::BuildProfile,
-        command, qemu,
+    crate::{args::BuildProfile, qemu, targets},
+    chef_core::{
+        command,
         target::{
             Target,
             run_policy::{AlwaysRun, RunPolicy},
         },
-        targets,
     },
     std::rc::Rc,
 };

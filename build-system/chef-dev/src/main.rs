@@ -1,23 +1,10 @@
 mod args;
-mod command;
-mod config;
-mod crates;
-mod files;
 mod fs;
-mod metadata;
 mod paths;
-mod result;
-mod status;
-mod target;
-mod targets;
-mod task;
 mod qemu;
+mod targets;
 
-use {
-    crate::{args::ChefCli, status::Status},
-    clap::Parser,
-    log::info,
-};
+use {crate::args::ChefCli, chef_core::status::Status, clap::Parser, log::info};
 
 fn main() {
     env_logger::init();

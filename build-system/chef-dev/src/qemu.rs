@@ -1,12 +1,8 @@
 use {
     crate::{
         args::{BuildProfile, GeneratePartition},
-        command,
-        config::CONFIG,
         paths,
-        result::ResultExt,
-    },
-    std::process::Command,
+    }, chef_core::{command, config::CONFIG, result::ResultExt}, std::process::Command
 };
 
 const QEMU_FEATURES: [&str; 7] = [

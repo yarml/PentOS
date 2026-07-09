@@ -32,7 +32,7 @@ jobs:
             ~/.rustup/toolchains
           key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
       - name: Lint
-        run: cargo chef lint
+        run: cargo dev lint
 
   test:
     runs-on: ubuntu-latest
@@ -54,4 +54,4 @@ jobs:
             ~/.rustup/toolchains
           key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
       - name: Run tests
-        run: cargo chef test
+        run: cargo dev test

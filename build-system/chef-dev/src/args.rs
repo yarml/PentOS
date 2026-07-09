@@ -1,5 +1,6 @@
 use {
-    crate::{target::Target, targets},
+    crate::targets,
+    chef_core::target::Target,
     clap::{Parser, Subcommand, ValueEnum},
     std::rc::Rc,
 };
@@ -165,8 +166,8 @@ impl ChefCommand {
             )),
             ChefCommand::Run { profile } => Rc::new(targets::run::run(*profile)),
             ChefCommand::Debug => Rc::new(targets::run::debug()),
-            ChefCommand::Check => Rc::new(targets::build::check()),
-            ChefCommand::Lint => Rc::new(targets::build::lint()),
+            ChefCommand::Check => Rc::new(chef_core::targets::check::check()),
+            ChefCommand::Lint => Rc::new(chef_core::targets::check::lint()),
             ChefCommand::Doc => Rc::new(targets::build::doc()),
             ChefCommand::Test => Rc::new(targets::build::test()),
             ChefCommand::Info {

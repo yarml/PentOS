@@ -26,8 +26,8 @@ The following tools must be installed manually before building:
 ### Optional Dependencies
 | Tool | Purpose |
 |-|-|
-| `qemu-system-x86_64` | Required for running PentOS in a VM (`cargo chef run` & `cargo chef debug`). |
-| `gdb`, `tmux`, `tee`, & `socat` | Required for debugging the kernel alongside QEMU (`cargo chef debug`). |
+| `qemu-system-x86_64` | Required for running PentOS in a VM (`cargo dev run` & `cargo dev debug`). |
+| `gdb`, `tmux`, `tee`, & `socat` | Required for debugging the kernel alongside QEMU (`cargo dev debug`). |
 
 ### Automatic Dependencies
 PentOS depends on additional tools and assets, but those not listed above are automatically managed by the build system itself.
@@ -40,12 +40,12 @@ OVMF and the console font are downloaded and managed automatically by chef the f
 ### Building the Bootloader and Kernel
 ```sh
 # Release build (default)
-cargo chef build bootloader
-cargo chef build kernel
+cargo dev build bootloader
+cargo dev build kernel
 
 # Debug build
-cargo chef build -p debug bootloader
-cargo chef build -p debug kernel
+cargo dev build -p debug bootloader
+cargo dev build -p debug kernel
 ```
 
 Output locations:
@@ -54,20 +54,20 @@ Output locations:
 
 ### Building a User Package
 ```sh
-cargo chef build pkg <name>
-cargo chef build -p debug pkg <name>
+cargo dev build pkg <name>
+cargo dev build -p debug pkg <name>
 ```
 
 Output location: `target/user/{debug,release}/<name>`
 
 ### Linting
 ```sh
-cargo chef lint
+cargo dev lint
 ```
 
 ### Running Unit Tests
 ```sh
-cargo chef test
+cargo dev test
 ```
 
 ## Running in QEMU
@@ -75,13 +75,13 @@ These commands build and generate everything automatically before launching QEMU
 
 ```sh
 # Run release build
-cargo chef run
+cargo dev run
 
 # Run debug build (no debugger attached)
-cargo chef run -p debug
+cargo dev run -p debug
 
 # Run debug build with GDB + tmux (attaches GDB and a QEMU monitor)
-cargo chef debug
+cargo dev debug
 ```
 
 The QEMU configuration is controlled via `build.toml` (and overrides in `.build.toml`). The defaults are:
@@ -96,17 +96,17 @@ Creates a directory tree representing the filesystem contents.
 
 ```sh
 # Release
-cargo chef generate flat
+cargo dev generate flat
 
 # Debug
-cargo chef generate -p debug flat
+cargo dev generate -p debug flat
 ```
 
 You can also generate individual partitions:
 
 ```sh
-cargo chef generate flat boot
-cargo chef generate flat system
+cargo dev generate flat boot
+cargo dev generate flat system
 ```
 
 ### Raw `.img`
@@ -114,17 +114,17 @@ Creates a raw GPT disk image containing both the boot and system partitions.
 
 ```sh
 # Release
-cargo chef generate img disk
+cargo dev generate img disk
 
 # Debug
-cargo chef generate -p debug img disk
+cargo dev generate -p debug img disk
 ```
 
 Individual partition images:
 
 ```sh
-cargo chef generate img boot
-cargo chef generate img system
+cargo dev generate img boot
+cargo dev generate img system
 ```
 
 Output: `.build/{debug,release}/img/pentos.img`
@@ -132,12 +132,12 @@ Output: `.build/{debug,release}/img/pentos.img`
 Optional page/frame size flags (defaults: `--page-size 512`, `--frame-size 4096`):
 
 ```sh
-cargo chef generate -p release img disk --page-size 512 --frame-size 4096
+cargo dev generate -p release img disk --page-size 512 --frame-size 4096
 ```
 
 ## Building the Documentation
 ```sh
-cargo chef doc
+cargo dev doc
 ```
 
 This generates rustdoc for the entire workspace under `target/doc/`.

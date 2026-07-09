@@ -1,6 +1,6 @@
 use {
-    crate::result::ResultExt,
     block::{BlockDevice, BlockDeviceDimensions},
+    chef_core::result::ResultExt,
     io::{IoError, IoResult},
     log::trace,
     std::{
@@ -53,7 +53,6 @@ impl FileBlockDevice {
     }
 
     pub fn open(path: &Path, page_size: usize, frame_size: usize) -> Self {
-
         let total_size = fs::metadata(path).or_fatal("metadata").len() as usize;
         let page_count = total_size / page_size;
 

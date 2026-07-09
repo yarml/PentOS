@@ -24,7 +24,9 @@ members = [
     "lib/keys",
     "lib/console-font",
     "macros/klib-macros",
-    "build-system/chef",
+    "build-system/chef-core",
+    "build-system/chef-dev",
+    "build-system/chef-analyze",
     "build-system/builder",
     "test",
     "user/lib/runtime",
@@ -73,6 +75,7 @@ boot-protocol = { path = "system/boot-protocol" }
 config = { path = "config" }
 
 builder = { path = "build-system/builder" }
+chef-core = { path = "build-system/chef-core" }
 
 x64 = { path = "lib/x64" }
 elf = { path = "lib/elf" }

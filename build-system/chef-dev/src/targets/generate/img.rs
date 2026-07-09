@@ -4,14 +4,12 @@ mod part;
 use {
     crate::{
         args::{BuildProfile, GeneratePartition},
-        config::CONFIG,
         paths,
         targets::{
             self,
             generate::img::{disk::DiskImgPartition, part::GenerateFatImgTarget},
         },
-    },
-    std::{path::PathBuf, rc::Rc},
+    }, chef_core::config::CONFIG, std::{path::PathBuf, rc::Rc}
 };
 
 pub use disk::GenerateDiskImgTarget;

@@ -3,14 +3,9 @@ pub mod img;
 use {
     crate::{
         args::{BuildProfile, GeneratePartition},
-        crates, paths,
-        target::{
-            Target,
-            primitive::{CopyTarget, SumTarget},
-        },
+        paths,
         targets::build,
-    },
-    std::rc::Rc,
+    }, chef_core::{crates, target::{Target, primitive::{CopyTarget, SumTarget}}}, std::rc::Rc
 };
 
 pub fn flat(partition: GeneratePartition, profile: BuildProfile) -> SumTarget {

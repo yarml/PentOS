@@ -1,9 +1,12 @@
 use {
-    crate::{
+    chef_core::{
         crates::{self, Crate},
-        target::{Target, run_policy::AlwaysRun},
+        target::{
+            Target,
+            run_policy::{AlwaysRun, RunPolicy},
+        },
     },
-    std::{fs, io::BufRead, path::PathBuf},
+    std::{fs, io::BufRead, path::PathBuf, rc::Rc},
 };
 
 pub fn lines() -> LinesTarget {
@@ -18,11 +21,11 @@ impl Target for LinesTarget {
         false
     }
 
-    fn run_policy(&self) -> Box<dyn crate::target::run_policy::RunPolicy> {
+    fn run_policy(&self) -> Box<dyn RunPolicy> {
         Box::new(AlwaysRun)
     }
 
-    fn dependencies(&self) -> Vec<std::rc::Rc<dyn Target>> {
+    fn dependencies(&self) -> Vec<Rc<dyn Target>> {
         vec![]
     }
 }

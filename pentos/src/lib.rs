@@ -59,7 +59,9 @@
 //!
 //! | Crate | Path | Description |
 //! |---|---|---|
-//! | `chef` | `build-system/chef` | Custom build tool — wraps `cargo`, manages OVMF/font downloads, generates disk images, runs QEMU |
+//! | `chef-dev` | `build-system/chef-dev` | Custom build tool — wraps `cargo`, manages OVMF/font downloads, generates disk images, runs QEMU, can be invoked with `cargo dev` |
+//! | `chef-analyze` | `build-system/chef-analyze` | Generates JSON output for use with rust-analyzer. A glorified wrapper around clippy, can be invoked with `cargo analyze` |
+//! | `chef-core` | `build-system/chef-core` | Backend for `chef-dev` and `chef-analyze`  |
 //! | `builder` | `build-system/builder` | Build helpers shared between `chef` and crate build scripts (e.g. NASM integration) |
 //!
 //! ---
@@ -142,24 +144,24 @@
 //!
 //! ## Building
 //!
-//! All build tasks go through `cargo chef` (see `build-system/chef`).
+//! All build tasks go through `cargo dev` (see `build-system/chef-dev`).
 //!
 //! ```sh
 //! # Build the bootloader and kernel (release)
-//! cargo chef build bootloader
-//! cargo chef build kernel
+//! cargo dev build bootloader
+//! cargo dev build kernel
 //!
 //! # Build and run in QEMU
-//! cargo chef run
+//! cargo dev run
 //!
 //! # Build and run with GDB attached
-//! cargo chef debug
+//! cargo dev debug
 //!
 //! # Generate a raw GPT disk image
-//! cargo chef generate img
+//! cargo dev generate img
 //!
 //! # Regenerate this documentation
-//! cargo chef doc
+//! cargo dev doc
 //! ```
 //!
 //! OVMF firmware and the console font are downloaded automatically by `chef`

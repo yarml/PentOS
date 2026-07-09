@@ -31,14 +31,14 @@ jobs:
             ~/.rustup/toolchains
           key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
       - name: Build Bootloader (Release)
-        run: cargo chef build -p release bootloader
+        run: cargo dev build -p release bootloader
       - name: Upload Bootloader (Release)
         uses: actions/upload-artifact@v7.0.0
         with:
           name: bootloader-release
           path: target/uefi/release/bootloader.efi
       - name: Build Bootloader (Debug)
-        run: cargo chef build -p debug bootloader
+        run: cargo dev build -p debug bootloader
       - name: Upload Bootloader (Debug)
         uses: actions/upload-artifact@v7.0.0
         with:
@@ -67,14 +67,14 @@ jobs:
             ~/.rustup/toolchains
           key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
       - name: Build Kernel (Release)
-        run: cargo chef build -p release kernel
+        run: cargo dev build -p release kernel
       - name: Upload Kernel (Release)
         uses: actions/upload-artifact@v7.0.0
         with:
           name: kernel-release
           path: target/kernel/release/kernel
       - name: Build Kernel (Debug)
-        run: cargo chef build -p debug kernel
+        run: cargo dev build -p debug kernel
       - name: Upload Kernel (Debug)
         uses: actions/upload-artifact@v7.0.0
         with:
@@ -104,14 +104,14 @@ jobs:
             ~/.rustup/toolchains
           key: ${{ runner.os }}-rustup-${{ hashFiles('rust-toolchain.toml') }}
       - name: Build Release Image
-        run: cargo chef generate img disk -p release
+        run: cargo dev generate img disk -p release
       - name: Upload Release Image
         uses: actions/upload-artifact@v7.0.0
         with:
           name: pentos-release.img
           path: .build/release/img/pentos.img
       - name: Build Debug Image
-        run: cargo chef generate img disk -p debug
+        run: cargo dev generate img disk -p debug
       - name: Upload Debug Image
         uses: actions/upload-artifact@v7.0.0
         with:

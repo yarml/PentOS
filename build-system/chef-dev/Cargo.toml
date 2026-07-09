@@ -1,5 +1,5 @@
 [package]
-name = "chef"
+name = "chef-dev"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
@@ -11,22 +11,14 @@ log.workspace = true
 
 md5.workspace = true
 
-cargo_metadata.workspace = true
-
 clap.workspace = true
-colored.workspace = true
 
-serde.workspace = true
-toml.workspace = true
-serde_json.workspace = true
-
-reqwest.workspace = true
 tar.workspace = true
 
-xz.workspace = true
-flate2.workspace = true
-
 tempfile.workspace = true
+
+chef-core.workspace = true
+
 
 # local crates
 block.workspace = true

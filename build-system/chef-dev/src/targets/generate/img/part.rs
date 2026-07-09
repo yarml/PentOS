@@ -1,24 +1,15 @@
 use {
-    crate::{
-        fs::block::FileBlockDevice,
-        result::ResultExt,
-        status::Status,
-        target::{
+    crate::fs::block::FileBlockDevice, block::BlockDevice, chef_core::{
+        result::ResultExt, status::Status, target::{
             Target,
             run_policy::{AlwaysRun, CombinedRunPolicies, FilesNotExist, MirrorDeps, RunPolicy},
-        },
-        task,
-    },
-    ::fs::Directory,
-    block::BlockDevice,
-    fat32::{FatVolume, FormatOptions, media::MediaType},
-    io::IoResult,
-    std::{
+        }, task
+    }, fat32::{FatVolume, FormatOptions, media::MediaType}, ::fs::Directory, io::IoResult, std::{
         fs,
         path::{Path, PathBuf},
         rc::Rc,
         sync::Arc,
-    },
+    }
 };
 
 pub struct GenerateFatImgTarget {

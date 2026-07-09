@@ -3,18 +3,8 @@ use {
         args::{BuildProfile, GeneratePartition},
         fs::block::FileBlockDevice,
         paths,
-        result::ResultExt,
-        status::Status,
-        target::{
-            Target,
-            run_policy::{AlwaysRun, RunPolicy},
-        },
         targets::generate::img::part::GenerateFatImgTarget,
-        task,
-    },
-    block::BlockDevice,
-    gpt::{GptDisk, format::FormatOptions, guid::Guid},
-    std::{fs, path::PathBuf, rc::Rc, sync::Arc},
+    }, block::BlockDevice, chef_core::{result::ResultExt, status::Status, target::{Target, run_policy::{AlwaysRun, RunPolicy}}, task}, gpt::{GptDisk, format::FormatOptions, guid::Guid}, std::{fs, path::PathBuf, rc::Rc, sync::Arc}
 };
 
 pub struct DiskImgPartition {
