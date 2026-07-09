@@ -7,26 +7,38 @@ use {
     },
 };
 
+#[repr(C)]
+#[derive(Clone, Copy)]
 pub struct SegmentAddress {
     group: u16,
 }
 
 #[repr(C)]
+#[derive(Clone, Copy)]
 pub struct BusAddress {
     segment: SegmentAddress,
     bus: u8,
 }
 
 #[repr(C)]
+#[derive(Clone, Copy)]
 pub struct DeviceAddress {
     bus: BusAddress,
     device: u8,
 }
 
 #[repr(C)]
+#[derive(Clone, Copy)]
 pub struct FunctionAddress {
     device: DeviceAddress,
     function: u8,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct RegisterAddress {
+    function: FunctionAddress,
+    offset: u16,
 }
 
 impl SegmentAddress {
@@ -38,7 +50,10 @@ impl SegmentAddress {
     }
 
     pub const fn bus(&self, bus: usize) -> BusAddress {
-        BusAddress::new(self.group(), bus)
+        BusAddress {
+            segment: *self,
+            bus: bus as u8,
+        }
     }
 
     pub const fn group(&self) -> usize {
@@ -63,7 +78,10 @@ impl BusAddress {
     }
 
     pub const fn dev(&self, dev: usize) -> DeviceAddress {
-        DeviceAddress::new(self.group(), self.bus(), dev)
+        DeviceAddress {
+            bus: *self,
+            device: dev as u8,
+        }
     }
 
     pub const fn group(&self) -> usize {
@@ -90,7 +108,10 @@ impl DeviceAddress {
     }
 
     pub const fn func(&self, func: usize) -> FunctionAddress {
-        FunctionAddress::new(self.group(), self.bus(), self.dev(), func)
+        FunctionAddress {
+            device: *self,
+            function: func as u8,
+        }
     }
 
     pub const fn group(&self) -> usize {
@@ -118,6 +139,14 @@ impl FunctionAddress {
             function: func as u8,
         }
     }
+
+    pub const fn reg(&self, offset: usize) -> RegisterAddress {
+        RegisterAddress {
+            function: *self,
+            offset: offset as u16,
+        }
+    }
+
     pub const fn group(&self) -> usize {
         self.device.group()
     }
@@ -139,8 +168,35 @@ impl FunctionAddress {
     pub const fn end_virtaddr(&self) -> VirtAddr {
         self.start_virtaddr().add_panic(Page4KiB::SIZE)
     }
+}
 
-    pub const fn offset(&self, offset: usize) -> VirtAddr {
-        self.start_virtaddr().add_panic(offset)
+impl RegisterAddress {
+    pub const fn new(group: usize, bus: usize, device: usize, func: usize, offset: usize) -> Self {
+        Self {
+            function: FunctionAddress::new(group, bus, device, func),
+            offset: offset as u16,
+        }
+    }
+
+    pub const fn group(&self) -> usize {
+        self.function.group()
+    }
+    pub const fn bus(&self) -> usize {
+        self.function.bus()
+    }
+    pub const fn dev(&self) -> usize {
+        self.function.dev()
+    }
+    pub const fn func(&self) -> usize {
+        self.function.func()
+    }
+    pub const fn offset(&self) -> usize {
+        self.offset as usize
+    }
+
+    pub const fn start_virtaddr(&self) -> VirtAddr {
+        self.function
+            .start_virtaddr()
+            .add_panic(self.offset as usize)
     }
 }
