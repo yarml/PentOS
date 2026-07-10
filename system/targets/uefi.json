@@ -1,6 +1,5 @@
 {
   "abi-return-struct-as-int": true,
-  "allows-weak-linkage": false,
   "arch": "x86_64",
   "archive-format": "coff",
   "binary-format": "coff",
@@ -50,7 +49,7 @@
       "/FIXED"
     ]
   },
-  "rustc-abi": "x86-softfloat",
+  "rustc-abi": "softfloat",
   "singlethread": true,
   "stack-probes": {
     "kind": "call"

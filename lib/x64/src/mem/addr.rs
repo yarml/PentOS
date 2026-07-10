@@ -75,7 +75,7 @@ macro_rules! define_addr {
             pub const MIN: Self = Self::null();
         }
 
-        impl const Address for $name {
+        const impl Address for $name {
             // Constructors
             #[inline(always)]
             fn null() -> Self {

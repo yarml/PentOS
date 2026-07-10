@@ -1,12 +1,13 @@
-use std::{
-    env,
-    fs::{self, ReadDir},
-    path::{Path, PathBuf},
-    process::Command,
-    sync::Mutex,
+use {
+    proc_macro2::TokenStream,
+    std::{
+        env,
+        fs::{self, ReadDir},
+        path::{Path, PathBuf},
+        process::Command,
+        sync::Mutex,
+    },
 };
-
-use proc_macro2::TokenStream;
 
 static CONFIG: Mutex<Config> = Mutex::new(Config {
     target: Target::Elf64,
