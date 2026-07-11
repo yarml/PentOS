@@ -1093,6 +1093,7 @@ dependencies = [
  "klib-macros",
  "log",
  "log-debugcon",
+ "pci",
  "spinlocks",
  "sync",
  "system",

@@ -18,6 +18,7 @@ log-debugcon.workspace = true
 system.workspace = true
 keys.workspace = true
 sync.workspace = true
+pci.workspace = true
 
 console-font.workspace = true
 

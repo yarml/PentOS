@@ -1,5 +1,5 @@
 use {
-    crate::table::{AcpiHeader, AcpiTable, MCFG_SIG},
+    crate::table::{AcpiHeader, AcpiTable, MCFG_SIG, Signature},
     core::mem,
 };
 
@@ -25,14 +25,14 @@ pub struct McfgIter<'a> {
 }
 
 impl Mcfg {
-    const HEADER_SIZE: usize = mem::size_of::<AcpiHeader>();
+    const HEADER_SIZE: usize = mem::size_of::<Mcfg>();
     const ENTRY_SIZE: usize = mem::size_of::<ConfigSpacePhysicalMapEntry>();
 
     pub const fn entry_count(&self) -> usize {
         (self.header.len as usize - Self::HEADER_SIZE) / Self::ENTRY_SIZE
     }
 
-    pub const fn entry_at(&self, index: usize) -> Option<ConfigSpacePhysicalMapEntry> {
+    pub fn entry_at(&self, index: usize) -> Option<ConfigSpacePhysicalMapEntry> {
         if index >= self.entry_count() {
             return None;
         }
@@ -74,5 +74,5 @@ impl<'a> Iterator for McfgIter<'a> {
 }
 
 impl AcpiTable for Mcfg {
-    const SIG: &'static [u8; 4] = MCFG_SIG;
+    const SIG: Signature = MCFG_SIG;
 }

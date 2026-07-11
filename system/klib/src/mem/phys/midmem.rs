@@ -115,7 +115,7 @@ impl MidMemAllocator {
     fn lock_block(&self, index: usize) {
         while self
             .lock
-            .fetch_update(Ordering::Acquire, Ordering::Relaxed, |lock| {
+            .try_update(Ordering::Acquire, Ordering::Relaxed, |lock| {
                 (lock & 1 << index == 0).then_some(lock | 1 << index)
             })
             .is_err()
@@ -130,7 +130,7 @@ impl MidMemAllocator {
         loop {
             if let Ok(prev_lock) =
                 self.lock
-                    .fetch_update(Ordering::Acquire, Ordering::Relaxed, |lock| {
+                    .try_update(Ordering::Acquire, Ordering::Relaxed, |lock| {
                         let free_block_index = lock.trailing_ones();
                         (free_block_index != 8).then_some(lock | 1 << free_block_index)
                     })

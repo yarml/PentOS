@@ -9,7 +9,7 @@ use {
     core::{cmp::min, mem, slice},
     elf::{Elf, SegmentType},
     log::debug,
-    pci::adr::BusAddress,
+    pci::adr::{BusAddress, DEV_PER_BUS, FUNC_PER_DEV},
     system::{
         pmem::IDENTITY_MAPPED_REGION,
         vmem::{BOOTINFO_REGION, IOAPIC_REGION, KBIN_REGION},
@@ -219,6 +219,8 @@ pub unsafe fn apply_pcie_mappings<const ALLOCATOR_CAP: usize>(
     cs_phys_map: &[PCIConfigSpace],
 ) {
     for cs in cs_phys_map {
+        let bus_count = cs.bus_end - cs.bus_start + 1;
+
         let bus_start_addr = BusAddress::new(cs.segment_group, cs.bus_start);
         let bus_end_addr = BusAddress::new(cs.segment_group, cs.bus_end);
 
@@ -227,13 +229,14 @@ pub unsafe fn apply_pcie_mappings<const ALLOCATOR_CAP: usize>(
             bus_end_addr.end_virtaddr(),
         );
 
-        map_optimal(
+        map_many::<Page4KiB, ALLOCATOR_CAP>(
             map_root,
             allocator,
-            ecam_region,
-            cs.phys_base,
-            true,  // WRITE
-            false, // NO EXEC
+            Frame::containing(cs.phys_base),
+            Page::containing(ecam_region.start()),
+            bus_count * DEV_PER_BUS * FUNC_PER_DEV,
+            true,
+            false,
             PatMemoryType::Uncacheable,
         );
     }

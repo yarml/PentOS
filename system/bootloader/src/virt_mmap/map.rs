@@ -2,8 +2,7 @@ use {
     crate::{
         allocator::PostBootAllocator,
         virt_mmap::{page_map_new, page_target_or_new},
-    },
-    x64::{
+    }, x64::{
         mem::{
             VirtualMemoryRegion,
             addr::{Address, PhysAddr, VirtAddr},
@@ -94,7 +93,7 @@ pub fn map_optimal<const ALLOCATOR_CAP: usize>(
     }
 
     if phys_start.trailing_zeros() < virt_region.start().trailing_zeros() {
-        todo!("Handle alignment when phys_start is less aligned than virt_region");
+        todo!("Handle alignment when phys_start is less aligned than virt_region: {}/{}", phys_start, virt_region);
     }
 
     let k4_start = *virt_region.start();
