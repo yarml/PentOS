@@ -1,5 +1,9 @@
 use {
-    core::assert,
+    crate::ConfigSpace,
+    core::{
+        assert,
+        fmt::{Debug, Display, Formatter, Result},
+    },
     system::vmem,
     x64::mem::{
         addr::{Address, VirtAddr},
@@ -77,8 +81,7 @@ impl SegmentAddress {
             .add_panic(self.group() * SEGMENT_SIZE)
     }
     pub const fn end_virtaddr(&self) -> VirtAddr {
-        self.start_virtaddr()
-            .add_panic(SEGMENT_SIZE)
+        self.start_virtaddr().add_panic(SEGMENT_SIZE)
     }
 }
 
@@ -112,8 +115,7 @@ impl BusAddress {
             .add_panic(self.bus() * BUS_SIZE)
     }
     pub const fn end_virtaddr(&self) -> VirtAddr {
-        self.start_virtaddr()
-            .add_panic(BUS_SIZE)
+        self.start_virtaddr().add_panic(BUS_SIZE)
     }
 }
 
@@ -148,9 +150,7 @@ impl DeviceAddress {
     }
 
     pub const fn start_virtaddr(&self) -> VirtAddr {
-        self.bus
-            .start_virtaddr()
-            .add_panic(self.dev() * DEV_SIZE)
+        self.bus.start_virtaddr().add_panic(self.dev() * DEV_SIZE)
     }
     pub const fn end_virtaddr(&self) -> VirtAddr {
         self.start_virtaddr().add_panic(DEV_SIZE)
@@ -195,6 +195,10 @@ impl FunctionAddress {
     pub const fn end_virtaddr(&self) -> VirtAddr {
         self.start_virtaddr().add_panic(FUNC_SIZE)
     }
+
+    pub const fn config_space(&self) -> ConfigSpace {
+        unsafe { ConfigSpace::new(self.start_virtaddr()) }
+    }
 }
 
 impl RegisterAddress {
@@ -226,5 +230,53 @@ impl RegisterAddress {
         self.function
             .start_virtaddr()
             .add_panic(self.offset as usize)
+    }
+}
+
+impl Display for SegmentAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{:02x}", self.group)
+    }
+}
+
+impl Display for BusAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}#{:02x}", self.segment, self.bus)
+    }
+}
+
+impl Display for DeviceAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}:{:02x}", self.bus, self.device)
+    }
+}
+
+impl Display for FunctionAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}.{:02x}", self.device, self.function)
+    }
+}
+
+impl Debug for SegmentAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl Debug for BusAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl Debug for DeviceAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl Debug for FunctionAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self)
     }
 }

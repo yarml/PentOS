@@ -2,7 +2,6 @@ use {
     crate::bootinfo::bootinfo,
     log::info,
     pci::adr::{BusAddress, DEV_PER_BUS},
-    x64::mem::addr::Address,
 };
 
 pub(crate) fn init() {
@@ -10,22 +9,28 @@ pub(crate) fn init() {
     let config_spaces = &**bootinfo.topology.pci_config_spaces;
 
     for cs in config_spaces {
-        for bus in cs.bus_start..cs.bus_end {
+        for bus in cs.bus_start..=cs.bus_end {
             let bus_addr = BusAddress::new(cs.segment_group, bus);
             for dev in 0..DEV_PER_BUS {
                 let dev_addr = bus_addr.dev(dev);
-                let f0 = dev_addr.func0();
-                let id_reg = f0.reg(0);
-                let id_ptr = id_reg.start_virtaddr().as_ptr::<u32>();
-                let id = unsafe { id_ptr.read_volatile() };
-                let devid = id >> 16;
-                let vendid = id & 0xFFFF;
+                for func in 0..8 {
+                    let func_addr = dev_addr.func(func);
+                    let config_space = func_addr.config_space();
 
-                if vendid == 0xFFFF {
-                    continue;
+                    let Some(info) = config_space.read_info() else {
+                        if func == 0 {
+                            break;
+                        } else {
+                            continue;
+                        }
+                    };
+
+                    info!("{func_addr}: {info}");
+
+                    if !info.multifunction {
+                        break;
+                    }
                 }
-
-                info!("VendorId: {vendid:04x}, DevId: {devid:04x}");
             }
         }
     }
