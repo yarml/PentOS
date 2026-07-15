@@ -1,6 +1,11 @@
 use core::{arch::x86_64::*, slice};
 
-use system::framebuffer::{FramebufferInfo, PixelColor, PixelMode};
+use console_font::{FontStateMachine, GlyphResult};
+
+use {
+    console_font::{GLYPH_WIDTH, GLYPHS},
+    system::framebuffer::{FramebufferInfo, PixelColor, PixelMode},
+};
 
 #[derive(Clone, Copy)]
 struct DirtyRect {
@@ -111,6 +116,37 @@ impl Framebuffer {
             self.buffer[start..start + w].fill(encoded);
         }
         self.dirty.mark_rect(x, y, w, h);
+    }
+
+    pub fn draw_glyph(
+        &mut self,
+        glyph_idx: u16,
+        x0: usize,
+        y0: usize,
+        fg: PixelColor,
+        bg: PixelColor,
+    ) {
+        let glyph = &GLYPHS[glyph_idx as usize];
+        for (row, bits) in glyph.iter().enumerate() {
+            for col in 0..GLYPH_WIDTH {
+                let byte = bits[col / 8];
+                let set = (byte >> (7 - (col % 8))) & 1 != 0;
+                self.set_pixel(x0 + col, y0 + row, if set { fg } else { bg });
+            }
+        }
+    }
+
+    pub fn draw_str(&mut self, str: &str, x0: usize, y0: usize, fg: PixelColor, bg: PixelColor) {
+        let mut machine = FontStateMachine::new();
+
+        let mut x = x0;
+
+        for byte in str.bytes() {
+            if let GlyphResult::Found(idx) | GlyphResult::Fallback(idx) = machine.feed(byte) {
+                self.draw_glyph(idx, x, y0, fg, bg);
+                x += GLYPH_WIDTH;
+            }
+        }
     }
 
     pub fn clear(&mut self) {

@@ -1,6 +1,17 @@
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PixelColor(pub u8, pub u8, pub u8);
 
+impl PixelColor {
+    pub const BLACK: Self = Self(0, 0, 0);
+    pub const BLUE: Self = Self(0, 0, 255);
+    pub const GREEN: Self = Self(0, 255, 0);
+    pub const CYAN: Self = Self(0, 255, 255);
+    pub const RED: Self = Self(255, 0, 0);
+    pub const MAGENTA: Self = Self(255, 0, 255);
+    pub const YELLOW: Self = Self(255, 255, 0);
+    pub const WHITE: Self = Self(255, 255, 255);
+}
+
 #[derive(Clone, Copy)]
 pub enum PixelMode {
     RgbRs,
