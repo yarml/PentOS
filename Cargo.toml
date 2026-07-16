@@ -8,6 +8,7 @@ members = [
     "system/system",
     "system/boot-protocol",
     "dev/pci",
+    "dev/nvme",
     "fs/fs",
     "fs/block",
     "fs/gpt",
@@ -90,6 +91,7 @@ crypto = { path = "lib/crypto" }
 sync = { path = "lib/sync" }
 
 pci = { path = "dev/pci" }
+nvme = { path = "dev/nvme" }
 
 fs = { path = "fs/fs" }
 block = { path = "fs/block" }

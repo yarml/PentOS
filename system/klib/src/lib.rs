@@ -4,6 +4,7 @@
 #![feature(allocator_api)]
 #![feature(slice_ptr_get)]
 #![feature(abi_x86_interrupt)]
+#![feature(gen_blocks)]
 
 extern crate alloc;
 
@@ -12,6 +13,7 @@ pub mod dev;
 pub mod hart;
 pub mod process;
 pub mod task;
+pub mod log;
 
 mod interrupts;
 mod kalloc;
@@ -32,10 +34,14 @@ use {
 macro_rules! use_klib {
     ($kmain:ident) => {
         extern crate alloc;
+
+        include!(concat!(env!("OUT_DIR"), "/force_link_drivers.rs"));
+
         /// # Safety
         /// Should be called by the bootloader after it has finished initializing everything
         #[unsafe(no_mangle)]
         unsafe extern "sysv64" fn init() -> ! {
+            __force_link_drivers();
             unsafe {
                 // SAFETY: Guarenteed by bootloader
                 klib::init($kmain())

@@ -18,7 +18,14 @@ PHDRS {
 
 SECTIONS {
     .text : ALIGN(0x1000) { *(.text .text.*) } >kernel :kernel_code
-    .rodata : ALIGN(0x1000) { *(.rodata .rodata.*) } >kernel :kernel_rodata
+    .rodata : ALIGN(0x1000) {
+        *(.rodata .rodata.*)
+
+        . = ALIGN(8);
+        __driver_start = .;
+        KEEP(*(.driver))
+        __driver_end = .;
+     } >kernel :kernel_rodata
     .data : ALIGN(0x1000) { *(.data .data.* .got .got.*) } >kernel :kernel_data
     .bss : ALIGN(0x1000) { *(.bss .bss.*) } >kernel :kernel_bss
 

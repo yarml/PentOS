@@ -1,3 +1,4 @@
+mod driver;
 mod hart_local;
 
 use {proc_macro::TokenStream, quote::quote};
@@ -10,4 +11,9 @@ pub fn hart_local(attr: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn klib_hart_local(attr: TokenStream, item: TokenStream) -> TokenStream {
     hart_local::handle_common(attr, item, quote! { crate::hart })
+}
+
+#[proc_macro_attribute]
+pub fn driver(attr: TokenStream, item: TokenStream) -> TokenStream {
+    driver::handle(attr, item)
 }

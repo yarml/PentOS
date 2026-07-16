@@ -1061,9 +1061,13 @@ version = "0.1.0"
 dependencies = [
  "boot-protocol",
  "builder",
+ "chef-core",
  "console-font",
  "klib",
  "log",
+ "nvme",
+ "pci",
+ "quote",
  "system",
  "x64",
 ]
@@ -1105,6 +1109,7 @@ dependencies = [
 name = "klib-macros"
 version = "0.1.0"
 dependencies = [
+ "chef-core",
  "proc-macro2",
  "quote",
  "syn",
@@ -1212,6 +1217,13 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.61.1",
+]
+
+[[package]]
+name = "nvme"
+version = "0.1.0"
+dependencies = [
+ "klib",
 ]
 
 [[package]]

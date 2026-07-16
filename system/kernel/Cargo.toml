@@ -15,5 +15,10 @@ system.workspace = true
 
 console-font.workspace = true
 
+pci.workspace = true
+nvme.workspace = true
+
 [build-dependencies]
 builder.workspace = true
+chef-core.workspace = true
+quote.workspace = true
