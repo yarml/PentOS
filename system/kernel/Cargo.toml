@@ -17,6 +17,9 @@ console-font.workspace = true
 
 pci.workspace = true
 nvme.workspace = true
+framebuffer.workspace = true
+ps2.workspace = true
+timer.workspace = true
 
 [build-dependencies]
 builder.workspace = true

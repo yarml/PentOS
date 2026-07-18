@@ -1,12 +1,31 @@
 #![no_std]
 #![feature(const_trait_impl)]
+#![feature(gen_blocks)]
 
 pub mod adr;
+
+#[cfg(feature = "driver")]
+mod driver;
 
 use {
     core::fmt::{self, Display, Formatter},
     x64::mem::addr::{Address, VirtAddr},
 };
+
+#[cfg(feature = "driver")]
+use klib::dev::driver;
+
+#[cfg(feature = "driver")]
+#[driver]
+pub fn init() {
+    use klib::log::info;
+    for (func_addr, info) in walk() {
+        info!("{func_addr}: {info}");
+    }
+}
+
+#[cfg(feature = "driver")]
+pub use driver::*;
 
 #[derive(Debug, Clone, Copy)]
 pub struct CommonInfo {

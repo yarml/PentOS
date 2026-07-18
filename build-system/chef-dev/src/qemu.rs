@@ -36,12 +36,13 @@ pub fn base(profile: BuildProfile) -> Command {
     command.args([
         "-drive",
         &format!(
-            "format=raw,file={disk_img}",
+            "id=nvm0,if=none,format=raw,file={disk_img}",
             disk_img = paths::img(GeneratePartition::Disk, profile)
                 .to_str()
                 .unwrap()
         ),
     ]);
+    command.args(["-device", "nvme,drive=nvm0,serial=deadbeef"]);
 
     let resolution = CONFIG.qemu_resolution();
     command.args([

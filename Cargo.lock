@@ -569,6 +569,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "framebuffer"
+version = "0.1.0"
+dependencies = [
+ "console-font",
+ "klib",
+ "spinlocks",
+ "sync",
+ "system",
+]
+
+[[package]]
 name = "fs"
 version = "0.1.0"
 dependencies = [
@@ -1063,12 +1074,15 @@ dependencies = [
  "builder",
  "chef-core",
  "console-font",
+ "framebuffer",
  "klib",
  "log",
  "nvme",
  "pci",
+ "ps2",
  "quote",
  "system",
+ "timer",
  "x64",
 ]
 
@@ -1092,12 +1106,9 @@ version = "0.1.0"
 dependencies = [
  "boot-protocol",
  "config",
- "console-font",
- "keys",
  "klib-macros",
  "log",
  "log-debugcon",
- "pci",
  "spinlocks",
  "sync",
  "system",
@@ -1248,6 +1259,7 @@ checksum = "7c87def4c32ab89d880effc9e097653c8da5d6ef28e6b539d313baaacfbafcbe"
 name = "pci"
 version = "0.1.0"
 dependencies = [
+ "klib",
  "system",
  "x64",
 ]
@@ -1315,6 +1327,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "ps2"
+version = "0.1.0"
+dependencies = [
+ "config",
+ "keys",
+ "klib",
+ "spinlocks",
+ "sync",
+ "timer",
+ "utils",
+ "x64",
 ]
 
 [[package]]
@@ -1932,6 +1958,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "timer"
+version = "0.1.0"
+dependencies = [
+ "klib",
+ "sync",
 ]
 
 [[package]]

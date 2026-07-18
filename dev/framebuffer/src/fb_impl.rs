@@ -1,9 +1,6 @@
-use core::{arch::x86_64::*, slice};
-
-use console_font::{FontStateMachine, GlyphResult};
-
 use {
-    console_font::{GLYPH_WIDTH, GLYPHS},
+    console_font::{FontStateMachine, GLYPH_WIDTH, GLYPHS, GlyphResult},
+    core::{arch::x86_64::*, slice},
     system::framebuffer::{FramebufferInfo, PixelColor, PixelMode},
 };
 

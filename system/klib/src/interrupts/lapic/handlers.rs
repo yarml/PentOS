@@ -1,5 +1,5 @@
 use {
-    crate::{dev, task},
+    crate::{interrupts::lapic::TICK_LISTENERS, task},
     system::hart::HartInfo,
     x64::{interrupts::stackframe::InterruptStackFrame, lapic::LocalApic},
 };
@@ -7,7 +7,10 @@ use {
 pub extern "x86-interrupt" fn timer_interrupt(_frame: InterruptStackFrame) {
     let hartinfo = HartInfo::get();
     if hartinfo.is_bsp() {
-        task::spawn_urgent(dev::timer::on_tick);
+        TICK_LISTENERS
+            .lock()
+            .iter()
+            .for_each(|l| task::spawn_urgent(*l));
     }
     LocalApic::end_of_interrupt();
 }

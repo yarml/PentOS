@@ -1,18 +1,15 @@
 pub mod futures;
 pub mod stream;
+pub mod urgent_task;
 
 mod executor;
 mod task_impl;
-mod urgent_task;
-mod utils;
 
 use {
     crate::task::{executor::Executor, urgent_task::UrgentTask},
     core::pin::Pin,
     spinlocks::once::SpinOnce,
 };
-
-pub use utils::*;
 
 static MAIN_EXECUTOR: SpinOnce<Executor> = SpinOnce::new();
 

@@ -10,17 +10,16 @@ klib-macros = { path = "../../macros/klib-macros" }
 
 x64.workspace = true
 utils.workspace = true
-boot-protocol.workspace = true
-spinlocks.workspace = true
+
 config.workspace = true
+boot-protocol.workspace = true
+system.workspace = true
+
+spinlocks.workspace = true
+sync.workspace = true
+
 log.workspace = true
 log-debugcon.workspace = true
-system.workspace = true
-keys.workspace = true
-sync.workspace = true
-pci.workspace = true
-
-console-font.workspace = true
 
 [features]
 test = []

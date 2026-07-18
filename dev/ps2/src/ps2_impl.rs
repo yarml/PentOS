@@ -1,12 +1,12 @@
 use {
-    crate::{dev::ps2::keyboard_update_wake, task},
+    crate::{interrupt, keyboard_update_wake},
     config::dev::ps2::KB_BAD_RESPONSE_MAX_RETRIES,
     core::sync::atomic::{AtomicBool, Ordering},
     keys::{
         KEYS_COUNT, KeyEvent,
         ps2::{FeedResult, StateMachine},
     },
-    log::warn,
+    klib::{log::warn, task},
     spinlocks::mutex::SpinMutex,
     x64::{
         interrupts,
@@ -31,7 +31,9 @@ static STATE_MACHINE: SpinMutex<StateMachine> = SpinMutex::new(StateMachine::new
 pub static KEYS_PRESS_MAP: [AtomicBool; KEYS_COUNT] =
     [const { AtomicBool::new(false) }; KEYS_COUNT];
 
-pub(crate) fn init() {
+pub(crate) fn init_impl() {
+    interrupt::init_interrupt();
+
     let mut cmd_port = CMD_PORT.lock();
     let mut data_port = DATA_PORT.lock();
 

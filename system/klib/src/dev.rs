@@ -1,8 +1,3 @@
-pub mod framebuffer;
-pub mod pci;
-pub mod ps2;
-pub mod timer;
-
 use core::hint::black_box;
 
 pub use klib_macros::driver;
@@ -23,20 +18,16 @@ unsafe extern "C" {
 pub(crate) fn init() {
     info!("Loading drivers");
     load_drivers();
-
-    framebuffer::init();
-    ps2::init();
-    pci::init();
 }
 
 fn load_drivers() {
     drivers().for_each(|driver| {
+        info!("Loading driver {}", driver.id);
         (driver.init)();
-        info!("Loaded driver {}", driver.name);
     });
 }
 
-fn drivers() -> impl Iterator<Item = &'static Driver> {
+pub fn drivers() -> impl Iterator<Item = &'static Driver> {
     gen {
         // First time I encounter this class of optimizer bugs, blackbox is necessary in case there
         // are 0 drivers, __driver_start and __driver_end will both be the same variable with

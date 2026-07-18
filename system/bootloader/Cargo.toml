@@ -7,17 +7,22 @@ authors.workspace = true
 
 [dependencies]
 uefi.workspace = true
+
+boot-protocol.workspace = true
+system.workspace = true
+config.workspace = true
+
+x64.workspace = true
+acpi.workspace = true
+elf.workspace = true
+utils.workspace = true
+
 log.workspace = true
 log-debugcon.workspace = true
-boot-protocol.workspace = true
-x64.workspace = true
-system.workspace = true
-elf.workspace = true
+
 spinlocks.workspace = true
-acpi.workspace = true
-config.workspace = true
-utils.workspace = true
-pci.workspace = true
+
+pci = { path = "../../dev/pci", default-features = false, features = [] }
 
 [build-dependencies]
 builder.workspace = true

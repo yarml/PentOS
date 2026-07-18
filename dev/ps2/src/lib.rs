@@ -1,12 +1,13 @@
+#![no_std]
+#![feature(abi_x86_interrupt)]
+
+extern crate alloc;
+
+mod interrupt;
 mod ps2_impl;
 
-pub(crate) use ps2_impl::{init, on_scancode};
-
 use {
-    crate::{
-        dev::{ps2::ps2_impl::KEYS_PRESS_MAP, timer},
-        task::{futures::ManualFuture, stream::Stream},
-    },
+    crate::ps2_impl::init_impl,
     alloc::vec::Vec,
     config::dev::ps2::KEY_EVENT_QUEUE_SIZE,
     core::{
@@ -15,10 +16,20 @@ use {
         task::{Context, Poll, Waker},
     },
     keys::{Key, KeyEvent},
-    log::warn,
+    klib::{
+        dev::driver,
+        log::warn,
+        task::{futures::ManualFuture, stream::Stream},
+    },
+    ps2_impl::KEYS_PRESS_MAP,
     sync::{AsyncMutex, AsyncMutexGuard},
     utils::collections::broadcast_queue::{BroadcastCursor, BroadcastQueue, ReadResult},
 };
+
+#[driver]
+fn init() {
+    init_impl();
+}
 
 pub mod keys {
     pub use keys::*;

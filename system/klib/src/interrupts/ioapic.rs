@@ -1,23 +1,17 @@
-pub mod handlers;
-
 use {
-    crate::{bootinfo, interrupts::VECTOR_PS2_KEYBOARD},
+    crate::bootinfo,
     boot_protocol::topology::InterruptOverrride,
     config::topology::hart::MAX_INTCTL_COUNT,
-    log::debug,
     spinlocks::{mutex::SpinMutex, once::SpinOnce},
     system::ioapic,
-    utils::collections::smallvec::{SmallVec, SmallVecBuf},
+    utils::collections::smallvec::SmallVec,
     x64::ioapic::{InputPolarity, IoApic, IoRedirection, TriggerMode},
 };
-
-const DEFAULT_PS2_KEYBOARD_IRQ: usize = 1;
 
 static INT_CONTROLLERS: SpinOnce<SmallVec<IoApicContainer, MAX_INTCTL_COUNT>> = SpinOnce::new();
 
 struct IoApicContainer {
     ioapic: SpinMutex<IoApic>,
-    // id: usize,
     gsi_base: usize,
     count: usize,
 }
@@ -26,16 +20,6 @@ pub(crate) fn init() {
     let bootinfo = bootinfo::bootinfo();
 
     let interrupt_controllers = &bootinfo.topology.int_controllers;
-
-    let io_hart = bootinfo
-        .topology
-        .harts
-        .iter()
-        .find(|hart| hart.apic_id < 16)
-        .expect("could not find a hart with an ID suitable for I/O APIC")
-        .apic_id;
-
-    debug!("Using hart #{io_hart} for I/O APIC interrupts");
 
     let mut int_controllers = SmallVec::new();
 
@@ -56,7 +40,6 @@ pub(crate) fn init() {
             ioapic: SpinMutex::new(ioapic),
             count,
             gsi_base,
-            // id: controller.id,
         };
         if int_controllers.push(container).is_err() {
             panic!("not enough interrupt controller slots");
@@ -65,22 +48,11 @@ pub(crate) fn init() {
 
     int_controllers.sort_by_key(|c1| c1.gsi_base);
 
-    apply_irq_redirection(
-        io_hart,
-        DEFAULT_PS2_KEYBOARD_IRQ,
-        VECTOR_PS2_KEYBOARD,
-        &mut int_controllers,
-    );
-
     INT_CONTROLLERS.init(|| int_controllers);
 }
 
-fn apply_irq_redirection(
-    io_hart_apic_id: usize,
-    irq: usize,
-    vector: u8,
-    int_controllers: &mut SmallVecBuf<IoApicContainer>,
-) {
+pub fn apply_irq_redirection(irq: usize, vector: usize) {
+    let int_controllers = INT_CONTROLLERS.wait();
     let bootinfo = bootinfo::bootinfo();
     let irq_overrides = &bootinfo.topology.irq_overrides;
     let redirection = irq_overrides[irq].unwrap_or(InterruptOverrride {
@@ -97,12 +69,23 @@ fn apply_irq_redirection(
         ioapic.write_redirection(
             (redirection.gsi - gsi_controller.gsi_base) as u8,
             IoRedirection::FixedPhysical {
-                vector,
-                apic_id: io_hart_apic_id as u8,
+                vector: vector as u8,
+                apic_id: get_io_hart() as u8,
                 trigger: redirection.trigger,
                 polarity: redirection.polarity,
                 mask: false,
             },
         );
     }
+}
+
+fn get_io_hart() -> usize {
+    let bootinfo = bootinfo::bootinfo();
+    bootinfo
+        .topology
+        .harts
+        .iter()
+        .find(|hart| hart.apic_id < 16)
+        .expect("could not find a hart with an ID suitable for I/O APIC")
+        .apic_id
 }

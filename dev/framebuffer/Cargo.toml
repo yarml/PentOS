@@ -1,16 +1,13 @@
 [package]
-name = "pci"
+name = "framebuffer"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 
 [dependencies]
-x64.workspace = true
+klib.workspace = true
 system.workspace = true
-
-klib = { workspace = true, optional = true}
-
-[features]
-default = ["driver"]
-driver = ["dep:klib"]
+console-font.workspace = true
+sync.workspace = true
+spinlocks.workspace = true

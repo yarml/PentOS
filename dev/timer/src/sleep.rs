@@ -1,12 +1,9 @@
 use {
-    crate::{dev::timer::get_timestamp, task::futures::ManualFuture},
-    alloc::collections::binary_heap::BinaryHeap,
-    core::{
+    crate::{get_timestamp, task::futures::ManualFuture}, alloc::collections::binary_heap::BinaryHeap, core::{
         cmp::Ordering,
         pin::Pin,
         task::{Context, Poll, Waker},
-    },
-    sync::{AsyncMutex, AsyncMutexGuard},
+    }, sync::{AsyncMutex, AsyncMutexGuard},
 };
 
 struct SleepingWaker {

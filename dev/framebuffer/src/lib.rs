@@ -1,18 +1,19 @@
+#![no_std]
+
 mod fb_impl;
 
 use {
-    sync::{AsyncMutex, AsyncMutexGuard},
-    crate::{
-        bootinfo,
-    },
+    klib::{bootinfo, dev::driver},
     spinlocks::once::SpinOnce,
+    sync::{AsyncMutex, AsyncMutexGuard},
 };
 
 pub use fb_impl::Framebuffer;
 
 static MAIN_FRAMEBUFFER: SpinOnce<AsyncMutex<Framebuffer>> = SpinOnce::new();
 
-pub(crate) fn init() {
+#[driver]
+fn init() {
     let bootinfo = bootinfo::bootinfo();
     MAIN_FRAMEBUFFER.init(|| {
         AsyncMutex::new(unsafe {

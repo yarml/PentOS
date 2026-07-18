@@ -1,17 +1,10 @@
 use {
-    crate::bootinfo::bootinfo,
-    log::info,
-    pci::{
+    crate::{
         CommonInfo,
         adr::{BusAddress, DEV_PER_BUS, FunctionAddress},
     },
+    klib::bootinfo::bootinfo,
 };
-
-pub(crate) fn init() {
-    for (func_addr, info) in walk() {
-        info!("{func_addr}: {info}");
-    }
-}
 
 pub fn walk() -> impl Iterator<Item = (FunctionAddress, CommonInfo)> {
     let bootinfo = bootinfo();

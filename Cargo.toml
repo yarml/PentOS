@@ -9,6 +9,9 @@ members = [
     "system/boot-protocol",
     "dev/pci",
     "dev/nvme",
+    "dev/framebuffer",
+    "dev/ps2",
+    "dev/timer",
     "fs/fs",
     "fs/block",
     "fs/gpt",
@@ -68,16 +71,18 @@ uefi = { version = "0.37.0" }
 # TODO: self-host this
 log = "0.4.29"
 
-# local crates
+# system/
 klib = { path = "system/klib" }
 system = { path = "system/system" }
 boot-protocol = { path = "system/boot-protocol" }
 
 config = { path = "config" }
 
+# build-system/
 builder = { path = "build-system/builder" }
 chef-core = { path = "build-system/chef-core" }
 
+# lib/
 x64 = { path = "lib/x64" }
 elf = { path = "lib/elf" }
 spinlocks = { path = "lib/spinlocks" }
@@ -90,9 +95,14 @@ io = { path = "lib/io" }
 crypto = { path = "lib/crypto" }
 sync = { path = "lib/sync" }
 
+# dev/
 pci = { path = "dev/pci" }
 nvme = { path = "dev/nvme" }
+framebuffer = { path = "dev/framebuffer" }
+ps2 = { path = "dev/ps2" }
+timer = { path = "dev/timer" }
 
+# fs/
 fs = { path = "fs/fs" }
 block = { path = "fs/block" }
 gpt = { path = "fs/gpt" }

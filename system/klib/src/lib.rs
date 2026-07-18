@@ -11,11 +11,11 @@ extern crate alloc;
 pub mod bootinfo;
 pub mod dev;
 pub mod hart;
+pub mod interrupts;
+pub mod log;
 pub mod process;
 pub mod task;
-pub mod log;
 
-mod interrupts;
 mod kalloc;
 mod logger;
 mod mem;
